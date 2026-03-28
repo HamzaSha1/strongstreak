@@ -11,6 +11,9 @@
     "name": {
       "type": "string"
     },
+    "image_url": {
+      "type": "string"
+    },
     "exercise_type": {
       "type": "string",
       "enum": [
