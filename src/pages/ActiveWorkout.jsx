@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, ChevronDown, ChevronUp, Plus, Check, Flag, Camera } from 'lucide-react';
+import { ArrowLeft, ArrowUpDown, ChevronDown, ChevronUp, Plus, Check, Flag, ArrowUp, ArrowDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -192,6 +192,8 @@ export default function ActiveWorkout() {
   const [elapsed, setElapsed] = useState(0);
   const [restTimer, setRestTimer] = useState(null); // { seconds, total }
   const [showPostModal, setShowPostModal] = useState(false);
+  const [reorderMode, setReorderMode] = useState(false);
+  const [exerciseOrder, setExerciseOrder] = useState([]);
   const startTime = useRef(new Date());
   const timerRef = useRef(null);
 
@@ -220,7 +222,13 @@ export default function ActiveWorkout() {
     enabled: !!user,
   });
 
-  // Initialize sets
+  // Initialize sets and order
+  useEffect(() => {
+    if (exercises.length && !exerciseOrder.length) {
+      setExerciseOrder(exercises.map((e) => e.id));
+    }
+  }, [exercises]);
+
   useEffect(() => {
     if (exercises.length && !Object.keys(sets).length) {
       const initial = {};
@@ -347,7 +355,25 @@ export default function ActiveWorkout() {
             <p className="font-heading font-semibold text-sm">{day?.day_of_week} — {day?.session_type}</p>
             <p className="text-primary font-mono text-lg font-bold">{formatTime(elapsed)}</p>
           </div>
-          <div className="text-xs text-muted-foreground">{completedSets}/{totalSets}</div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                setReorderMode((r) => {
+                  if (!r) setExpanded({});
+                  else setExpanded(Object.fromEntries(exerciseOrder.map((id) => [id, true])));
+                  return !r;
+                });
+              }}
+              className={cn(
+                'text-xs flex items-center gap-1 px-2 py-1 rounded-lg border transition-colors',
+                reorderMode ? 'bg-primary text-primary-foreground border-primary' : 'border-border text-muted-foreground'
+              )}
+            >
+              <ArrowUpDown size={12} />
+              {reorderMode ? 'Done' : 'Reorder'}
+            </button>
+            <div className="text-xs text-muted-foreground">{completedSets}/{totalSets}</div>
+          </div>
         </div>
         {/* Progress bar */}
         <div className="w-full bg-muted rounded-full h-1.5">
@@ -360,16 +386,58 @@ export default function ActiveWorkout() {
 
       <div className="px-4 pt-4 flex flex-col gap-3">
         {(() => {
+          // Build ordered exercises list
+          const orderedExercises = exerciseOrder.length
+            ? exerciseOrder.map((id) => exercises.find((e) => e.id === id)).filter(Boolean)
+            : exercises;
+
+          const moveExercise = (fromIdx, toIdx) => {
+            if (toIdx < 0 || toIdx >= orderedExercises.length) return;
+            setExerciseOrder((prev) => {
+              const next = [...prev];
+              const [moved] = next.splice(fromIdx, 1);
+              next.splice(toIdx, 0, moved);
+              return next;
+            });
+          };
+
+          if (reorderMode) {
+            return orderedExercises.map((ex, idx) => (
+              <div key={ex.id} className="bg-card border border-border rounded-2xl flex items-center gap-3 px-4 py-3">
+                <div className="flex-1 min-w-0">
+                  <p className="font-heading font-semibold text-sm">{ex.name}</p>
+                  <p className="text-xs text-muted-foreground">{ex.target_sets} × {ex.target_reps}</p>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <button
+                    onClick={() => moveExercise(idx, idx - 1)}
+                    disabled={idx === 0}
+                    className="w-7 h-7 rounded-lg bg-secondary flex items-center justify-center disabled:opacity-30"
+                  >
+                    <ArrowUp size={14} />
+                  </button>
+                  <button
+                    onClick={() => moveExercise(idx, idx + 1)}
+                    disabled={idx === orderedExercises.length - 1}
+                    className="w-7 h-7 rounded-lg bg-secondary flex items-center justify-center disabled:opacity-30"
+                  >
+                    <ArrowDown size={14} />
+                  </button>
+                </div>
+              </div>
+            ));
+          }
+
           // Group exercises: supersets grouped, others individual
           const rendered = [];
           const usedIds = new Set();
 
-          exercises.forEach((ex) => {
+          orderedExercises.forEach((ex) => {
             if (usedIds.has(ex.id)) return;
 
             if (ex.superset_group) {
               // Find all exercises in this superset group
-              const group = exercises.filter((e) => e.superset_group === ex.superset_group);
+              const group = orderedExercises.filter((e) => e.superset_group === ex.superset_group);
               group.forEach((e) => usedIds.add(e.id));
               rendered.push({ type: 'superset', exercises: group });
             } else {
