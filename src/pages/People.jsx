@@ -1,9 +1,29 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Search, UserPlus, UserCheck } from 'lucide-react';
+import { Search, UserPlus, UserCheck, Flame } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+
+function calcStreak(logs) {
+  if (!logs?.length) return 0;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const logDates = [...new Set(logs.map((l) => {
+    const d = new Date(l.started_at || l.created_date);
+    d.setHours(0, 0, 0, 0);
+    return d.getTime();
+  }))].sort((a, b) => b - a);
+  let streak = 0;
+  let check = today.getTime();
+  for (const ts of logDates) {
+    if (ts === check || ts === check - 86400000) {
+      streak++;
+      check = ts - 86400000;
+    } else break;
+  }
+  return streak;
+}
 
 export default function People() {
   const [user, setUser] = useState(null);
@@ -29,6 +49,13 @@ export default function People() {
   const { data: followers = [] } = useQuery({
     queryKey: ['followers', user?.email],
     queryFn: () => base44.entities.Follow.filter({ following_id: user?.email }),
+    enabled: !!user,
+  });
+
+  // Fetch all workout logs so we can compute per-user streaks
+  const { data: allLogs = [] } = useQuery({
+    queryKey: ['allWorkoutLogs'],
+    queryFn: () => base44.entities.WorkoutLog.list('-started_at', 500),
     enabled: !!user,
   });
 
@@ -100,6 +127,16 @@ export default function People() {
                 <p className="font-medium text-sm truncate">{u.full_name || u.email?.split('@')[0]}</p>
                 <p className="text-xs text-muted-foreground truncate">{u.email}</p>
               </div>
+              {(() => {
+                const userLogs = allLogs.filter((l) => l.user_id === u.email);
+                const s = calcStreak(userLogs);
+                return s > 0 ? (
+                  <div className="flex items-center gap-1 mr-1">
+                    <Flame size={13} className="text-primary flame-glow" />
+                    <span className="text-primary text-xs font-bold">{s}</span>
+                  </div>
+                ) : null;
+              })()}
               <button
                 onClick={() => followMutation.mutate(u)}
                 className={cn(

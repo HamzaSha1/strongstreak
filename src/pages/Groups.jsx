@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Copy, Users, Flame, LogOut, Trophy } from 'lucide-react';
+import { Plus, Copy, Users, Flame, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -11,11 +11,7 @@ function generateCode() {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
 
-const RANK_STYLES = [
-  'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
-  'bg-slate-400/20 text-slate-300 border-slate-400/30',
-  'bg-orange-700/20 text-orange-400 border-orange-700/30',
-];
+
 
 export default function Groups() {
   const [user, setUser] = useState(null);
@@ -112,7 +108,23 @@ export default function Groups() {
     },
   });
 
-  const sortedMembers = [...groupMembers].sort((a, b) => (b.streak || 0) - (a.streak || 0));
+  // Fetch all workout logs to determine who completed today
+  const { data: allLogs = [] } = useQuery({
+    queryKey: ['allLogsForGroup'],
+    queryFn: () => base44.entities.WorkoutLog.list('-started_at', 500),
+    enabled: !!selectedGroup,
+  });
+
+  const todayStr = new Date().toISOString().slice(0, 10);
+
+  // A member "completed today" if they have a WorkoutLog created today
+  const memberCompletedToday = (memberId) =>
+    allLogs.some((l) => l.user_id === memberId && (l.started_at || l.created_date || '').slice(0, 10) === todayStr);
+
+  const allMembersCompleted = groupMembers.length > 0 && groupMembers.every((m) => memberCompletedToday(m.user_id));
+
+  // Group shared streak = the streak field stored on the group's first member record (same for all)
+  const groupStreak = groupMembers[0]?.streak || 0;
 
   if (view === 'detail' && selectedGroup) {
     return (
@@ -140,34 +152,37 @@ export default function Groups() {
           </button>
         </div>
 
-        {/* Leaderboard */}
-        <h3 className="font-heading font-semibold mb-3 flex items-center gap-2">
-          <Trophy size={16} className="text-primary" /> Streak Leaderboard
-        </h3>
-        <div className="flex flex-col gap-2 mb-6">
-          {sortedMembers.map((member, i) => (
-            <div
-              key={member.id}
-              className="flex items-center gap-3 bg-card rounded-xl border border-border px-4 py-3"
-            >
-              <span
-                className={cn(
-                  'w-6 h-6 rounded-full border flex items-center justify-center text-xs font-bold',
-                  RANK_STYLES[i] || 'bg-muted text-muted-foreground border-border'
-                )}
-              >
-                {i + 1}
-              </span>
-              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-sm">
-                {member.display_name?.[0]?.toUpperCase() || '?'}
-              </div>
-              <span className="flex-1 text-sm font-medium">{member.display_name}</span>
-              <div className="flex items-center gap-1">
-                <Flame size={15} className="text-primary flame-glow" />
-                <span className="text-primary font-bold text-sm streak-pulse">{member.streak || 0}</span>
-              </div>
+        {/* Shared Group Streak */}
+        <div className="bg-card border border-border rounded-2xl p-5 mb-6 text-center">
+          <div className="flex items-center justify-center gap-2 mb-1">
+            <Flame size={28} className="text-primary flame-glow" />
+            <span className="text-5xl font-heading font-bold text-primary streak-pulse">{groupStreak}</span>
+          </div>
+          <p className="text-muted-foreground text-sm mb-4">Group streak — keep it alive together!</p>
+          <div className="flex flex-col gap-2">
+            {groupMembers.map((member) => {
+              const done = memberCompletedToday(member.user_id);
+              return (
+                <div key={member.id} className="flex items-center gap-3 bg-muted/40 rounded-xl px-3 py-2">
+                  <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-sm flex-shrink-0">
+                    {member.display_name?.[0]?.toUpperCase() || '?'}
+                  </div>
+                  <span className="flex-1 text-sm font-medium text-left">{member.display_name}</span>
+                  <span className={cn(
+                    'text-xs font-semibold px-2.5 py-1 rounded-full',
+                    done ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'
+                  )}>
+                    {done ? '✓ Done' : 'Pending'}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+          {allMembersCompleted && (
+            <div className="mt-3 text-xs text-primary font-semibold">
+              🔥 Everyone's done today — streak grows!
             </div>
-          ))}
+          )}
         </div>
 
         <Button
@@ -278,7 +293,13 @@ export default function Groups() {
             >
               <div className="flex items-center justify-between mb-1">
                 <span className="font-heading font-semibold">{group.name}</span>
-                <span className="text-xs text-muted-foreground font-mono">{group.invite_code}</span>
+                <div className="flex items-center gap-1">
+                  <Flame size={13} className="text-primary" />
+                  <span className="text-xs font-bold text-primary">
+                    {myMemberships.find((m) => m.group_id === group.id)?.streak || 0}
+                  </span>
+                  <span className="text-xs text-muted-foreground font-mono ml-2">{group.invite_code}</span>
+                </div>
               </div>
               {group.description && (
                 <p className="text-muted-foreground text-sm">{group.description}</p>

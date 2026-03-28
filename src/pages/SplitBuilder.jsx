@@ -36,12 +36,13 @@ export default function SplitBuilder() {
       for (const e of existingEx) await base44.entities.SplitExercise.delete(e.id);
 
       for (const d of days) {
-        if (!d.session_type) continue;
+        // Days with no session_type or no exercises → auto Rest
+        const effectiveType = d.session_type || 'Rest';
         const savedDay = await base44.entities.SplitDay.create({
           user_id: user.email,
           split_name: splitName || 'My Split',
           day_of_week: d.day,
-          session_type: d.session_type,
+          session_type: effectiveType,
           order_index: d.order_index,
         });
         for (let i = 0; i < d.exercises.length; i++) {
@@ -77,7 +78,7 @@ export default function SplitBuilder() {
   };
 
   const trainingDays = days.filter((d) => d.session_type && d.session_type !== 'Rest').length;
-  const restDays = days.filter((d) => d.session_type === 'Rest').length;
+  const restDays = days.filter((d) => d.session_type === 'Rest' || !d.session_type).length;
 
   return (
     <div className="pb-28 min-h-screen bg-background">
@@ -133,8 +134,8 @@ export default function SplitBuilder() {
         </div>
         <div className="w-px bg-border" />
         <div>
-          <p className="font-bold text-xl font-heading">{7 - trainingDays - restDays}</p>
-          <p className="text-muted-foreground">Unset</p>
+          <p className="font-bold text-xl font-heading text-muted-foreground">{7 - trainingDays - restDays}</p>
+          <p className="text-muted-foreground">→ Rest</p>
         </div>
       </div>
     </div>
