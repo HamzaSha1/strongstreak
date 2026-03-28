@@ -1,17 +1,27 @@
-import { useState } from 'react';
-import { X, ChevronDown, ChevronUp, Minus, Plus } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { base44 } from '@/api/base44Client';
+import { X, ChevronDown, ChevronUp, Minus, Plus, Camera } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { REST_OPTIONS, EXERCISE_MUSCLE_MAP } from './exerciseData';
-import ExerciseIllustration from './ExerciseIllustration';
+import { REST_OPTIONS } from './exerciseData';
 
 // Step-by-step config: Sets → Reps → RPE → Rest
 const STEPS = ['sets', 'reps', 'rpe', 'rest'];
 
 export default function ExerciseConfig({ exercise, onChange, onDelete }) {
   const [openStep, setOpenStep] = useState('sets');
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef();
 
   const toggleStep = (step) => setOpenStep((s) => (s === step ? null : step));
-  const muscle = EXERCISE_MUSCLE_MAP[exercise.name] || 'Core';
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploading(true);
+    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    onChange({ ...exercise, image_url: file_url });
+    setUploading(false);
+  };
 
   const nextStep = (current) => {
     const idx = STEPS.indexOf(current);
@@ -23,8 +33,21 @@ export default function ExerciseConfig({ exercise, onChange, onDelete }) {
     <div className="bg-secondary/50 border border-border rounded-2xl overflow-hidden mb-3">
       {/* Exercise header */}
       <div className="flex items-center gap-3 p-3">
-        <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-secondary flex items-center justify-center">
-          <ExerciseIllustration muscle={muscle} size="sm" />
+        <div
+          className="relative w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-secondary flex items-center justify-center cursor-pointer"
+          onClick={() => fileRef.current.click()}
+        >
+          {exercise.image_url ? (
+            <img src={exercise.image_url} alt={exercise.name} className="w-full h-full object-cover" />
+          ) : (
+            <Camera size={18} className="text-muted-foreground" />
+          )}
+          {uploading && (
+            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            </div>
+          )}
+          <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleImageUpload} />
         </div>
 
         <div className="flex-1 min-w-0">
