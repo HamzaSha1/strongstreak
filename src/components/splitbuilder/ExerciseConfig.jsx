@@ -32,8 +32,8 @@ export default function ExerciseConfig({ exercise, onChange, onDelete }) {
     <div className="bg-secondary/50 border border-border rounded-2xl overflow-hidden mb-3">
       {/* Exercise header */}
       <div className="flex items-center gap-3 p-3">
-        <div className="flex flex-col items-center gap-1 flex-shrink-0">
-          <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-secondary border border-dashed border-primary/40 flex items-center justify-center">
+        <label className="flex flex-col items-center gap-1 flex-shrink-0 cursor-pointer">
+          <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-secondary border-2 border-dashed border-primary flex items-center justify-center">
             {exercise.image_url ? (
               <img src={exercise.image_url} alt={exercise.name} className="w-full h-full object-cover" />
             ) : (
@@ -44,15 +44,16 @@ export default function ExerciseConfig({ exercise, onChange, onDelete }) {
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
               </div>
             )}
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleImageUpload}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-            />
           </div>
-          <span className="text-[9px] text-primary/70 leading-none">photo</span>
-        </div>
+          <span className="text-[9px] text-primary leading-none">photo</span>
+          <input
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={handleImageUpload}
+            className="hidden"
+          />
+        </label>
 
         <div className="flex-1 min-w-0">
           <p className="font-heading font-semibold text-sm truncate">{exercise.name}</p>
