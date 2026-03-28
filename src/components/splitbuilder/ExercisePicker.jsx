@@ -23,11 +23,11 @@ export default function ExercisePicker({ sessionType, addedNames, onAdd, onCusto
 
       {/* Muscle group image */}
       {selectedGroup && MUSCLE_GROUP_IMAGES[selectedGroup] && (
-        <div className="w-full h-36 rounded-2xl overflow-hidden mb-3">
+        <div className="w-full h-36 rounded-2xl overflow-hidden mb-3 bg-white flex items-center justify-center">
           <img
             src={MUSCLE_GROUP_IMAGES[selectedGroup]}
             alt={selectedGroup}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-contain p-2"
           />
         </div>
       )}
@@ -65,8 +65,8 @@ export default function ExercisePicker({ sessionType, addedNames, onAdd, onCusto
                   alreadyAdded ? 'opacity-40 cursor-not-allowed' : 'hover:bg-secondary active:bg-secondary/80'
                 )}
               >
-                <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 bg-muted">
-                  <img src={ex.image} alt={ex.name} className="w-full h-full object-cover" />
+                <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 bg-white flex items-center justify-center">
+                  <img src={ex.image} alt={ex.name} className="w-full h-full object-contain p-0.5" />
                 </div>
                 <span className="flex-1 text-sm font-medium text-left">{ex.name}</span>
                 <div className={cn(

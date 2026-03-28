@@ -33,9 +33,9 @@ export default function ExerciseConfig({ exercise, onChange, onDelete }) {
     <div className="bg-secondary/50 border border-border rounded-2xl overflow-hidden mb-3">
       {/* Exercise header */}
       <div className="flex items-center gap-3 p-3">
-        <div className="relative w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-muted">
+        <div className="relative w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-white flex items-center justify-center">
           {exercise.image_url ? (
-            <img src={exercise.image_url} alt={exercise.name} className="w-full h-full object-cover" />
+            <img src={exercise.image_url} alt={exercise.name} className="w-full h-full object-contain p-0.5" />
           ) : (
             <div className="w-full h-full bg-muted" />
           )}
