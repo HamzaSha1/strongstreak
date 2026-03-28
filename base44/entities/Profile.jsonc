@@ -13,6 +13,11 @@
     },
     "bio": {
       "type": "string"
+    },
+    "is_private": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether the profile is private or public"
     }
   },
   "required": [
