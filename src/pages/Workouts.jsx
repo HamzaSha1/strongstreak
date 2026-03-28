@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
-import { Flame, Plus, Edit, Play, BedDouble, Dumbbell } from 'lucide-react';
+import { Flame, Plus, Edit, Play, BedDouble, Dumbbell, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
@@ -87,25 +87,31 @@ export default function Workouts() {
         </Button>
       </div>
 
-      {/* Split Tabs */}
-      {splitNames.length > 1 && (
-        <div className="flex gap-1.5 mb-4 overflow-x-auto pb-1 scrollbar-hide">
-          {splitNames.map((name, i) => (
-            <button
-              key={name}
-              onClick={() => setActiveTab(i)}
-              className={cn(
-                'flex-shrink-0 px-3.5 py-1.5 rounded-xl text-sm font-medium transition-colors whitespace-nowrap',
-                i === activeTab
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-secondary text-muted-foreground hover:text-foreground'
-              )}
-            >
-              {name}
-            </button>
-          ))}
-        </div>
-      )}
+      {/* Split Tabs — always visible, Chrome-style */}
+      <div className="flex items-center gap-1 mb-4 overflow-x-auto pb-1 scrollbar-hide">
+        {(splitNames.length > 0 ? splitNames : ['Split 1']).map((name, i) => (
+          <button
+            key={name}
+            onClick={() => setActiveTab(i)}
+            className={cn(
+              'flex-shrink-0 px-3.5 py-1.5 rounded-xl text-sm font-medium transition-colors whitespace-nowrap',
+              i === activeTab
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-secondary text-muted-foreground hover:text-foreground'
+            )}
+          >
+            {name || `Split ${i + 1}`}
+          </button>
+        ))}
+        {/* + tab: go to split builder to add a new split */}
+        <a
+          href="/split-builder"
+          className="flex-shrink-0 w-8 h-8 rounded-xl bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors ml-0.5"
+          title="Add new split"
+        >
+          <Plus size={16} />
+        </a>
+      </div>
 
       {/* Day Cards */}
       {splitDays.length === 0 ? (
