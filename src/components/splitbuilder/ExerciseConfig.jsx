@@ -33,19 +33,23 @@ export default function ExerciseConfig({ exercise, onChange, onDelete }) {
     <div className="bg-secondary/50 border border-border rounded-2xl overflow-hidden mb-3">
       {/* Exercise header */}
       <div className="flex items-center gap-3 p-3">
-        <label className="relative w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-secondary flex items-center justify-center cursor-pointer">
+        <button
+          type="button"
+          onClick={() => fileRef.current.click()}
+          className="relative w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-secondary flex items-center justify-center cursor-pointer"
+        >
           {exercise.image_url ? (
-            <img src={exercise.image_url} alt={exercise.name} className="w-full h-full object-cover pointer-events-none" />
+            <img src={exercise.image_url} alt={exercise.name} className="w-full h-full object-cover" />
           ) : (
-            <Camera size={18} className="text-muted-foreground pointer-events-none" />
+            <Camera size={18} className="text-muted-foreground" />
           )}
           {uploading && (
-            <div className="absolute inset-0 bg-black/50 flex items-center justify-center pointer-events-none">
+            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
             </div>
           )}
-          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
-        </label>
+        </button>
+        <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
 
         <div className="flex-1 min-w-0">
           <p className="font-heading font-semibold text-sm truncate">{exercise.name}</p>
