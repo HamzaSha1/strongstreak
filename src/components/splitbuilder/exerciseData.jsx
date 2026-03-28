@@ -1,39 +1,3 @@
-// Everkinetic line-art illustrations from Wikimedia Commons (CC BY-SA 3.0)
-// All hashes verified against actual Wikimedia Commons file pages.
-const WK = 'https://upload.wikimedia.org/wikipedia/commons/thumb';
-
-// Helper: build a thumbnail URL given the hash, filename and desired width
-const wk = (hash, filename, w = 400) =>
-  `${WK}/${hash}/${filename}/${w}px-${filename}`;
-
-// ─── Verified files ───────────────────────────────────────────────────────────
-// Bench press 1.svg              → 7/74
-// Arnold press 1.svg             → 9/96
-// Alternating bicep curl...1.svg → b/b6
-// Alternating hammer curl...1.svg→ 8/8c
-// Alternating incline curl...1.svg→a/ab
-// Ab rollout on knees...1.svg    → b/ba
-// Air bike 1.svg                 → a/ae
-// Barbell shoulder press 1.svg   → 9/99
-// Barbell dead lifts 1.svg       → 9/92
-// Barbell lunges 1.svg           → 8/8a
-// Back extension stability...1.svg→2/22
-// Back flys exercise band 1.svg  → d/d6
-// Decline crunch 1.svg           → 9/96
-// Decline barbell bench press 1.svg→a/ad
-
-export const MUSCLE_GROUP_IMAGES = {
-  Chest:     wk('7/74', 'Bench_press_1.svg', 500),
-  Shoulders: wk('9/99', 'Barbell_shoulder_press_1.svg', 400),
-  Triceps:   wk('a/ad', 'Decline_barbell_bench_press_1.svg', 400),
-  Back:      wk('d/d6', 'Back_flys_exercise_band_1.svg', 400),
-  Biceps:    wk('b/b6', 'Alternating_bicep_curl_with_dumbbell_1.svg', 350),
-  Legs:      wk('8/8a', 'Barbell_lunges_1.svg', 400),
-  Glutes:    wk('2/22', 'Back_extension_stability_ball_1.svg', 400),
-  Core:      wk('b/ba', 'Ab_rollout_on_knees_with_barbell_1.svg', 400),
-  Cardio:    wk('a/ae', 'Air_bike_1.svg', 400),
-};
-
 export const SESSION_MUSCLE_GROUPS = {
   Push: ['Chest', 'Shoulders', 'Triceps'],
   Pull: ['Back', 'Biceps'],
@@ -47,68 +11,86 @@ export const SESSION_MUSCLE_GROUPS = {
 
 export const EXERCISES_BY_MUSCLE = {
   Chest: [
-    { name: 'Bench Press',            image: wk('7/74', 'Bench_press_1.svg', 400) },
-    { name: 'Incline Dumbbell Press', image: wk('a/ad', 'Decline_barbell_bench_press_1.svg', 400) },
-    { name: 'Dumbbell Fly',           image: wk('d/d2', 'Decline_dumbbell_flys_1.svg', 400) },
-    { name: 'Dips (Chest)',           image: wk('2/22', 'Back_extension_stability_ball_1.svg', 400) },
-    { name: 'Push-Ups',               image: wk('b/ba', 'Ab_rollout_on_knees_with_barbell_1.svg', 400) },
-    { name: 'Pec Deck',               image: wk('7/74', 'Bench_press_1.svg', 400) },
+    { name: 'Bench Press' },
+    { name: 'Incline Dumbbell Press' },
+    { name: 'Dumbbell Fly' },
+    { name: 'Dips (Chest)' },
+    { name: 'Push-Ups' },
+    { name: 'Pec Deck' },
   ],
   Shoulders: [
-    { name: 'Overhead Press', image: wk('9/99', 'Barbell_shoulder_press_1.svg', 400) },
-    { name: 'Lateral Raise',   image: wk('d/d6', 'Back_flys_exercise_band_1.svg', 400) },
-    { name: 'Front Raise',     image: wk('9/99', 'Barbell_shoulder_press_1.svg', 400) },
-    { name: 'Face Pull',       image: wk('d/d6', 'Back_flys_exercise_band_1.svg', 400) },
-    { name: 'Arnold Press',    image: wk('9/96', 'Arnold_press_1.svg', 300) },
+    { name: 'Overhead Press' },
+    { name: 'Lateral Raise' },
+    { name: 'Front Raise' },
+    { name: 'Face Pull' },
+    { name: 'Arnold Press' },
   ],
   Triceps: [
-    { name: 'Tricep Pushdown',           image: wk('a/ad', 'Decline_barbell_bench_press_1.svg', 400) },
-    { name: 'Overhead Tricep Extension', image: wk('9/96', 'Arnold_press_1.svg', 300) },
-    { name: 'Skull Crushers',            image: wk('3/35', 'Decline_close_grip_bench_to_skull_crusher_1.svg', 400) },
-    { name: 'Dips (Triceps)',            image: wk('a/ad', 'Decline_barbell_bench_press_1.svg', 400) },
-    { name: 'Close Grip Press',          image: wk('7/74', 'Bench_press_1.svg', 400) },
+    { name: 'Tricep Pushdown' },
+    { name: 'Overhead Tricep Extension' },
+    { name: 'Skull Crushers' },
+    { name: 'Dips (Triceps)' },
+    { name: 'Close Grip Press' },
   ],
   Back: [
-    { name: 'Deadlift',     image: wk('9/92', 'Barbell_dead_lifts_1.svg', 400) },
-    { name: 'Pull-Up',      image: wk('d/d6', 'Back_flys_exercise_band_1.svg', 400) },
-    { name: 'Barbell Row',  image: wk('9/92', 'Barbell_dead_lifts_1.svg', 400) },
-    { name: 'Cable Row',    image: wk('d/d6', 'Back_flys_exercise_band_1.svg', 400) },
-    { name: 'Lat Pulldown', image: wk('2/22', 'Back_extension_stability_ball_1.svg', 400) },
+    { name: 'Deadlift' },
+    { name: 'Pull-Up' },
+    { name: 'Barbell Row' },
+    { name: 'Cable Row' },
+    { name: 'Lat Pulldown' },
   ],
   Biceps: [
-    { name: 'Bicep Curl',    image: wk('b/b6', 'Alternating_bicep_curl_with_dumbbell_1.svg', 300) },
-    { name: 'Hammer Curl',   image: wk('8/8c', 'Alternating_hammer_curl_with_dumbbell_1.svg', 300) },
-    { name: 'Preacher Curl', image: wk('b/b6', 'Alternating_bicep_curl_with_dumbbell_1.svg', 300) },
-    { name: 'Incline Curl',  image: wk('a/ab', 'Alternating_incline_curl_with_dumbbell_1.svg', 400) },
+    { name: 'Bicep Curl' },
+    { name: 'Hammer Curl' },
+    { name: 'Preacher Curl' },
+    { name: 'Incline Curl' },
   ],
   Legs: [
-    { name: 'Squat',                 image: wk('9/92', 'Barbell_dead_lifts_1.svg', 400) },
-    { name: 'Romanian Deadlift',     image: wk('9/92', 'Barbell_dead_lifts_1.svg', 400) },
-    { name: 'Leg Press',             image: wk('8/8a', 'Barbell_lunges_1.svg', 400) },
-    { name: 'Leg Curl',              image: wk('2/22', 'Back_extension_stability_ball_1.svg', 400) },
-    { name: 'Leg Extension',         image: wk('8/8a', 'Barbell_lunges_1.svg', 400) },
-    { name: 'Bulgarian Split Squat', image: wk('8/8a', 'Barbell_lunges_1.svg', 400) },
+    { name: 'Squat' },
+    { name: 'Romanian Deadlift' },
+    { name: 'Leg Press' },
+    { name: 'Leg Curl' },
+    { name: 'Leg Extension' },
+    { name: 'Bulgarian Split Squat' },
   ],
   Glutes: [
-    { name: 'Hip Thrust',    image: wk('2/22', 'Back_extension_stability_ball_1.svg', 400) },
-    { name: 'Glute Bridge',  image: wk('7/78', 'Back_extension_stability_ball_2.svg', 400) },
-    { name: 'Cable Kickback',image: wk('d/d6', 'Back_flys_exercise_band_1.svg', 400) },
+    { name: 'Hip Thrust' },
+    { name: 'Glute Bridge' },
+    { name: 'Cable Kickback' },
   ],
   Core: [
-    { name: 'Plank',            image: wk('b/ba', 'Ab_rollout_on_knees_with_barbell_1.svg', 400) },
-    { name: 'Crunches',         image: wk('9/96', 'Decline_crunch_1.svg', 400) },
-    { name: 'Leg Raise',        image: wk('9/96', 'Decline_crunch_1.svg', 400) },
-    { name: 'Russian Twist',    image: wk('b/ba', 'Ab_rollout_on_knees_with_barbell_1.svg', 400) },
-    { name: 'Ab Wheel Rollout', image: wk('b/ba', 'Ab_rollout_on_knees_with_barbell_1.svg', 400) },
+    { name: 'Plank' },
+    { name: 'Crunches' },
+    { name: 'Leg Raise' },
+    { name: 'Russian Twist' },
+    { name: 'Ab Wheel Rollout' },
   ],
   Cardio: [
-    { name: 'Treadmill Run', image: wk('a/ae', 'Air_bike_1.svg', 400) },
-    { name: 'Cycling',       image: wk('a/ae', 'Air_bike_1.svg', 400) },
-    { name: 'Rowing',        image: wk('a/ae', 'Air_bike_1.svg', 400) },
-    { name: 'Jump Rope',     image: wk('a/ae', 'Air_bike_1.svg', 400) },
-    { name: 'Stair Climber', image: wk('a/ae', 'Air_bike_1.svg', 400) },
-    { name: 'Elliptical',    image: wk('a/ae', 'Air_bike_1.svg', 400) },
+    { name: 'Treadmill Run' },
+    { name: 'Cycling' },
+    { name: 'Rowing' },
+    { name: 'Jump Rope' },
+    { name: 'Stair Climber' },
+    { name: 'Elliptical' },
   ],
+};
+
+// Muscle group each exercise belongs to (for showing the right illustration)
+export const EXERCISE_MUSCLE_MAP = {
+  'Bench Press': 'Chest', 'Incline Dumbbell Press': 'Chest', 'Dumbbell Fly': 'Chest',
+  'Dips (Chest)': 'Chest', 'Push-Ups': 'Chest', 'Pec Deck': 'Chest',
+  'Overhead Press': 'Shoulders', 'Lateral Raise': 'Shoulders', 'Front Raise': 'Shoulders',
+  'Face Pull': 'Shoulders', 'Arnold Press': 'Shoulders',
+  'Tricep Pushdown': 'Triceps', 'Overhead Tricep Extension': 'Triceps', 'Skull Crushers': 'Triceps',
+  'Dips (Triceps)': 'Triceps', 'Close Grip Press': 'Triceps',
+  'Deadlift': 'Back', 'Pull-Up': 'Back', 'Barbell Row': 'Back', 'Cable Row': 'Back', 'Lat Pulldown': 'Back',
+  'Bicep Curl': 'Biceps', 'Hammer Curl': 'Biceps', 'Preacher Curl': 'Biceps', 'Incline Curl': 'Biceps',
+  'Squat': 'Legs', 'Romanian Deadlift': 'Legs', 'Leg Press': 'Legs', 'Leg Curl': 'Legs',
+  'Leg Extension': 'Legs', 'Bulgarian Split Squat': 'Legs',
+  'Hip Thrust': 'Glutes', 'Glute Bridge': 'Glutes', 'Cable Kickback': 'Glutes',
+  'Plank': 'Core', 'Crunches': 'Core', 'Leg Raise': 'Core', 'Russian Twist': 'Core', 'Ab Wheel Rollout': 'Core',
+  'Treadmill Run': 'Cardio', 'Cycling': 'Cardio', 'Rowing': 'Cardio',
+  'Jump Rope': 'Cardio', 'Stair Climber': 'Cardio', 'Elliptical': 'Cardio',
 };
 
 export const SESSION_TYPES = ['Push', 'Pull', 'Legs', 'Upper', 'Lower', 'Full Body', 'Cardio', 'Rest', 'Custom'];

@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Plus, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { EXERCISES_BY_MUSCLE, MUSCLE_GROUP_IMAGES, SESSION_MUSCLE_GROUPS } from './exerciseData';
+import { EXERCISES_BY_MUSCLE, SESSION_MUSCLE_GROUPS } from './exerciseData';
 import { Input } from '@/components/ui/input';
+import ExerciseIllustration from './ExerciseIllustration';
 
 export default function ExercisePicker({ sessionType, addedNames, onAdd, onCustomAdd }) {
   const groups = SESSION_MUSCLE_GROUPS[sessionType] || [];
@@ -21,14 +22,10 @@ export default function ExercisePicker({ sessionType, addedNames, onAdd, onCusto
     <div>
       <p className="text-xs text-muted-foreground mb-2">Add Exercise</p>
 
-      {/* Muscle group image */}
-      {selectedGroup && MUSCLE_GROUP_IMAGES[selectedGroup] && (
-        <div className="w-full h-36 rounded-2xl overflow-hidden mb-3 bg-white flex items-center justify-center">
-          <img
-            src={MUSCLE_GROUP_IMAGES[selectedGroup]}
-            alt={selectedGroup}
-            className="w-full h-full object-contain p-2"
-          />
+      {/* Muscle group illustration */}
+      {selectedGroup && (
+        <div className="w-full h-36 rounded-2xl overflow-hidden mb-3 bg-secondary/60 flex items-center justify-center">
+          <ExerciseIllustration muscle={selectedGroup} size="md" className="w-32 h-32" />
         </div>
       )}
 
@@ -58,15 +55,15 @@ export default function ExercisePicker({ sessionType, addedNames, onAdd, onCusto
             return (
               <button
                 key={ex.name}
-                onClick={() => !alreadyAdded && onAdd(ex)}
+                onClick={() => !alreadyAdded && onAdd({ ...ex, muscle: selectedGroup })}
                 disabled={alreadyAdded}
                 className={cn(
                   'flex items-center gap-3 bg-secondary/60 rounded-xl px-3 py-2.5 transition-colors',
                   alreadyAdded ? 'opacity-40 cursor-not-allowed' : 'hover:bg-secondary active:bg-secondary/80'
                 )}
               >
-                <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 bg-white flex items-center justify-center">
-                  <img src={ex.image} alt={ex.name} className="w-full h-full object-contain p-0.5" />
+                <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 bg-secondary flex items-center justify-center">
+                  <ExerciseIllustration muscle={selectedGroup} size="sm" />
                 </div>
                 <span className="flex-1 text-sm font-medium text-left">{ex.name}</span>
                 <div className={cn(
