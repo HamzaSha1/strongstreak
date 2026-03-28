@@ -92,7 +92,7 @@ export default function DayCard({ day, dayIndex, onUpdate }) {
             {SESSION_TYPES.map((t) => (
               <button
                 key={t}
-                onClick={() => onUpdate({ session_type: t, exercises: t === 'Rest' ? [] : day.exercises })}
+                onClick={() => onUpdate({ session_type: t, exercises: [] })}
                 className={cn(
                   'px-3.5 py-1.5 rounded-full border text-sm transition-colors',
                   day.session_type === t
