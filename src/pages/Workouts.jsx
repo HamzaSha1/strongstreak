@@ -279,8 +279,8 @@ export default function Workouts() {
 
       {/* Delete confirmation modal */}
       {deleteConfirm && (
-        <div className="fixed inset-0 bg-black/50 flex items-end z-50">
-          <div className="w-full bg-card rounded-t-3xl p-6 border-t border-border">
+        <div className="fixed inset-0 bg-black/50 flex items-end z-[60]">
+          <div className="w-full bg-card rounded-t-3xl p-6 border-t border-border mb-20">
             <h2 className="text-lg font-heading font-bold mb-2">Delete Split?</h2>
             <p className="text-sm text-muted-foreground mb-4">
               This will permanently delete "{activeSplitName}" and all its exercises. Type DELETE to confirm.
