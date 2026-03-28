@@ -1,0 +1,24 @@
+{
+  "name": "Weight",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "weight_kg": {
+      "type": "number"
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "user_id",
+    "weight_kg",
+    "date"
+  ]
+}

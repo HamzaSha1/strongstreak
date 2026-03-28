@@ -11,6 +11,7 @@ import Workouts from '@/pages/Workouts';
 import Feed from '@/pages/Feed';
 import Groups from '@/pages/Groups';
 import History from '@/pages/History';
+import Progress from '@/pages/Progress';
 import SplitBuilder from '@/pages/SplitBuilder';
 import ActiveWorkout from '@/pages/ActiveWorkout';
 import People from '@/pages/People';
@@ -43,6 +44,7 @@ const AuthenticatedApp = () => {
         <Route path="/people" element={<People />} />
         <Route path="/groups" element={<Groups />} />
         <Route path="/history" element={<History />} />
+        <Route path="/progress" element={<Progress />} />
       </Route>
       <Route path="/split-builder" element={<SplitBuilder />} />
 
