@@ -29,7 +29,8 @@ export default function Workouts() {
   const [user, setUser] = useState(null);
   const [streak, setStreak] = useState(7);
   const [activeTab, setActiveTab] = useState(0);
-  const [contextMenu, setContextMenu] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [deleteInput, setDeleteInput] = useState('');
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
@@ -62,11 +63,55 @@ export default function Workouts() {
       queryClient.invalidateQueries({ queryKey: ['splitDays'] });
       queryClient.invalidateQueries({ queryKey: ['splitExercises'] });
       setActiveTab(0);
-      setContextMenu(null);
+      setDeleteConfirm(false);
+      setDeleteInput('');
       toast.success('Split deleted');
     },
     onError: () => {
       toast.error('Failed to delete split');
+    },
+  });
+
+  const duplicateSplitMutation = useMutation({
+    mutationFn: async (splitName) => {
+      const daysToDuplicate = splitDays.filter((d) => d.split_name === splitName);
+      const newSplitName = `${splitName} (Copy)`;
+      for (const day of daysToDuplicate) {
+        const newDay = await base44.entities.SplitDay.create({
+          user_id: user.email,
+          split_name: newSplitName,
+          day_of_week: day.day_of_week,
+          session_type: day.session_type,
+          order_index: day.order_index,
+        });
+        const dayExercises = exercises.filter((e) => e.split_day_id === day.id);
+        for (const ex of dayExercises) {
+          await base44.entities.SplitExercise.create({
+            split_day_id: newDay.id,
+            user_id: user.email,
+            name: ex.name,
+            image_url: ex.image_url,
+            exercise_type: ex.exercise_type,
+            target_sets: ex.target_sets,
+            target_reps: ex.target_reps,
+            rpe: ex.rpe,
+            rest_seconds: ex.rest_seconds,
+            cardio_metric: ex.cardio_metric,
+            order_index: ex.order_index,
+            notes: ex.notes,
+            superset_group: ex.superset_group,
+            dropset_count: ex.dropset_count,
+          });
+        }
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['splitDays'] });
+      queryClient.invalidateQueries({ queryKey: ['splitExercises'] });
+      toast.success('Split duplicated');
+    },
+    onError: () => {
+      toast.error('Failed to duplicate split');
     },
   });
 
@@ -115,32 +160,20 @@ export default function Workouts() {
       </div>
 
       {/* Split Tabs — always visible, Chrome-style */}
-      <div className="flex items-center gap-1 mb-4 overflow-x-auto pb-1 scrollbar-hide relative">
+      <div className="flex items-center gap-1 mb-4 overflow-x-auto pb-1 scrollbar-hide">
         {(splitNames.length > 0 ? splitNames : ['Split 1']).map((name, i) => (
-          <div key={name} className="relative flex-shrink-0 group">
-            <button
-              onClick={() => setActiveTab(i)}
-              className={cn(
-                'px-3.5 py-1.5 rounded-xl text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-2',
-                i === activeTab
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-secondary text-muted-foreground hover:text-foreground'
-              )}
-            >
-              {name || `Split ${i + 1}`}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  deleteSplitMutation.mutate(name);
-                }}
-                disabled={deleteSplitMutation.isPending}
-                className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-white/20 rounded-md"
-                title="Delete split"
-              >
-                <X size={14} />
-              </button>
-            </button>
-          </div>
+          <button
+            key={name}
+            onClick={() => setActiveTab(i)}
+            className={cn(
+              'flex-shrink-0 px-3.5 py-1.5 rounded-xl text-sm font-medium transition-colors whitespace-nowrap',
+              i === activeTab
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-secondary text-muted-foreground hover:text-foreground'
+            )}
+          >
+            {name || `Split ${i + 1}`}
+          </button>
         ))}
         {/* + tab: go to split builder to add a new split */}
         <button
@@ -220,6 +253,65 @@ export default function Workouts() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Delete/Duplicate section */}
+      {splitNames.length > 0 && (
+        <div className="mt-6 pt-4 border-t border-border flex gap-2">
+          <Button
+            variant="outline"
+            className="flex-1 border-destructive text-destructive hover:bg-destructive/10"
+            onClick={() => setDeleteConfirm(true)}
+          >
+            Delete Split
+          </Button>
+          <Button
+            variant="outline"
+            className="flex-1"
+            onClick={() => duplicateSplitMutation.mutate(activeSplitName)}
+            disabled={duplicateSplitMutation.isPending}
+          >
+            Duplicate Split
+          </Button>
+        </div>
+      )}
+
+      {/* Delete confirmation modal */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-end z-50">
+          <div className="w-full bg-card rounded-t-3xl p-6 border-t border-border">
+            <h2 className="text-lg font-heading font-bold mb-2">Delete Split?</h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              This will permanently delete "{activeSplitName}" and all its exercises. Type DELETE to confirm.
+            </p>
+            <input
+              type="text"
+              placeholder="Type DELETE..."
+              value={deleteInput}
+              onChange={(e) => setDeleteInput(e.target.value)}
+              className="w-full h-10 rounded-xl bg-input border border-border px-3 text-sm mb-4"
+            />
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => {
+                  setDeleteConfirm(false);
+                  setDeleteInput('');
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="flex-1 bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                onClick={() => deleteSplitMutation.mutate(activeSplitName)}
+                disabled={deleteInput !== 'DELETE' || deleteSplitMutation.isPending}
+              >
+                Delete
+              </Button>
+            </div>
+          </div>
         </div>
       )}
     </div>
