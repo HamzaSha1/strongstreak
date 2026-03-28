@@ -110,7 +110,7 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
           <button
             onClick={() => !s.completed && onCompleteSet(ex, actualIdx)}
             className={cn(
-              'w-7 h-7 rounded-full flex items-center justify-center transition-colors',
+              'w-7 h-7 rounded-full flex items-center justify-center transition-colors ml-auto flex-shrink-0',
               s.completed ? 'bg-primary text-primary-foreground' : 'border border-border text-muted-foreground hover:border-primary hover:text-primary'
             )}
           >
@@ -233,6 +233,7 @@ export default function ActiveWorkout() {
   const [expanded, setExpanded] = useState({});
   const [elapsed, setElapsed] = useState(0);
   const [restTimer, setRestTimer] = useState(null); // { seconds, total }
+  const [timerMinimized, setTimerMinimized] = useState(false);
   const [showPostModal, setShowPostModal] = useState(false);
   const [exerciseOrder, setExerciseOrder] = useState([]);
   const [showEditor, setShowEditor] = useState(false);
@@ -378,6 +379,7 @@ export default function ActiveWorkout() {
 
     if (set.set_type !== 'dropset' && ex.rest_seconds) {
       setRestTimer({ seconds: ex.rest_seconds, total: ex.rest_seconds });
+      setTimerMinimized(false);
     }
   };
 
@@ -552,6 +554,8 @@ export default function ActiveWorkout() {
           total={restTimer.total}
           onDone={() => setRestTimer(null)}
           onSkip={() => setRestTimer(null)}
+          isMinimized={timerMinimized}
+          onToggleMinimize={() => setTimerMinimized(!timerMinimized)}
         />
       )}
 
