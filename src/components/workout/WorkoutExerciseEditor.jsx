@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, ArrowUp, ArrowDown, Trash2, Plus } from 'lucide-react';
+import { X, ArrowUp, ArrowDown, Trash2, Plus, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SESSION_MUSCLE_GROUPS, EXERCISES_BY_MUSCLE } from '@/components/splitbuilder/exerciseData';
 
@@ -8,6 +8,7 @@ export default function WorkoutExerciseEditor({ exercises, sessionType, onClose,
   const [selectedMuscle, setSelectedMuscle] = useState(null);
   const [customName, setCustomName] = useState('');
   const [editingSupersetId, setEditingSupersetId] = useState(null);
+  const [editingRestId, setEditingRestId] = useState(null);
 
   const muscleGroups = SESSION_MUSCLE_GROUPS[sessionType] ||
     SESSION_MUSCLE_GROUPS['Custom'];
@@ -68,31 +69,56 @@ export default function WorkoutExerciseEditor({ exercises, sessionType, onClose,
                   </p>
                 </div>
                 <div className="flex items-center gap-1">
-                   <button
-                     onClick={() => onReorder(idx, idx - 1)}
-                     disabled={idx === 0}
-                     className="p-2 rounded-lg bg-secondary flex items-center justify-center disabled:opacity-30 touch-target-44"
-                   >
-                     <ArrowUp size={13} />
-                   </button>
-                   <button
-                     onClick={() => onReorder(idx, idx + 1)}
-                     disabled={idx === exercises.length - 1}
-                     className="p-2 rounded-lg bg-secondary flex items-center justify-center disabled:opacity-30 touch-target-44"
-                   >
-                     <ArrowDown size={13} />
-                   </button>
-                   <button
-                     onClick={() => onRemove(ex.id)}
-                     className="p-2 rounded-lg bg-destructive/10 text-destructive flex items-center justify-center touch-target-44"
-                   >
-                     <Trash2 size={13} />
-                   </button>
-                 </div>
-              </div>
+                     {ex.exercise_type === 'strength' && (
+                       <button
+                         onClick={() => setEditingRestId(editingRestId === ex.id ? null : ex.id)}
+                         className="p-2 rounded-lg bg-secondary flex items-center justify-center hover:bg-secondary/80 touch-target-44"
+                         title="Edit rest time"
+                       >
+                         <Clock size={13} />
+                       </button>
+                     )}
+                     <button
+                       onClick={() => onReorder(idx, idx - 1)}
+                       disabled={idx === 0}
+                       className="p-2 rounded-lg bg-secondary flex items-center justify-center disabled:opacity-30 touch-target-44"
+                     >
+                       <ArrowUp size={13} />
+                     </button>
+                     <button
+                       onClick={() => onReorder(idx, idx + 1)}
+                       disabled={idx === exercises.length - 1}
+                       className="p-2 rounded-lg bg-secondary flex items-center justify-center disabled:opacity-30 touch-target-44"
+                     >
+                       <ArrowDown size={13} />
+                     </button>
+                     <button
+                       onClick={() => onRemove(ex.id)}
+                       className="p-2 rounded-lg bg-destructive/10 text-destructive flex items-center justify-center touch-target-44"
+                     >
+                       <Trash2 size={13} />
+                     </button>
+                   </div>
+                </div>
+
+              {/* Rest time editor */}
+              {editingRestId === ex.id && onUpdateExercise && ex.exercise_type === 'strength' && (
+                <div className="bg-primary/10 border border-primary/30 rounded-xl mt-2 p-3 flex items-center gap-2">
+                  <span className="text-xs text-primary font-semibold">Rest:</span>
+                  <input
+                    type="number"
+                    value={ex.rest_seconds || 90}
+                    onChange={(e) => onUpdateExercise(ex.id, { rest_seconds: Math.max(0, parseInt(e.target.value) || 0) })}
+                    className="w-16 h-8 bg-input border border-primary rounded-lg px-2 text-sm text-center"
+                    min="0"
+                    step="5"
+                  />
+                  <span className="text-xs text-primary">seconds</span>
+                </div>
+              )}
 
               {/* Superset config */}
-              {editingSupersetId === ex.id && onUpdateExercise && (
+               {editingSupersetId === ex.id && onUpdateExercise && (
                 <div className="bg-primary/10 border border-primary/30 rounded-xl mt-2 p-3">
                   <p className="text-xs text-primary font-semibold mb-2">Superset with:</p>
                   <div className="flex flex-col gap-1">
