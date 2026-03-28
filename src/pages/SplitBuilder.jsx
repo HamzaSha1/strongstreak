@@ -25,6 +25,9 @@ export default function SplitBuilder() {
   const [splits, setSplits] = useState([{ name: 'My Split', days: initialDays() }]);
   const [activeTab, setActiveTab] = useState(0);
   const [initialized, setInitialized] = useState(false);
+  const [pendingNewSplit, setPendingNewSplit] = useState(
+    () => new URLSearchParams(window.location.search).get('newSplit') === '1'
+  );
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
@@ -43,7 +46,13 @@ export default function SplitBuilder() {
   });
 
   useEffect(() => {
-    if (initialized || existingSplitDays.length === 0) return;
+    if (initialized || existingSplitDays.length === 0) {
+      if (!initialized && existingSplitDays.length === 0 && pendingNewSplit) {
+        // No existing splits — just stay on the default empty split, clear the flag
+        setPendingNewSplit(false);
+      }
+      return;
+    }
     const grouped = {};
     for (const d of existingSplitDays) {
       if (!grouped[d.split_name]) grouped[d.split_name] = [];
@@ -69,6 +78,12 @@ export default function SplitBuilder() {
     }));
     setSplits(loadedSplits);
     setInitialized(true);
+    if (pendingNewSplit) {
+      const newSplit = { name: `Split ${loadedSplits.length + 1}`, days: initialDays() };
+      setSplits([...loadedSplits, newSplit]);
+      setActiveTab(loadedSplits.length);
+      setPendingNewSplit(false);
+    }
   }, [existingSplitDays, existingExercises, initialized]);
 
   const activeSplit = splits[activeTab] || splits[0];
