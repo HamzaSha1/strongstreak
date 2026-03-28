@@ -105,10 +105,12 @@ export default function SnakeGame({ isActive, onGameEnd, gameState, onGameStateC
           (head[1] + nextDirection[1] + GRID_SIZE) % GRID_SIZE,
         ];
 
-        // Check self collision
+        // Check self collision - restart game
         if (prevSnake.some((segment) => segment[0] === newHead[0] && segment[1] === newHead[1])) {
-          onGameEnd();
-          return prevSnake;
+          setDirection([1, 0]);
+          setNextDirection([1, 0]);
+          setScore(0);
+          return [[10, 10]];
         }
 
         const newSnake = [newHead, ...prevSnake];
