@@ -1,5 +1,5 @@
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { Dumbbell, Rss, Users, TrendingUp, UserSearch } from 'lucide-react';
+import { Dumbbell, Rss, Users, History, UserSearch, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const NAV_ITEMS = [
@@ -7,6 +7,7 @@ const NAV_ITEMS = [
   { path: '/feed', label: 'Feed', icon: Rss },
   { path: '/people', label: 'People', icon: UserSearch },
   { path: '/groups', label: 'Groups', icon: Users },
+  { path: '/history', label: 'History', icon: History },
   { path: '/progress', label: 'Progress', icon: TrendingUp },
 ];
 
