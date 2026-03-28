@@ -3,10 +3,11 @@ import { X, ArrowUp, ArrowDown, Trash2, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SESSION_MUSCLE_GROUPS, EXERCISES_BY_MUSCLE } from '@/components/splitbuilder/exerciseData';
 
-export default function WorkoutExerciseEditor({ exercises, sessionType, onClose, onReorder, onRemove, onAdd }) {
+export default function WorkoutExerciseEditor({ exercises, sessionType, onClose, onReorder, onRemove, onAdd, onUpdateExercise }) {
   const [showPicker, setShowPicker] = useState(false);
   const [selectedMuscle, setSelectedMuscle] = useState(null);
   const [customName, setCustomName] = useState('');
+  const [editingSupersetId, setEditingSupersetId] = useState(null);
 
   const muscleGroups = SESSION_MUSCLE_GROUPS[sessionType] ||
     SESSION_MUSCLE_GROUPS['Custom'];
@@ -56,37 +57,95 @@ export default function WorkoutExerciseEditor({ exercises, sessionType, onClose,
         <div className="overflow-y-auto flex-1 p-4 flex flex-col gap-2">
           {/* Exercise list */}
           {exercises.map((ex, idx) => (
-            <div key={ex.id} className="flex items-center gap-3 bg-secondary/50 rounded-2xl px-3 py-2.5">
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-sm truncate">{ex.name}</p>
-                <p className="text-xs text-muted-foreground">
-                  {ex.exercise_type === 'cardio'
-                    ? ex.cardio_metric || 'cardio'
-                    : `${ex.target_sets} × ${ex.target_reps}`}
-                </p>
+            <div key={ex.id}>
+              <div className="flex items-center gap-3 bg-secondary/50 rounded-2xl px-3 py-2.5">
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-sm truncate">{ex.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {ex.exercise_type === 'cardio'
+                      ? ex.cardio_metric || 'cardio'
+                      : `${ex.target_sets} × ${ex.target_reps}`}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => onReorder(idx, idx - 1)}
+                    disabled={idx === 0}
+                    className="w-7 h-7 rounded-lg bg-secondary flex items-center justify-center disabled:opacity-30"
+                  >
+                    <ArrowUp size={13} />
+                  </button>
+                  <button
+                    onClick={() => onReorder(idx, idx + 1)}
+                    disabled={idx === exercises.length - 1}
+                    className="w-7 h-7 rounded-lg bg-secondary flex items-center justify-center disabled:opacity-30"
+                  >
+                    <ArrowDown size={13} />
+                  </button>
+                  <button
+                    onClick={() => onRemove(ex.id)}
+                    className="w-7 h-7 rounded-lg bg-destructive/10 text-destructive flex items-center justify-center"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
               </div>
-              <div className="flex items-center gap-1">
+
+              {/* Superset config */}
+              {editingSupersetId === ex.id && onUpdateExercise && (
+                <div className="bg-primary/10 border border-primary/30 rounded-xl mt-2 p-3">
+                  <p className="text-xs text-primary font-semibold mb-2">Superset with:</p>
+                  <div className="flex flex-col gap-1">
+                    <button
+                      onClick={() => { 
+                        onUpdateExercise(ex.id, { superset_group: '' });
+                        setEditingSupersetId(null);
+                      }}
+                      className={cn(
+                        'px-3 py-1.5 rounded-lg text-xs border text-left transition-colors',
+                        !ex.superset_group
+                          ? 'bg-primary text-primary-foreground border-primary'
+                          : 'border-border text-muted-foreground hover:border-primary/50'
+                      )}
+                    >
+                      None
+                    </button>
+                    {exercises
+                      .filter((e) => e.name !== ex.name)
+                      .map((e) => {
+                        const groupId = [ex.name, e.name].sort().join('__');
+                        const isSelected = ex.superset_group === groupId;
+                        return (
+                          <button
+                            key={e.name}
+                            onClick={() => {
+                              onUpdateExercise(ex.id, { superset_group: isSelected ? '' : groupId });
+                              setEditingSupersetId(null);
+                            }}
+                            className={cn(
+                              'px-3 py-1.5 rounded-lg text-xs border text-left transition-colors',
+                              isSelected
+                                ? 'bg-primary text-primary-foreground border-primary'
+                                : 'border-border text-muted-foreground hover:border-primary/50'
+                            )}
+                          >
+                            {e.name}
+                          </button>
+                        );
+                      })}
+                  </div>
+                </div>
+              )}
+
+              {/* Superset button */}
+              {ex.exercise_type === 'strength' && (
                 <button
-                  onClick={() => onReorder(idx, idx - 1)}
-                  disabled={idx === 0}
-                  className="w-7 h-7 rounded-lg bg-secondary flex items-center justify-center disabled:opacity-30"
+                  onClick={() => setEditingSupersetId(editingSupersetId === ex.id ? null : ex.id)}
+                  className="w-full mt-1 text-xs py-1.5 rounded-lg border border-border text-muted-foreground hover:border-primary/50 transition-colors"
                 >
-                  <ArrowUp size={13} />
+                  {ex.superset_group ? '✓ Superset' : 'Add Superset'}
                 </button>
-                <button
-                  onClick={() => onReorder(idx, idx + 1)}
-                  disabled={idx === exercises.length - 1}
-                  className="w-7 h-7 rounded-lg bg-secondary flex items-center justify-center disabled:opacity-30"
-                >
-                  <ArrowDown size={13} />
-                </button>
-                <button
-                  onClick={() => onRemove(ex.id)}
-                  className="w-7 h-7 rounded-lg bg-destructive/10 text-destructive flex items-center justify-center"
-                >
-                  <Trash2 size={13} />
-                </button>
-              </div>
+              )}
             </div>
           ))}
 

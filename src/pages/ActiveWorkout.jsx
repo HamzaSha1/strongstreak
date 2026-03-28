@@ -92,21 +92,19 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
                 disabled={s.completed}
                 className="w-16 h-8 text-center bg-input border-border text-sm"
               />
-              <div className="flex gap-1 flex-1">
-                {SET_TYPES.map((t) => (
-                  <button
-                    key={t}
-                    disabled={s.completed}
-                    onClick={() => onUpdateSet(ex.id, actualIdx, { set_type: t })}
-                    className={cn(
-                      'text-[10px] px-1.5 py-0.5 rounded-full border capitalize transition-colors',
-                      s.set_type === t ? 'bg-primary/20 text-primary border-primary/50' : 'border-border text-muted-foreground'
-                    )}
-                  >
-                    {t === 'normal' ? 'N' : t === 'dropset' ? 'D' : 'S'}
-                  </button>
-                ))}
-              </div>
+              {!s.completed && (
+                <button
+                  onClick={() => onUpdateSet(ex.id, actualIdx, { set_type: s.set_type === 'dropset' ? 'normal' : 'dropset' })}
+                  className={cn(
+                    'text-[10px] px-2 py-1 rounded-full border transition-colors whitespace-nowrap',
+                    s.set_type === 'dropset' 
+                      ? 'bg-primary/20 text-primary border-primary/50' 
+                      : 'border-border text-muted-foreground hover:border-primary/50'
+                  )}
+                >
+                  {s.set_type === 'dropset' ? 'Drop Set' : 'Make Drop Set'}
+                </button>
+              )}
             </>
           )}
           <button
@@ -540,6 +538,10 @@ export default function ActiveWorkout() {
           onReorder={handleEditorReorder}
           onRemove={handleEditorRemove}
           onAdd={handleEditorAdd}
+          onUpdateExercise={(exId, updates) => {
+            const updated = activeExercises.map((e) => e.id === exId ? { ...e, ...updates } : e);
+            setLocalExercises(updated);
+          }}
         />
       )}
 
