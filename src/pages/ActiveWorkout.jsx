@@ -12,7 +12,12 @@ import PostWorkoutModal from '@/components/workout/PostWorkoutModal';
 
 const SET_TYPES = ['normal', 'dropset', 'superset'];
 
+const CARDIO_UNITS = { distance: 'km', time: 'min', calories: 'kcal' };
+
 function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onCompleteSet, onAddSet, divider }) {
+  const isCardio = ex.exercise_type === 'cardio';
+  const cardioUnit = CARDIO_UNITS[ex.cardio_metric] || 'km';
+
   // Group sets by dropset: consecutive dropsets shown side-by-side
   const renderSets = () => {
     const rows = [];
@@ -81,37 +86,53 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
             )}
           >
             <span className="text-xs text-muted-foreground w-5">{s.set_number}</span>
-            <Input
-              type="number"
-              placeholder={prevSets[i]?.reps?.toString() || 'Reps'}
-              value={s.reps}
-              onChange={(e) => onUpdateSet(ex.id, i, { reps: e.target.value })}
-              disabled={s.completed}
-              className="w-16 h-8 text-center bg-input border-border text-sm"
-            />
-            <Input
-              type="number"
-              placeholder={prevSets[i]?.weight_kg?.toString() || 'kg'}
-              value={s.weight_kg}
-              onChange={(e) => onUpdateSet(ex.id, i, { weight_kg: e.target.value })}
-              disabled={s.completed}
-              className="w-16 h-8 text-center bg-input border-border text-sm"
-            />
-            <div className="flex gap-1 flex-1">
-              {SET_TYPES.map((t) => (
-                <button
-                  key={t}
+            {isCardio ? (
+              <>
+                <Input
+                  type="number"
+                  placeholder={ex.target_reps || cardioUnit}
+                  value={s.reps}
+                  onChange={(e) => onUpdateSet(ex.id, i, { reps: e.target.value })}
                   disabled={s.completed}
-                  onClick={() => onUpdateSet(ex.id, i, { set_type: t })}
-                  className={cn(
-                    'text-[10px] px-1.5 py-0.5 rounded-full border capitalize transition-colors',
-                    s.set_type === t ? 'bg-primary/20 text-primary border-primary/50' : 'border-border text-muted-foreground'
-                  )}
-                >
-                  {t === 'normal' ? 'N' : t === 'dropset' ? 'D' : 'S'}
-                </button>
-              ))}
-            </div>
+                  className="flex-1 h-8 text-center bg-input border-border text-sm"
+                />
+                <span className="text-xs text-muted-foreground w-8">{cardioUnit}</span>
+              </>
+            ) : (
+              <>
+                <Input
+                  type="number"
+                  placeholder={prevSets[i]?.reps?.toString() || 'Reps'}
+                  value={s.reps}
+                  onChange={(e) => onUpdateSet(ex.id, i, { reps: e.target.value })}
+                  disabled={s.completed}
+                  className="w-16 h-8 text-center bg-input border-border text-sm"
+                />
+                <Input
+                  type="number"
+                  placeholder={prevSets[i]?.weight_kg?.toString() || 'kg'}
+                  value={s.weight_kg}
+                  onChange={(e) => onUpdateSet(ex.id, i, { weight_kg: e.target.value })}
+                  disabled={s.completed}
+                  className="w-16 h-8 text-center bg-input border-border text-sm"
+                />
+                <div className="flex gap-1 flex-1">
+                  {SET_TYPES.map((t) => (
+                    <button
+                      key={t}
+                      disabled={s.completed}
+                      onClick={() => onUpdateSet(ex.id, i, { set_type: t })}
+                      className={cn(
+                        'text-[10px] px-1.5 py-0.5 rounded-full border capitalize transition-colors',
+                        s.set_type === t ? 'bg-primary/20 text-primary border-primary/50' : 'border-border text-muted-foreground'
+                      )}
+                    >
+                      {t === 'normal' ? 'N' : t === 'dropset' ? 'D' : 'S'}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
             <button
               onClick={() => !s.completed && onCompleteSet(ex, i)}
               className={cn(
@@ -139,7 +160,9 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
         <div>
           <p className="font-heading font-semibold text-sm text-left">{ex.name}</p>
           <p className="text-muted-foreground text-xs">
-            {ex.target_sets} × {ex.target_reps} · {ex.rest_seconds}s rest
+            {isCardio
+              ? `${ex.cardio_metric || 'distance'} · target: ${ex.target_reps || '—'} ${cardioUnit}`
+              : `${ex.target_sets} × ${ex.target_reps} · ${ex.rest_seconds}s rest`}
           </p>
         </div>
         <div className="flex items-center gap-2">

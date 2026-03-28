@@ -5,11 +5,16 @@ import { cn } from '@/lib/utils';
 import { REST_OPTIONS } from './exerciseData';
 import { Textarea } from '@/components/ui/textarea';
 
-// Step-by-step config: Sets → Reps → RPE → Rest → Notes
-const STEPS = ['sets', 'reps', 'rpe', 'rest', 'notes'];
+const CARDIO_METRICS = [
+  { value: 'distance', label: 'Distance', unit: 'km' },
+  { value: 'time', label: 'Time', unit: 'min' },
+  { value: 'calories', label: 'Calories', unit: 'kcal' },
+];
+
+const isCardio = (ex) => ex.exercise_type === 'cardio';
 
 export default function ExerciseConfig({ exercise, onChange, onDelete, allExercises = [] }) {
-  const [openStep, setOpenStep] = useState('sets');
+  const [openStep, setOpenStep] = useState(isCardio(exercise) ? 'cardio_metric' : 'sets');
   const [uploading, setUploading] = useState(false);
 
   const toggleStep = (step) => setOpenStep((s) => (s === step ? null : step));
@@ -22,6 +27,10 @@ export default function ExerciseConfig({ exercise, onChange, onDelete, allExerci
     onChange({ ...exercise, image_url: file_url });
     setUploading(false);
   };
+
+  const STEPS = isCardio(exercise)
+    ? ['cardio_metric', 'rpe', 'rest', 'notes']
+    : ['sets', 'reps', 'rpe', 'rest', 'notes'];
 
   const nextStep = (current) => {
     const idx = STEPS.indexOf(current);
@@ -59,9 +68,10 @@ export default function ExerciseConfig({ exercise, onChange, onDelete, allExerci
         <div className="flex-1 min-w-0">
           <p className="font-heading font-semibold text-sm truncate">{exercise.name}</p>
           <p className="text-xs text-muted-foreground">
-            {exercise.target_sets ? `${exercise.target_sets} sets` : '—'}
-            {exercise.target_reps ? ` · ${exercise.target_reps} reps` : ''}
-            {exercise.rpe ? ` · RPE ${exercise.rpe}` : ''}
+            {isCardio(exercise)
+              ? `${exercise.cardio_metric || 'distance'} · ${exercise.target_reps || '—'} ${CARDIO_METRICS.find(m => m.value === (exercise.cardio_metric || 'distance'))?.unit || ''}`
+              : `${exercise.target_sets ? `${exercise.target_sets} sets` : '—'}${exercise.target_reps ? ` · ${exercise.target_reps} reps` : ''}${exercise.rpe ? ` · RPE ${exercise.rpe}` : ''}`
+            }
           </p>
         </div>
         <button onClick={onDelete} className="text-muted-foreground hover:text-destructive transition-colors p-1">
@@ -69,58 +79,106 @@ export default function ExerciseConfig({ exercise, onChange, onDelete, allExerci
         </button>
       </div>
 
-      {/* Sets */}
-      <StepRow label="Sets" open={openStep === 'sets'} onToggle={() => toggleStep('sets')}>
-        <div className="flex items-center justify-center gap-6 py-2">
+      {/* Cardio metric selector (cardio only) */}
+      {isCardio(exercise) && (
+        <StepRow label="Metric" open={openStep === 'cardio_metric'} onToggle={() => toggleStep('cardio_metric')}>
+          <div className="flex flex-col gap-3 py-2">
+            <div className="flex gap-2">
+              {CARDIO_METRICS.map((m) => (
+                <button
+                  key={m.value}
+                  onClick={() => onChange({ ...exercise, cardio_metric: m.value })}
+                  className={cn(
+                    'flex-1 py-2 rounded-xl border text-sm transition-colors',
+                    (exercise.cardio_metric || 'distance') === m.value
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : 'border-border text-muted-foreground hover:border-primary/50'
+                  )}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min={0}
+                step={0.1}
+                value={exercise.target_reps || ''}
+                onChange={(e) => onChange({ ...exercise, target_reps: e.target.value })}
+                placeholder="Target"
+                className="flex-1 h-10 rounded-xl bg-input border border-border px-3 text-sm text-center"
+              />
+              <span className="text-sm text-muted-foreground w-10">
+                {CARDIO_METRICS.find(m => m.value === (exercise.cardio_metric || 'distance'))?.unit}
+              </span>
+            </div>
+          </div>
           <button
-            onClick={() => onChange({ ...exercise, target_sets: Math.max(1, (exercise.target_sets || 3) - 1) })}
-            className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center"
+            onClick={() => nextStep('cardio_metric')}
+            className="w-full mt-2 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-semibold"
           >
-            <Minus size={16} />
+            Next
           </button>
-          <span className="text-4xl font-heading font-bold text-foreground w-12 text-center">
-            {exercise.target_sets || 3}
-          </span>
-          <button
-            onClick={() => onChange({ ...exercise, target_sets: Math.min(10, (exercise.target_sets || 3) + 1) })}
-            className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center"
-          >
-            <Plus size={16} />
-          </button>
-        </div>
-        <button
-          onClick={() => nextStep('sets')}
-          className="w-full mt-2 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-semibold"
-        >
-          Next
-        </button>
-      </StepRow>
+        </StepRow>
+      )}
 
-      {/* Reps */}
-      <StepRow label="Reps" open={openStep === 'reps'} onToggle={() => toggleStep('reps')}>
-        <div className="flex flex-wrap gap-2 py-2">
-          {['6', '8', '10', '12', '15', '20', 'Failure'].map((r) => (
+      {/* Sets (strength only) */}
+      {!isCardio(exercise) && (
+        <StepRow label="Sets" open={openStep === 'sets'} onToggle={() => toggleStep('sets')}>
+          <div className="flex items-center justify-center gap-6 py-2">
             <button
-              key={r}
-              onClick={() => onChange({ ...exercise, target_reps: r })}
-              className={cn(
-                'px-4 py-2 rounded-xl border text-sm transition-colors',
-                exercise.target_reps === r
-                  ? 'bg-primary text-primary-foreground border-primary'
-                  : 'border-border text-muted-foreground hover:border-primary/50'
-              )}
+              onClick={() => onChange({ ...exercise, target_sets: Math.max(1, (exercise.target_sets || 3) - 1) })}
+              className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center"
             >
-              {r}
+              <Minus size={16} />
             </button>
-          ))}
-        </div>
-        <button
-          onClick={() => nextStep('reps')}
-          className="w-full mt-2 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-semibold"
-        >
-          Next
-        </button>
-      </StepRow>
+            <span className="text-4xl font-heading font-bold text-foreground w-12 text-center">
+              {exercise.target_sets || 3}
+            </span>
+            <button
+              onClick={() => onChange({ ...exercise, target_sets: Math.min(10, (exercise.target_sets || 3) + 1) })}
+              className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center"
+            >
+              <Plus size={16} />
+            </button>
+          </div>
+          <button
+            onClick={() => nextStep('sets')}
+            className="w-full mt-2 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-semibold"
+          >
+            Next
+          </button>
+        </StepRow>
+      )}
+
+      {/* Reps (strength only) */}
+      {!isCardio(exercise) && (
+        <StepRow label="Reps" open={openStep === 'reps'} onToggle={() => toggleStep('reps')}>
+          <div className="flex flex-wrap gap-2 py-2">
+            {['6', '8', '10', '12', '15', '20', 'Failure'].map((r) => (
+              <button
+                key={r}
+                onClick={() => onChange({ ...exercise, target_reps: r })}
+                className={cn(
+                  'px-4 py-2 rounded-xl border text-sm transition-colors',
+                  exercise.target_reps === r
+                    ? 'bg-primary text-primary-foreground border-primary'
+                    : 'border-border text-muted-foreground hover:border-primary/50'
+                )}
+              >
+                {r}
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={() => nextStep('reps')}
+            className="w-full mt-2 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-semibold"
+          >
+            Next
+          </button>
+        </StepRow>
+      )}
 
       {/* RPE */}
       <StepRow label="RPE" open={openStep === 'rpe'} onToggle={() => toggleStep('rpe')}>
