@@ -1,0 +1,50 @@
+{
+  "name": "SplitExercise",
+  "type": "object",
+  "properties": {
+    "split_day_id": {
+      "type": "string"
+    },
+    "user_id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "exercise_type": {
+      "type": "string",
+      "enum": [
+        "strength",
+        "cardio"
+      ]
+    },
+    "target_sets": {
+      "type": "number"
+    },
+    "target_reps": {
+      "type": "string"
+    },
+    "rpe": {
+      "type": "number"
+    },
+    "rest_seconds": {
+      "type": "number"
+    },
+    "cardio_metric": {
+      "type": "string",
+      "enum": [
+        "time",
+        "distance",
+        "calories"
+      ]
+    },
+    "order_index": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "split_day_id",
+    "user_id",
+    "name"
+  ]
+}

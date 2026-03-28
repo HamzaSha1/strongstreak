@@ -1,0 +1,33 @@
+{
+  "name": "Post",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "workout_log_id": {
+      "type": "string"
+    },
+    "image_url": {
+      "type": "string"
+    },
+    "caption": {
+      "type": "string"
+    },
+    "visibility": {
+      "type": "string",
+      "enum": [
+        "public",
+        "private"
+      ],
+      "default": "public"
+    },
+    "likes_count": {
+      "type": "number",
+      "default": 0
+    }
+  },
+  "required": [
+    "user_id"
+  ]
+}

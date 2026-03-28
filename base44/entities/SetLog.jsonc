@@ -1,0 +1,51 @@
+{
+  "name": "SetLog",
+  "type": "object",
+  "properties": {
+    "workout_log_id": {
+      "type": "string"
+    },
+    "user_id": {
+      "type": "string"
+    },
+    "exercise_name": {
+      "type": "string"
+    },
+    "exercise_order": {
+      "type": "number"
+    },
+    "set_number": {
+      "type": "number"
+    },
+    "reps": {
+      "type": "number"
+    },
+    "weight_kg": {
+      "type": "number"
+    },
+    "rpe": {
+      "type": "number"
+    },
+    "set_type": {
+      "type": "string",
+      "enum": [
+        "normal",
+        "dropset",
+        "superset"
+      ],
+      "default": "normal"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "completed": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "workout_log_id",
+    "user_id",
+    "exercise_name"
+  ]
+}

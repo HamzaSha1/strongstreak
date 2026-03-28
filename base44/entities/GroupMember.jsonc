@@ -1,0 +1,26 @@
+{
+  "name": "GroupMember",
+  "type": "object",
+  "properties": {
+    "group_id": {
+      "type": "string"
+    },
+    "user_id": {
+      "type": "string"
+    },
+    "display_name": {
+      "type": "string"
+    },
+    "avatar_url": {
+      "type": "string"
+    },
+    "streak": {
+      "type": "number",
+      "default": 0
+    }
+  },
+  "required": [
+    "group_id",
+    "user_id"
+  ]
+}

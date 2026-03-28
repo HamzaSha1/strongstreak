@@ -1,0 +1,45 @@
+{
+  "name": "SplitDay",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "split_name": {
+      "type": "string"
+    },
+    "day_of_week": {
+      "type": "string",
+      "enum": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+        "Sunday"
+      ]
+    },
+    "session_type": {
+      "type": "string",
+      "enum": [
+        "Push",
+        "Pull",
+        "Legs",
+        "Upper",
+        "Lower",
+        "Full Body",
+        "Cardio",
+        "Rest",
+        "Custom"
+      ]
+    },
+    "order_index": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "user_id",
+    "day_of_week"
+  ]
+}
