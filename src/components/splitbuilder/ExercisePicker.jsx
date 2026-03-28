@@ -22,13 +22,6 @@ export default function ExercisePicker({ sessionType, addedNames, onAdd, onCusto
     <div>
       <p className="text-xs text-muted-foreground mb-2">Add Exercise</p>
 
-      {/* Muscle group illustration */}
-      {selectedGroup && (
-        <div className="w-full h-36 rounded-2xl overflow-hidden mb-3 bg-secondary/60 flex items-center justify-center">
-          <ExerciseIllustration muscle={selectedGroup} size="md" className="w-32 h-32" />
-        </div>
-      )}
-
       {/* Muscle group selector */}
       <div className="flex flex-wrap gap-2 mb-3">
         {groups.map((g) => (
