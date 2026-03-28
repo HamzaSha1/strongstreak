@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 const SESSION_COLORS = {
   Push: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
@@ -24,6 +25,7 @@ const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
 export default function Workouts() {
   const [user, setUser] = useState(null);
   const [streak, setStreak] = useState(7);
+  const [activeTab, setActiveTab] = useState(0);
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
@@ -40,6 +42,11 @@ export default function Workouts() {
     queryFn: () => base44.entities.SplitExercise.filter({ user_id: user?.email }),
     enabled: !!user,
   });
+
+  // Group days by split_name
+  const splitNames = [...new Set(splitDays.map((d) => d.split_name).filter(Boolean))];
+  const activeSplitName = splitNames[activeTab] || splitNames[0];
+  const activeDays = splitDays.filter((d) => d.split_name === activeSplitName);
 
   const getExerciseCount = (dayId) =>
     exercises.filter((e) => e.split_day_id === dayId).length;
@@ -64,11 +71,11 @@ export default function Workouts() {
       </div>
 
       {/* Quick actions */}
-      <div className="flex gap-2 mb-6">
+      <div className="flex gap-2 mb-4">
         <Link to="/split-builder" className="flex-1">
           <Button variant="outline" className="w-full border-border gap-2 text-sm">
             <Edit size={15} />
-            {splitDays.length ? 'Edit Split' : 'Build Split'}
+            {splitDays.length ? 'Edit Splits' : 'Build Split'}
           </Button>
         </Link>
         <Button
@@ -79,6 +86,26 @@ export default function Workouts() {
           Log Rest Day
         </Button>
       </div>
+
+      {/* Split Tabs */}
+      {splitNames.length > 1 && (
+        <div className="flex gap-1.5 mb-4 overflow-x-auto pb-1 scrollbar-hide">
+          {splitNames.map((name, i) => (
+            <button
+              key={name}
+              onClick={() => setActiveTab(i)}
+              className={cn(
+                'flex-shrink-0 px-3.5 py-1.5 rounded-xl text-sm font-medium transition-colors whitespace-nowrap',
+                i === activeTab
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-secondary text-muted-foreground hover:text-foreground'
+              )}
+            >
+              {name}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Day Cards */}
       {splitDays.length === 0 ? (
@@ -98,7 +125,7 @@ export default function Workouts() {
         </div>
       ) : (
         <div className="flex flex-col gap-3">
-          {splitDays.map((day, i) => {
+          {activeDays.map((day, i) => {
             const isToday = day.day_of_week === today;
             return (
               <div
