@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { X, ChevronDown, ChevronUp, Minus, Plus, Camera } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -10,7 +10,6 @@ const STEPS = ['sets', 'reps', 'rpe', 'rest'];
 export default function ExerciseConfig({ exercise, onChange, onDelete }) {
   const [openStep, setOpenStep] = useState('sets');
   const [uploading, setUploading] = useState(false);
-  const fileRef = useRef();
 
   const toggleStep = (step) => setOpenStep((s) => (s === step ? null : step));
 
@@ -33,11 +32,7 @@ export default function ExerciseConfig({ exercise, onChange, onDelete }) {
     <div className="bg-secondary/50 border border-border rounded-2xl overflow-hidden mb-3">
       {/* Exercise header */}
       <div className="flex items-center gap-3 p-3">
-        <button
-          type="button"
-          onClick={() => fileRef.current.click()}
-          className="relative w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-secondary flex items-center justify-center cursor-pointer"
-        >
+        <div className="relative w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-secondary flex items-center justify-center">
           {exercise.image_url ? (
             <img src={exercise.image_url} alt={exercise.name} className="w-full h-full object-cover" />
           ) : (
@@ -48,8 +43,13 @@ export default function ExerciseConfig({ exercise, onChange, onDelete }) {
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
             </div>
           )}
-        </button>
-        <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleImageUpload}
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+          />
+        </div>
 
         <div className="flex-1 min-w-0">
           <p className="font-heading font-semibold text-sm truncate">{exercise.name}</p>
