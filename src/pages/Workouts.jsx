@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Flame, Plus, Edit, Play, BedDouble, Dumbbell, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
@@ -23,6 +23,7 @@ const SESSION_COLORS = {
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 export default function Workouts() {
+  const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [streak, setStreak] = useState(7);
   const [activeTab, setActiveTab] = useState(0);
@@ -104,13 +105,13 @@ export default function Workouts() {
           </button>
         ))}
         {/* + tab: go to split builder to add a new split */}
-        <a
-          href="/split-builder?newSplit=1"
+        <button
+          onClick={() => navigate('/split-builder?newSplit=1')}
           className="flex-shrink-0 w-8 h-8 rounded-xl bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors ml-0.5"
           title="Add new split"
         >
           <Plus size={16} />
-        </a>
+        </button>
       </div>
 
       {/* Day Cards */}
