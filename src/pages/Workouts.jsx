@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
-import { Flame, Plus, Edit, Play, BedDouble, Dumbbell, Trash2 } from 'lucide-react';
+import { Flame, Plus, Edit, Play, BedDouble, Dumbbell, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Link, useNavigate } from 'react-router-dom';
@@ -117,33 +117,29 @@ export default function Workouts() {
       {/* Split Tabs — always visible, Chrome-style */}
       <div className="flex items-center gap-1 mb-4 overflow-x-auto pb-1 scrollbar-hide relative">
         {(splitNames.length > 0 ? splitNames : ['Split 1']).map((name, i) => (
-          <div key={name} className="relative flex-shrink-0">
+          <div key={name} className="relative flex-shrink-0 group">
             <button
               onClick={() => setActiveTab(i)}
-              onContextMenu={(e) => {
-                e.preventDefault();
-                setContextMenu(contextMenu === name ? null : name);
-              }}
-              onLongPress={() => setContextMenu(contextMenu === name ? null : name)}
               className={cn(
-                'px-3.5 py-1.5 rounded-xl text-sm font-medium transition-colors whitespace-nowrap',
+                'px-3.5 py-1.5 rounded-xl text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-2',
                 i === activeTab
                   ? 'bg-primary text-primary-foreground'
                   : 'bg-secondary text-muted-foreground hover:text-foreground'
               )}
             >
               {name || `Split ${i + 1}`}
-            </button>
-            {contextMenu === name && (
               <button
-                onClick={() => deleteSplitMutation.mutate(name)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  deleteSplitMutation.mutate(name);
+                }}
                 disabled={deleteSplitMutation.isPending}
-                className="absolute top-full mt-1 right-0 bg-destructive text-destructive-foreground rounded-lg px-2 py-1 text-xs font-medium flex items-center gap-1 z-50 whitespace-nowrap"
+                className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-white/20 rounded-md"
+                title="Delete split"
               >
-                <Trash2 size={12} />
-                Delete
+                <X size={14} />
               </button>
-            )}
+            </button>
           </div>
         ))}
         {/* + tab: go to split builder to add a new split */}
