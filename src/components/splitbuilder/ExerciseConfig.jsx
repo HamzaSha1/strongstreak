@@ -3,11 +3,12 @@ import { base44 } from '@/api/base44Client';
 import { X, ChevronDown, ChevronUp, Minus, Plus, Camera } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { REST_OPTIONS } from './exerciseData';
+import { Textarea } from '@/components/ui/textarea';
 
-// Step-by-step config: Sets → Reps → RPE → Rest
-const STEPS = ['sets', 'reps', 'rpe', 'rest'];
+// Step-by-step config: Sets → Reps → RPE → Rest → Notes
+const STEPS = ['sets', 'reps', 'rpe', 'rest', 'notes'];
 
-export default function ExerciseConfig({ exercise, onChange, onDelete }) {
+export default function ExerciseConfig({ exercise, onChange, onDelete, allExercises = [] }) {
   const [openStep, setOpenStep] = useState('sets');
   const [uploading, setUploading] = useState(false);
 
@@ -143,6 +144,55 @@ export default function ExerciseConfig({ exercise, onChange, onDelete }) {
           Next
         </button>
       </StepRow>
+
+      {/* Notes */}
+      <StepRow label="Notes" open={openStep === 'notes'} onToggle={() => toggleStep('notes')}>
+        <Textarea
+          value={exercise.notes || ''}
+          onChange={(e) => onChange({ ...exercise, notes: e.target.value })}
+          placeholder="Any cues, form notes, variations..."
+          className="bg-input border-border text-sm min-h-[80px] resize-none"
+        />
+      </StepRow>
+
+      {/* Superset */}
+      {allExercises.filter((e) => e.name !== exercise.name).length > 0 && (
+        <StepRow label="Superset with" open={openStep === 'superset'} onToggle={() => toggleStep('superset')}>
+          <div className="flex flex-col gap-2 py-1">
+            <button
+              onClick={() => onChange({ ...exercise, superset_group: '' })}
+              className={cn(
+                'px-4 py-2 rounded-xl border text-sm transition-colors text-left',
+                !exercise.superset_group
+                  ? 'bg-primary text-primary-foreground border-primary'
+                  : 'border-border text-muted-foreground hover:border-primary/50'
+              )}
+            >
+              None
+            </button>
+            {allExercises
+              .filter((e) => e.name !== exercise.name)
+              .map((e) => {
+                const groupId = [exercise.name, e.name].sort().join('__');
+                const isSelected = exercise.superset_group === groupId;
+                return (
+                  <button
+                    key={e.name}
+                    onClick={() => onChange({ ...exercise, superset_group: isSelected ? '' : groupId })}
+                    className={cn(
+                      'px-4 py-2 rounded-xl border text-sm transition-colors text-left',
+                      isSelected
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'border-border text-muted-foreground hover:border-primary/50'
+                    )}
+                  >
+                    {e.name}
+                  </button>
+                );
+              })}
+          </div>
+        </StepRow>
+      )}
 
       {/* Rest */}
       <StepRow label="Rest" open={openStep === 'rest'} onToggle={() => toggleStep('rest')}>

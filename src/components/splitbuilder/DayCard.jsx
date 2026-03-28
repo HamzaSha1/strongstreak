@@ -35,7 +35,18 @@ export default function DayCard({ day, dayIndex, onUpdate }) {
   };
 
   const updateExercise = (idx, updated) => {
-    const exercises = day.exercises.map((e, i) => (i === idx ? updated : e));
+    let exercises = day.exercises.map((e, i) => (i === idx ? updated : e));
+    // Sync superset_group to partner exercise
+    if (updated.superset_group) {
+      exercises = exercises.map((e, i) => {
+        if (i === idx) return e;
+        const partnerGroupId = [updated.name, e.name].sort().join('__');
+        if (partnerGroupId === updated.superset_group) {
+          return { ...e, superset_group: updated.superset_group };
+        }
+        return e;
+      });
+    }
     onUpdate({ exercises });
   };
 
@@ -104,6 +115,7 @@ export default function DayCard({ day, dayIndex, onUpdate }) {
                   exercise={ex}
                   onChange={(updated) => updateExercise(idx, updated)}
                   onDelete={() => deleteExercise(idx)}
+                  allExercises={day.exercises}
                 />
               ))}
 

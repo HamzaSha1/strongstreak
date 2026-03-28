@@ -43,6 +43,12 @@
     },
     "order_index": {
       "type": "number"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "superset_group": {
+      "type": "string"
     }
   },
   "required": [

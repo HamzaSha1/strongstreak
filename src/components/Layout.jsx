@@ -1,10 +1,11 @@
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { Dumbbell, Rss, Users, History } from 'lucide-react';
+import { Dumbbell, Rss, Users, History, UserSearch } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const NAV_ITEMS = [
   { path: '/', label: 'Workouts', icon: Dumbbell },
   { path: '/feed', label: 'Feed', icon: Rss },
+  { path: '/people', label: 'People', icon: UserSearch },
   { path: '/groups', label: 'Groups', icon: Users },
   { path: '/history', label: 'History', icon: History },
 ];

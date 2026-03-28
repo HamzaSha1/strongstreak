@@ -58,6 +58,8 @@ export default function SplitBuilder() {
             cardio_metric: ex.cardio_metric,
             image_url: ex.image_url,
             order_index: i,
+            notes: ex.notes || '',
+            superset_group: ex.superset_group || '',
           });
         }
       }

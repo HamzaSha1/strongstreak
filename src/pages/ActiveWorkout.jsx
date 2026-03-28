@@ -12,6 +12,175 @@ import PostWorkoutModal from '@/components/workout/PostWorkoutModal';
 
 const SET_TYPES = ['normal', 'dropset', 'superset'];
 
+function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onCompleteSet, onAddSet, divider }) {
+  // Group sets by dropset: consecutive dropsets shown side-by-side
+  const renderSets = () => {
+    const rows = [];
+    let i = 0;
+    while (i < exSets.length) {
+      const s = exSets[i];
+      if (s.set_type === 'dropset') {
+        // Collect consecutive dropsets
+        const dropGroup = [{ s, idx: i }];
+        let j = i + 1;
+        while (j < exSets.length && exSets[j].set_type === 'dropset') {
+          dropGroup.push({ s: exSets[j], idx: j });
+          j++;
+        }
+        rows.push(
+          <div key={i} className="flex flex-col gap-1">
+            <span className="text-[10px] text-primary font-semibold px-1">Dropset</span>
+            <div className="flex gap-1.5 flex-wrap">
+              {dropGroup.map(({ s: ds, idx }) => (
+                <div
+                  key={idx}
+                  className={cn(
+                    'flex items-center gap-1.5 rounded-xl px-2 py-2 transition-colors flex-1 min-w-0',
+                    ds.completed ? 'bg-primary/10 opacity-70' : 'bg-muted/30'
+                  )}
+                >
+                  <span className="text-[10px] text-muted-foreground">{ds.set_number}</span>
+                  <Input
+                    type="number"
+                    placeholder={prevSets[idx]?.reps?.toString() || 'Reps'}
+                    value={ds.reps}
+                    onChange={(e) => onUpdateSet(ex.id, idx, { reps: e.target.value })}
+                    disabled={ds.completed}
+                    className="w-14 h-7 text-center bg-input border-border text-xs"
+                  />
+                  <Input
+                    type="number"
+                    placeholder="kg"
+                    value={ds.weight_kg}
+                    onChange={(e) => onUpdateSet(ex.id, idx, { weight_kg: e.target.value })}
+                    disabled={ds.completed}
+                    className="w-14 h-7 text-center bg-input border-border text-xs"
+                  />
+                  <button
+                    onClick={() => !ds.completed && onCompleteSet(ex, idx)}
+                    className={cn(
+                      'w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-colors',
+                      ds.completed ? 'bg-primary text-primary-foreground' : 'border border-border text-muted-foreground hover:border-primary hover:text-primary'
+                    )}
+                  >
+                    <Check size={11} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+        i = j;
+      } else {
+        rows.push(
+          <div
+            key={i}
+            className={cn(
+              'flex items-center gap-2 rounded-xl px-3 py-2 transition-colors',
+              s.completed ? 'bg-primary/10 opacity-70' : 'bg-muted/30'
+            )}
+          >
+            <span className="text-xs text-muted-foreground w-5">{s.set_number}</span>
+            <Input
+              type="number"
+              placeholder={prevSets[i]?.reps?.toString() || 'Reps'}
+              value={s.reps}
+              onChange={(e) => onUpdateSet(ex.id, i, { reps: e.target.value })}
+              disabled={s.completed}
+              className="w-16 h-8 text-center bg-input border-border text-sm"
+            />
+            <Input
+              type="number"
+              placeholder={prevSets[i]?.weight_kg?.toString() || 'kg'}
+              value={s.weight_kg}
+              onChange={(e) => onUpdateSet(ex.id, i, { weight_kg: e.target.value })}
+              disabled={s.completed}
+              className="w-16 h-8 text-center bg-input border-border text-sm"
+            />
+            <div className="flex gap-1 flex-1">
+              {SET_TYPES.map((t) => (
+                <button
+                  key={t}
+                  disabled={s.completed}
+                  onClick={() => onUpdateSet(ex.id, i, { set_type: t })}
+                  className={cn(
+                    'text-[10px] px-1.5 py-0.5 rounded-full border capitalize transition-colors',
+                    s.set_type === t ? 'bg-primary/20 text-primary border-primary/50' : 'border-border text-muted-foreground'
+                  )}
+                >
+                  {t === 'normal' ? 'N' : t === 'dropset' ? 'D' : 'S'}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => !s.completed && onCompleteSet(ex, i)}
+              className={cn(
+                'w-7 h-7 rounded-full flex items-center justify-center transition-colors',
+                s.completed ? 'bg-primary text-primary-foreground' : 'border border-border text-muted-foreground hover:border-primary hover:text-primary'
+              )}
+            >
+              <Check size={13} />
+            </button>
+          </div>
+        );
+        i++;
+      }
+    }
+    return rows;
+  };
+
+  return (
+    <>
+      {divider && <div className="border-t border-border/50" />}
+      <button
+        className="w-full flex items-center justify-between px-4 py-3"
+        onClick={onToggle}
+      >
+        <div>
+          <p className="font-heading font-semibold text-sm text-left">{ex.name}</p>
+          <p className="text-muted-foreground text-xs">
+            {ex.target_sets} × {ex.target_reps} · {ex.rest_seconds}s rest
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground">
+            {exSets.filter((s) => s.completed).length}/{exSets.length}
+          </span>
+          {isOpen ? <ChevronUp size={15} className="text-muted-foreground" /> : <ChevronDown size={15} className="text-muted-foreground" />}
+        </div>
+      </button>
+      {isOpen && (
+        <div className="border-t border-border px-4 pb-4 pt-3">
+          {ex.notes && (
+            <div className="bg-muted/40 rounded-xl px-3 py-2 mb-3 text-xs text-muted-foreground italic">
+              {ex.notes}
+            </div>
+          )}
+          {prevSets.length > 0 && (
+            <div className="bg-muted/50 rounded-xl p-2 mb-3">
+              <p className="text-xs text-muted-foreground mb-1">Last session</p>
+              <div className="flex flex-wrap gap-1.5">
+                {prevSets.map((s, i) => (
+                  <span key={i} className="text-xs bg-muted rounded-lg px-2 py-0.5">
+                    {s.reps}×{s.weight_kg}kg
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          <div className="flex flex-col gap-1.5">{renderSets()}</div>
+          <button
+            onClick={() => onAddSet(ex.id)}
+            className="w-full mt-2 flex items-center justify-center gap-1 py-2 text-xs text-muted-foreground hover:text-primary border border-dashed border-border rounded-xl transition-colors"
+          >
+            <Plus size={12} /> Add set
+          </button>
+        </div>
+      )}
+    </>
+  );
+}
+
 export default function ActiveWorkout() {
   const { dayId } = useParams();
   const navigate = useNavigate();
@@ -190,118 +359,69 @@ export default function ActiveWorkout() {
       </div>
 
       <div className="px-4 pt-4 flex flex-col gap-3">
-        {exercises.map((ex) => {
-          const exSets = sets[ex.id] || [];
-          const isOpen = expanded[ex.id];
-          const prevSets = getPrevSets(ex.name);
+        {(() => {
+          // Group exercises: supersets grouped, others individual
+          const rendered = [];
+          const usedIds = new Set();
 
-          return (
-            <div key={ex.id} className="bg-card border border-border rounded-2xl overflow-hidden">
-              <button
-                className="w-full flex items-center justify-between px-4 py-3"
-                onClick={() => setExpanded((p) => ({ ...p, [ex.id]: !p[ex.id] }))}
-              >
-                <div>
-                  <p className="font-heading font-semibold text-sm text-left">{ex.name}</p>
-                  <p className="text-muted-foreground text-xs">
-                    {ex.target_sets} × {ex.target_reps} · {ex.rest_seconds}s rest
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">
-                    {exSets.filter((s) => s.completed).length}/{exSets.length}
-                  </span>
-                  {isOpen ? <ChevronUp size={15} className="text-muted-foreground" /> : <ChevronDown size={15} className="text-muted-foreground" />}
-                </div>
-              </button>
+          exercises.forEach((ex) => {
+            if (usedIds.has(ex.id)) return;
 
-              {isOpen && (
-                <div className="border-t border-border px-4 pb-4 pt-3">
-                  {/* Last session */}
-                  {prevSets.length > 0 && (
-                    <div className="bg-muted/50 rounded-xl p-2 mb-3">
-                      <p className="text-xs text-muted-foreground mb-1">Last session</p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {prevSets.map((s, i) => (
-                          <span key={i} className="text-xs bg-muted rounded-lg px-2 py-0.5">
-                            {s.reps}×{s.weight_kg}kg
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+            if (ex.superset_group) {
+              // Find all exercises in this superset group
+              const group = exercises.filter((e) => e.superset_group === ex.superset_group);
+              group.forEach((e) => usedIds.add(e.id));
+              rendered.push({ type: 'superset', exercises: group });
+            } else {
+              usedIds.add(ex.id);
+              rendered.push({ type: 'single', exercises: [ex] });
+            }
+          });
 
-                  {/* Set rows */}
-                  <div className="flex flex-col gap-1.5">
-                    {exSets.map((s, idx) => (
-                      <div
-                        key={idx}
-                        className={cn(
-                          'flex items-center gap-2 rounded-xl px-3 py-2 transition-colors',
-                          s.completed ? 'bg-primary/10 opacity-70' : 'bg-muted/30'
-                        )}
-                      >
-                        <span className="text-xs text-muted-foreground w-5">{s.set_number}</span>
-                        <Input
-                          type="number"
-                          placeholder={prevSets[idx]?.reps?.toString() || 'Reps'}
-                          value={s.reps}
-                          onChange={(e) => updateSet(ex.id, idx, { reps: e.target.value })}
-                          disabled={s.completed}
-                          className="w-16 h-8 text-center bg-input border-border text-sm"
-                        />
-                        <Input
-                          type="number"
-                          placeholder={prevSets[idx]?.weight_kg?.toString() || 'kg'}
-                          value={s.weight_kg}
-                          onChange={(e) => updateSet(ex.id, idx, { weight_kg: e.target.value })}
-                          disabled={s.completed}
-                          className="w-16 h-8 text-center bg-input border-border text-sm"
-                        />
-                        {/* Set type pills */}
-                        <div className="flex gap-1 flex-1">
-                          {SET_TYPES.map((t) => (
-                            <button
-                              key={t}
-                              disabled={s.completed}
-                              onClick={() => updateSet(ex.id, idx, { set_type: t })}
-                              className={cn(
-                                'text-[10px] px-1.5 py-0.5 rounded-full border capitalize transition-colors',
-                                s.set_type === t
-                                  ? 'bg-primary/20 text-primary border-primary/50'
-                                  : 'border-border text-muted-foreground'
-                              )}
-                            >
-                              {t === 'normal' ? 'N' : t === 'dropset' ? 'D' : 'S'}
-                            </button>
-                          ))}
-                        </div>
-                        <button
-                          onClick={() => !s.completed && completeSet(ex, idx)}
-                          className={cn(
-                            'w-7 h-7 rounded-full flex items-center justify-center transition-colors',
-                            s.completed
-                              ? 'bg-primary text-primary-foreground'
-                              : 'border border-border text-muted-foreground hover:border-primary hover:text-primary'
-                          )}
-                        >
-                          <Check size={13} />
-                        </button>
-                      </div>
-                    ))}
+          return rendered.map((item, itemIdx) => {
+            if (item.type === 'superset') {
+              const group = item.exercises;
+              return (
+                <div key={itemIdx} className="border border-primary/30 rounded-2xl overflow-hidden">
+                  <div className="bg-primary/10 px-4 py-1.5 text-[10px] text-primary font-semibold uppercase tracking-wider">
+                    Superset
                   </div>
-
-                  <button
-                    onClick={() => addSet(ex.id)}
-                    className="w-full mt-2 flex items-center justify-center gap-1 py-2 text-xs text-muted-foreground hover:text-primary border border-dashed border-border rounded-xl transition-colors"
-                  >
-                    <Plus size={12} /> Add set
-                  </button>
+                  {group.map((ex, gi) => (
+                    <ExerciseCard
+                      key={ex.id}
+                      ex={ex}
+                      exSets={sets[ex.id] || []}
+                      isOpen={expanded[ex.id]}
+                      prevSets={getPrevSets(ex.name)}
+                      onToggle={() => setExpanded((p) => ({ ...p, [ex.id]: !p[ex.id] }))}
+                      onUpdateSet={updateSet}
+                      onCompleteSet={completeSet}
+                      onAddSet={addSet}
+                      divider={gi < group.length - 1}
+                    />
+                  ))}
                 </div>
-              )}
-            </div>
-          );
-        })}
+              );
+            }
+
+            const ex = item.exercises[0];
+            return (
+              <div key={ex.id} className="bg-card border border-border rounded-2xl overflow-hidden">
+                <ExerciseCard
+                  ex={ex}
+                  exSets={sets[ex.id] || []}
+                  isOpen={expanded[ex.id]}
+                  prevSets={getPrevSets(ex.name)}
+                  onToggle={() => setExpanded((p) => ({ ...p, [ex.id]: !p[ex.id] }))}
+                  onUpdateSet={updateSet}
+                  onCompleteSet={completeSet}
+                  onAddSet={addSet}
+                  divider={false}
+                />
+              </div>
+            );
+          });
+        })()}
       </div>
 
       {/* Rest timer */}

@@ -13,6 +13,7 @@ import Groups from '@/pages/Groups';
 import History from '@/pages/History';
 import SplitBuilder from '@/pages/SplitBuilder';
 import ActiveWorkout from '@/pages/ActiveWorkout';
+import People from '@/pages/People';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -39,10 +40,12 @@ const AuthenticatedApp = () => {
       <Route element={<Layout />}>
         <Route path="/" element={<Workouts />} />
         <Route path="/feed" element={<Feed />} />
+        <Route path="/people" element={<People />} />
         <Route path="/groups" element={<Groups />} />
         <Route path="/history" element={<History />} />
       </Route>
       <Route path="/split-builder" element={<SplitBuilder />} />
+
       <Route path="/workout/:dayId" element={<ActiveWorkout />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
