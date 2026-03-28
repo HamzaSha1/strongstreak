@@ -49,7 +49,7 @@ export default function WorkoutExerciseEditor({ exercises, sessionType, onClose,
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
           <h2 className="font-heading font-bold text-base">Edit Exercises</h2>
-          <button onClick={onClose} className="text-muted-foreground">
+          <button onClick={onClose} className="text-muted-foreground p-2 -m-2 touch-target-44">
             <X size={20} />
           </button>
         </div>
@@ -68,27 +68,27 @@ export default function WorkoutExerciseEditor({ exercises, sessionType, onClose,
                   </p>
                 </div>
                 <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => onReorder(idx, idx - 1)}
-                    disabled={idx === 0}
-                    className="w-7 h-7 rounded-lg bg-secondary flex items-center justify-center disabled:opacity-30"
-                  >
-                    <ArrowUp size={13} />
-                  </button>
-                  <button
-                    onClick={() => onReorder(idx, idx + 1)}
-                    disabled={idx === exercises.length - 1}
-                    className="w-7 h-7 rounded-lg bg-secondary flex items-center justify-center disabled:opacity-30"
-                  >
-                    <ArrowDown size={13} />
-                  </button>
-                  <button
-                    onClick={() => onRemove(ex.id)}
-                    className="w-7 h-7 rounded-lg bg-destructive/10 text-destructive flex items-center justify-center"
-                  >
-                    <Trash2 size={13} />
-                  </button>
-                </div>
+                   <button
+                     onClick={() => onReorder(idx, idx - 1)}
+                     disabled={idx === 0}
+                     className="p-2 rounded-lg bg-secondary flex items-center justify-center disabled:opacity-30 touch-target-44"
+                   >
+                     <ArrowUp size={13} />
+                   </button>
+                   <button
+                     onClick={() => onReorder(idx, idx + 1)}
+                     disabled={idx === exercises.length - 1}
+                     className="p-2 rounded-lg bg-secondary flex items-center justify-center disabled:opacity-30 touch-target-44"
+                   >
+                     <ArrowDown size={13} />
+                   </button>
+                   <button
+                     onClick={() => onRemove(ex.id)}
+                     className="p-2 rounded-lg bg-destructive/10 text-destructive flex items-center justify-center touch-target-44"
+                   >
+                     <Trash2 size={13} />
+                   </button>
+                 </div>
               </div>
 
               {/* Superset config */}

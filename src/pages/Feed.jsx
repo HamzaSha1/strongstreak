@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Heart, Clock } from 'lucide-react';
@@ -7,11 +7,40 @@ import { cn } from '@/lib/utils';
 
 export default function Feed() {
   const [user, setUser] = useState(null);
+  const [pullProgress, setPullProgress] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const scrollContainerRef = useRef(null);
+  const startYRef = useRef(0);
   const queryClient = useQueryClient();
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
   }, []);
+
+  const handleTouchStart = (e) => {
+    if (scrollContainerRef.current?.scrollTop === 0) {
+      startYRef.current = e.touches[0].clientY;
+    }
+  };
+
+  const handleTouchMove = (e) => {
+    if (scrollContainerRef.current?.scrollTop === 0 && startYRef.current) {
+      const diff = e.touches[0].clientY - startYRef.current;
+      if (diff > 0) {
+        setPullProgress(Math.min(diff / 80, 1));
+      }
+    }
+  };
+
+  const handleTouchEnd = async () => {
+    if (pullProgress >= 1 && !isRefreshing) {
+      setIsRefreshing(true);
+      await queryClient.refetchQueries({ queryKey: ['posts'] });
+      setIsRefreshing(false);
+    }
+    setPullProgress(0);
+    startYRef.current = 0;
+  };
 
   const { data: posts = [], isLoading } = useQuery({
     queryKey: ['posts'],
@@ -44,7 +73,26 @@ export default function Feed() {
   const isLiked = (postId) => myLikes.some((l) => l.post_id === postId);
 
   return (
-    <div className="pb-4">
+    <div
+      ref={scrollContainerRef}
+      className="pb-4 h-screen overflow-y-auto"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
+      {/* Pull-to-refresh indicator */}
+      {pullProgress > 0 && (
+        <div className="flex justify-center pt-4 px-4">
+          <div className="relative w-10 h-10 flex items-center justify-center">
+            <div
+              className="absolute inset-0 rounded-full border-2 border-transparent border-t-primary border-r-primary transition-transform"
+              style={{ transform: `rotate(${pullProgress * 360}deg)` }}
+            />
+            <div className="text-xs text-primary font-bold">{Math.round(pullProgress * 100)}%</div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border px-4 py-4">
         <h1 className="text-xl font-heading font-bold">Feed</h1>
