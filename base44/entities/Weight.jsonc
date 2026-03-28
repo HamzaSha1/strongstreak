@@ -12,6 +12,9 @@
       "type": "string",
       "format": "date"
     },
+    "photo_url": {
+      "type": "string"
+    },
     "notes": {
       "type": "string"
     }

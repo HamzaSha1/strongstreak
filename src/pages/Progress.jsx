@@ -2,16 +2,18 @@ import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Plus, TrendingUp } from 'lucide-react';
+import { Plus, TrendingUp, Camera, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { format, parse } from 'date-fns';
+import { toast } from 'sonner';
 
 export default function Progress() {
   const [user, setUser] = useState(null);
   const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState({ weight_kg: '', date: format(new Date(), 'yyyy-MM-dd') });
+  const [formData, setFormData] = useState({ weight_kg: '', date: format(new Date(), 'yyyy-MM-dd'), photo_url: '' });
+  const [uploading, setUploading] = useState(false);
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -24,17 +26,33 @@ export default function Progress() {
     enabled: !!user,
   });
 
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      setFormData((prev) => ({ ...prev, photo_url: file_url }));
+      toast.success('Photo uploaded');
+    } catch (err) {
+      toast.error('Failed to upload photo');
+    }
+    setUploading(false);
+  };
+
   const addWeightMutation = useMutation({
     mutationFn: (data) =>
       base44.entities.Weight.create({
         user_id: user.email,
         weight_kg: Number(data.weight_kg),
         date: data.date,
+        photo_url: data.photo_url || undefined,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['weights', user?.email] });
-      setFormData({ weight_kg: '', date: format(new Date(), 'yyyy-MM-dd') });
+      setFormData({ weight_kg: '', date: format(new Date(), 'yyyy-MM-dd'), photo_url: '' });
       setShowForm(false);
+      toast.success('Weight logged');
     },
   });
 
@@ -93,7 +111,7 @@ export default function Progress() {
             max={format(new Date(), 'yyyy-MM-dd')}
             className="w-full h-10 rounded-xl bg-input border border-border px-3 text-sm mb-3"
           />
-          <div className="flex gap-2">
+          <div className="flex gap-2 mb-3">
             <Input
               type="number"
               step="0.1"
@@ -104,7 +122,34 @@ export default function Progress() {
             />
             <span className="text-muted-foreground text-sm flex items-center">kg</span>
           </div>
-          <div className="flex gap-2 mt-3">
+
+          {/* Photo upload */}
+          {formData.photo_url ? (
+            <div className="relative mb-3 rounded-xl overflow-hidden">
+              <img src={formData.photo_url} alt="Progress" className="w-full h-40 object-cover" />
+              <button
+                onClick={() => setFormData((prev) => ({ ...prev, photo_url: '' }))}
+                className="absolute top-2 right-2 w-7 h-7 bg-black/50 rounded-full flex items-center justify-center text-white"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          ) : (
+            <label className="flex flex-col items-center justify-center gap-2 h-20 rounded-xl border-2 border-dashed border-border hover:border-primary transition-colors cursor-pointer mb-3">
+              <Camera size={18} className="text-muted-foreground" />
+              <span className="text-xs text-muted-foreground">Add progress photo</span>
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handlePhotoUpload}
+                disabled={uploading}
+                className="hidden"
+              />
+            </label>
+          )}
+
+          <div className="flex gap-2">
             <Button
               variant="outline"
               onClick={() => setShowForm(false)}
@@ -114,7 +159,7 @@ export default function Progress() {
             </Button>
             <Button
               onClick={() => addWeightMutation.mutate(formData)}
-              disabled={!formData.weight_kg || addWeightMutation.isPending}
+              disabled={!formData.weight_kg || addWeightMutation.isPending || uploading}
               className="flex-1"
             >
               Save
@@ -168,17 +213,22 @@ export default function Progress() {
       {weights.length > 0 && (
         <div className="bg-card border border-border rounded-2xl p-4">
           <p className="text-xs uppercase tracking-wide text-muted-foreground mb-3">History</p>
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-3">
             {weights.map((w, idx) => (
-              <div key={w.id} className="flex items-center justify-between py-2 border-b border-border/50 last:border-b-0">
-                <div>
-                  <p className="text-sm font-semibold">{w.weight_kg} kg</p>
-                  <p className="text-xs text-muted-foreground">{format(parse(w.date, 'yyyy-MM-dd', new Date()), 'MMM d, yyyy')}</p>
+              <div key={w.id} className="border-b border-border/50 last:border-b-0 pb-3 last:pb-0">
+                <div className="flex items-start justify-between mb-2">
+                  <div>
+                    <p className="text-sm font-semibold">{w.weight_kg} kg</p>
+                    <p className="text-xs text-muted-foreground">{format(parse(w.date, 'yyyy-MM-dd', new Date()), 'MMM d, yyyy')}</p>
+                  </div>
+                  {idx > 0 && (
+                    <span className={cn('text-xs font-semibold', weights[idx - 1].weight_kg > w.weight_kg ? 'text-green-500' : 'text-destructive')}>
+                      {(w.weight_kg - weights[idx - 1].weight_kg).toFixed(1)} kg
+                    </span>
+                  )}
                 </div>
-                {idx > 0 && (
-                  <span className={cn('text-xs font-semibold', weights[idx - 1].weight_kg > w.weight_kg ? 'text-green-500' : 'text-destructive')}>
-                    {(w.weight_kg - weights[idx - 1].weight_kg).toFixed(1)} kg
-                  </span>
+                {w.photo_url && (
+                  <img src={w.photo_url} alt="Progress" className="w-full h-32 object-cover rounded-lg" />
                 )}
               </div>
             ))}
