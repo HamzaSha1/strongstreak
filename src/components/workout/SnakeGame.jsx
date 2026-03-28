@@ -3,14 +3,21 @@ import { useState, useEffect, useRef } from 'react';
 const GRID_SIZE = 20;
 const CELL_SIZE = 15;
 
-export default function SnakeGame({ isActive, onGameEnd }) {
+export default function SnakeGame({ isActive, onGameEnd, gameState, onGameStateChange }) {
   const canvasRef = useRef(null);
-  const [snake, setSnake] = useState([[10, 10]]);
-  const [food, setFood] = useState([15, 15]);
-  const [direction, setDirection] = useState([1, 0]);
-  const [nextDirection, setNextDirection] = useState([1, 0]);
-  const [score, setScore] = useState(0);
+  const [snake, setSnake] = useState(() => gameState?.snake ?? [[10, 10]]);
+  const [food, setFood] = useState(() => gameState?.food ?? [15, 15]);
+  const [direction, setDirection] = useState(() => gameState?.direction ?? [1, 0]);
+  const [nextDirection, setNextDirection] = useState(() => gameState?.nextDirection ?? [1, 0]);
+  const [score, setScore] = useState(() => gameState?.score ?? 0);
   const gameLoopRef = useRef(null);
+
+  // Save game state when it changes
+  useEffect(() => {
+    if (onGameStateChange) {
+      onGameStateChange({ snake, food, direction, nextDirection, score });
+    }
+  }, [snake, food, direction, nextDirection, score, onGameStateChange]);
 
   // Handle keyboard input
   useEffect(() => {

@@ -5,7 +5,7 @@ import SnakeGame from './SnakeGame';
 const RADIUS = 45;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
-export default function RestTimer({ seconds, total, onDone, onSkip, isMinimized, onToggleMinimize }) {
+export default function RestTimer({ seconds, total, onDone, onSkip, isMinimized, onToggleMinimize, gameState, onGameStateChange }) {
   const [remaining, setRemaining] = useState(seconds);
   const [showGame, setShowGame] = useState(false);
 
@@ -43,7 +43,12 @@ export default function RestTimer({ seconds, total, onDone, onSkip, isMinimized,
             </button>
           </div>
           <p className="text-lg font-heading font-bold text-primary">{remaining}s remaining</p>
-          <SnakeGame isActive={true} onGameEnd={() => {}} />
+          <SnakeGame 
+            isActive={true} 
+            onGameEnd={() => {}} 
+            gameState={gameState}
+            onGameStateChange={onGameStateChange}
+          />
         </div>
       </div>
     );

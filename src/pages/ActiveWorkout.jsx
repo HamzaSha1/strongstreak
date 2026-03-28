@@ -235,6 +235,7 @@ export default function ActiveWorkout() {
   const [restTimer, setRestTimer] = useState(null); // { seconds, total }
   const [timerMinimized, setTimerMinimized] = useState(false);
   const [showPostModal, setShowPostModal] = useState(false);
+  const [persistedGameState, setPersistedGameState] = useState(null);
   const [exerciseOrder, setExerciseOrder] = useState([]);
   const [showEditor, setShowEditor] = useState(false);
   const [localExercises, setLocalExercises] = useState(null); // null = use server exercises
@@ -556,6 +557,8 @@ export default function ActiveWorkout() {
           onSkip={() => setRestTimer(null)}
           isMinimized={timerMinimized}
           onToggleMinimize={() => setTimerMinimized(!timerMinimized)}
+          gameState={persistedGameState}
+          onGameStateChange={setPersistedGameState}
         />
       )}
 
