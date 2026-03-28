@@ -17,6 +17,7 @@ import SplitBuilder from '@/pages/SplitBuilder';
 import ActiveWorkout from '@/pages/ActiveWorkout';
 import People from '@/pages/People';
 import Profile from '@/pages/Profile';
+import Privacy from '@/pages/Privacy';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -59,6 +60,7 @@ const AuthenticatedApp = () => {
             <Route path="/progress" element={<Progress />} />
           </Route>
           <Route path="/split-builder" element={<SplitBuilder />} />
+          <Route path="/privacy" element={<Privacy />} />
 
           <Route path="/workout/:dayId" element={<ActiveWorkout />} />
           <Route path="*" element={<PageNotFound />} />
