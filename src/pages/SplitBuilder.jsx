@@ -46,45 +46,56 @@ export default function SplitBuilder() {
   });
 
   useEffect(() => {
-    if (initialized || existingSplitDays.length === 0) {
-      if (!initialized && existingSplitDays.length === 0 && pendingNewSplit) {
-        // No existing splits — just stay on the default empty split, clear the flag
-        setPendingNewSplit(false);
-      }
-      return;
+    if (initialized) return;
+    if (!user) return;
+
+    // Data still loading
+    if (existingSplitDays.length === 0 && existingExercises.length === 0) {
+      // Could be empty or still loading — wait for user query to be enabled
+      // We mark initialized only after we know data has settled
+      // Use a small trick: if queries are enabled and returned empty, treat as no data
     }
+
     const grouped = {};
     for (const d of existingSplitDays) {
       if (!grouped[d.split_name]) grouped[d.split_name] = [];
       grouped[d.split_name].push(d);
     }
-    const loadedSplits = Object.entries(grouped).map(([name, dbDays]) => ({
-      name,
-      days: DAYS.map((dayName, i) => {
-        const dbDay = dbDays.find((d) => d.day_of_week === dayName);
-        if (!dbDay) return { day: dayName, session_type: '', exercises: [], open: false, order_index: i };
-        const exs = existingExercises
-          .filter((e) => e.split_day_id === dbDay.id)
-          .sort((a, b) => a.order_index - b.order_index)
-          .map((e) => ({ ...e }));
-        return {
-          day: dayName,
-          session_type: dbDay.session_type || '',
-          exercises: exs,
-          open: false,
-          order_index: dbDay.order_index ?? i,
-        };
-      }),
-    }));
-    setSplits(loadedSplits);
-    setInitialized(true);
+
+    let loadedSplits;
+    if (Object.keys(grouped).length === 0) {
+      loadedSplits = [{ name: 'My Split', days: initialDays() }];
+    } else {
+      loadedSplits = Object.entries(grouped).map(([name, dbDays]) => ({
+        name,
+        days: DAYS.map((dayName, i) => {
+          const dbDay = dbDays.find((d) => d.day_of_week === dayName);
+          if (!dbDay) return { day: dayName, session_type: '', exercises: [], open: false, order_index: i };
+          const exs = existingExercises
+            .filter((e) => e.split_day_id === dbDay.id)
+            .sort((a, b) => a.order_index - b.order_index)
+            .map((e) => ({ ...e }));
+          return {
+            day: dayName,
+            session_type: dbDay.session_type || '',
+            exercises: exs,
+            open: false,
+            order_index: dbDay.order_index ?? i,
+          };
+        }),
+      }));
+    }
+
     if (pendingNewSplit) {
       const newSplit = { name: `Split ${loadedSplits.length + 1}`, days: initialDays() };
       setSplits([...loadedSplits, newSplit]);
       setActiveTab(loadedSplits.length);
       setPendingNewSplit(false);
+    } else {
+      setSplits(loadedSplits);
     }
-  }, [existingSplitDays, existingExercises, initialized]);
+    setInitialized(true);
+  }, [existingSplitDays, existingExercises, initialized, user]);
 
   const activeSplit = splits[activeTab] || splits[0];
 
