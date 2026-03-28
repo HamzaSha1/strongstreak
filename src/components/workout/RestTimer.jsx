@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { SkipForward, ChevronDown, ChevronUp } from 'lucide-react';
+import { SkipForward, ChevronDown, ChevronUp, Edit2, Check } from 'lucide-react';
 import SnakeGame from './SnakeGame';
 
 const RADIUS = 45;
@@ -8,6 +8,8 @@ const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 export default function RestTimer({ seconds, total, onDone, onSkip, isMinimized, onToggleMinimize, gameState, onGameStateChange }) {
   const [remaining, setRemaining] = useState(seconds);
   const [showGame, setShowGame] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState(seconds);
 
   useEffect(() => {
     if (remaining <= 0) { onDone(); return; }
@@ -66,34 +68,67 @@ export default function RestTimer({ seconds, total, onDone, onSkip, isMinimized,
             <ChevronDown size={18} />
           </button>
         </div>
-        <div
-          className="relative w-32 h-32 cursor-pointer transition-transform active:scale-95"
-          onClick={() => setShowGame(true)}
-        >
-          <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-            <circle cx="50" cy="50" r={RADIUS} fill="none" stroke="hsl(var(--muted))" strokeWidth="6" />
-            <circle
-              cx="50" cy="50" r={RADIUS}
-              fill="none"
-              stroke="hsl(var(--primary))"
-              strokeWidth="6"
-              strokeLinecap="round"
-              strokeDasharray={CIRCUMFERENCE}
-              strokeDashoffset={dashoffset}
-              style={{ transition: 'stroke-dashoffset 1s linear' }}
+        {isEditing ? (
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              value={editValue}
+              onChange={(e) => setEditValue(Math.max(0, parseInt(e.target.value) || 0))}
+              autoFocus
+              className="w-20 text-center text-2xl font-heading font-bold bg-muted border border-border rounded-lg px-3 py-2 text-foreground"
             />
-          </svg>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-3xl font-heading font-bold text-primary">{remaining}</span>
+            <span className="text-lg text-muted-foreground">s</span>
+            <button
+              onClick={() => {
+                setRemaining(editValue);
+                setIsEditing(false);
+              }}
+              className="text-primary hover:text-primary/80 transition-colors p-1"
+            >
+              <Check size={20} />
+            </button>
           </div>
-        </div>
+        ) : (
+          <div
+            className="relative w-32 h-32 cursor-pointer transition-transform active:scale-95"
+            onClick={() => setShowGame(true)}
+          >
+            <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r={RADIUS} fill="none" stroke="hsl(var(--muted))" strokeWidth="6" />
+              <circle
+                cx="50" cy="50" r={RADIUS}
+                fill="none"
+                stroke="hsl(var(--primary))"
+                strokeWidth="6"
+                strokeLinecap="round"
+                strokeDasharray={CIRCUMFERENCE}
+                strokeDashoffset={dashoffset}
+                style={{ transition: 'stroke-dashoffset 1s linear' }}
+              />
+            </svg>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-3xl font-heading font-bold text-primary">{remaining}</span>
+            </div>
+          </div>
+        )}
         <p className="text-xs text-muted-foreground text-center">Tap to play Snake while waiting</p>
-        <button
-          onClick={onSkip}
-          className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground text-sm transition-colors"
-        >
-          <SkipForward size={15} /> Skip
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => {
+              setIsEditing(true);
+              setEditValue(remaining);
+            }}
+            className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground text-sm transition-colors"
+          >
+            <Edit2 size={15} /> Edit
+          </button>
+          <button
+            onClick={onSkip}
+            className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground text-sm transition-colors"
+          >
+            <SkipForward size={15} /> Skip
+          </button>
+        </div>
       </div>
     </div>
   );
