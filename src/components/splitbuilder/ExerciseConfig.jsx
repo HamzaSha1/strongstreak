@@ -30,7 +30,7 @@ export default function ExerciseConfig({ exercise, onChange, onDelete, allExerci
 
   const STEPS = isCardio(exercise)
     ? ['cardio_metric', 'rpe', 'rest', 'notes']
-    : ['sets', 'reps', 'rpe', 'rest', 'notes'];
+    : ['sets', 'reps', 'rpe', 'dropset', 'rest', 'notes'];
 
   const nextStep = (current) => {
     const idx = STEPS.indexOf(current);
@@ -202,6 +202,38 @@ export default function ExerciseConfig({ exercise, onChange, onDelete, allExerci
           Next
         </button>
       </StepRow>
+
+      {/* Dropset (strength only) */}
+      {!isCardio(exercise) && (
+        <StepRow label="Dropsets" open={openStep === 'dropset'} onToggle={() => toggleStep('dropset')}>
+          <div className="flex flex-col gap-3 py-2">
+            <p className="text-xs text-muted-foreground">How many dropsets after the main sets?</p>
+            <div className="flex items-center justify-center gap-6">
+              <button
+                onClick={() => onChange({ ...exercise, dropset_count: Math.max(0, (exercise.dropset_count || 0) - 1) })}
+                className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center"
+              >
+                <Minus size={16} />
+              </button>
+              <span className="text-3xl font-heading font-bold text-foreground w-12 text-center">
+                {exercise.dropset_count || 0}
+              </span>
+              <button
+                onClick={() => onChange({ ...exercise, dropset_count: Math.min(5, (exercise.dropset_count || 0) + 1) })}
+                className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center"
+              >
+                <Plus size={16} />
+              </button>
+            </div>
+          </div>
+          <button
+            onClick={() => nextStep('dropset')}
+            className="w-full mt-2 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-semibold"
+          >
+            Next
+          </button>
+        </StepRow>
+      )}
 
       {/* Notes */}
       <StepRow label="Notes" open={openStep === 'notes'} onToggle={() => toggleStep('notes')}>

@@ -49,6 +49,11 @@
     },
     "superset_group": {
       "type": "string"
+    },
+    "dropset_count": {
+      "type": "number",
+      "default": 0,
+      "description": "Number of dropsets (0 = normal set)"
     }
   },
   "required": [

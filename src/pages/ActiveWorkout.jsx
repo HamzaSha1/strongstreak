@@ -44,38 +44,107 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
   const isCardio = ex.exercise_type === 'cardio';
   const cardioUnit = CARDIO_UNITS[ex.cardio_metric] || 'km';
 
-  // Group sets by dropset: consecutive dropsets shown side-by-side
+  // Group sets: normal first, then dropsets side-by-side
   const renderSets = () => {
     const rows = [];
-    let i = 0;
-    while (i < exSets.length) {
-      const s = exSets[i];
-      if (s.set_type === 'dropset') {
-        // Collect consecutive dropsets
-        const dropGroup = [{ s, idx: i }];
-        let j = i + 1;
-        while (j < exSets.length && exSets[j].set_type === 'dropset') {
-          dropGroup.push({ s: exSets[j], idx: j });
-          j++;
-        }
-        rows.push(
-          <div key={i} className="flex flex-col gap-1">
-            <span className="text-[10px] text-primary font-semibold px-1">Dropset</span>
-            <div className="flex gap-1.5 flex-wrap">
-              {dropGroup.map(({ s: ds, idx }) => (
+    const normalSets = exSets.filter((s) => s.set_type !== 'dropset');
+    const dropsets = exSets.filter((s) => s.set_type === 'dropset');
+
+    // Render normal sets
+    normalSets.forEach((s, normalIdx) => {
+      const actualIdx = exSets.indexOf(s);
+      rows.push(
+        <div
+          key={actualIdx}
+          className={cn(
+            'flex items-center gap-2 rounded-xl px-3 py-2 transition-colors',
+            s.completed ? 'bg-primary/10 opacity-70' : 'bg-muted/30'
+          )}
+        >
+          <span className="text-xs text-muted-foreground w-5">{s.set_number}</span>
+          {isCardio ? (
+            <>
+              <Input
+                type="number"
+                placeholder={ex.target_reps || cardioUnit}
+                value={s.reps}
+                onChange={(e) => onUpdateSet(ex.id, actualIdx, { reps: e.target.value })}
+                disabled={s.completed}
+                className="flex-1 h-8 text-center bg-input border-border text-sm"
+              />
+              <span className="text-xs text-muted-foreground w-8">{cardioUnit}</span>
+            </>
+          ) : (
+            <>
+              <Input
+                type="number"
+                placeholder={prevSets[normalIdx]?.reps?.toString() || 'Reps'}
+                value={s.reps}
+                onChange={(e) => onUpdateSet(ex.id, actualIdx, { reps: e.target.value })}
+                disabled={s.completed}
+                className="w-16 h-8 text-center bg-input border-border text-sm"
+              />
+              <Input
+                type="number"
+                placeholder={prevSets[normalIdx]?.weight_kg?.toString() || 'kg'}
+                value={s.weight_kg}
+                onChange={(e) => onUpdateSet(ex.id, actualIdx, { weight_kg: e.target.value })}
+                disabled={s.completed}
+                className="w-16 h-8 text-center bg-input border-border text-sm"
+              />
+              <div className="flex gap-1 flex-1">
+                {SET_TYPES.map((t) => (
+                  <button
+                    key={t}
+                    disabled={s.completed}
+                    onClick={() => onUpdateSet(ex.id, actualIdx, { set_type: t })}
+                    className={cn(
+                      'text-[10px] px-1.5 py-0.5 rounded-full border capitalize transition-colors',
+                      s.set_type === t ? 'bg-primary/20 text-primary border-primary/50' : 'border-border text-muted-foreground'
+                    )}
+                  >
+                    {t === 'normal' ? 'N' : t === 'dropset' ? 'D' : 'S'}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+          <button
+            onClick={() => !s.completed && onCompleteSet(ex, actualIdx)}
+            className={cn(
+              'w-7 h-7 rounded-full flex items-center justify-center transition-colors',
+              s.completed ? 'bg-primary text-primary-foreground' : 'border border-border text-muted-foreground hover:border-primary hover:text-primary'
+            )}
+          >
+            <Check size={13} />
+          </button>
+        </div>
+      );
+    });
+
+    // Render dropsets side-by-side if any
+    if (dropsets.length > 0) {
+      rows.push(
+        <div key="dropsets" className="flex flex-col gap-1">
+          <span className="text-[10px] text-primary font-semibold px-1">Dropsets</span>
+          <div className="flex gap-1.5 flex-wrap">
+            {dropsets.map((ds) => {
+              const actualIdx = exSets.indexOf(ds);
+              const dropsetNum = dropsets.indexOf(ds) + 1;
+              return (
                 <div
-                  key={idx}
+                  key={actualIdx}
                   className={cn(
                     'flex items-center gap-1.5 rounded-xl px-2 py-2 transition-colors flex-1 min-w-0',
                     ds.completed ? 'bg-primary/10 opacity-70' : 'bg-muted/30'
                   )}
                 >
-                  <span className="text-[10px] text-muted-foreground">{ds.set_number}</span>
+                  <span className="text-[10px] text-muted-foreground">D{dropsetNum}</span>
                   <Input
                     type="number"
-                    placeholder={prevSets[idx]?.reps?.toString() || 'Reps'}
+                    placeholder="Reps"
                     value={ds.reps}
-                    onChange={(e) => onUpdateSet(ex.id, idx, { reps: e.target.value })}
+                    onChange={(e) => onUpdateSet(ex.id, actualIdx, { reps: e.target.value })}
                     disabled={ds.completed}
                     className="w-14 h-7 text-center bg-input border-border text-xs"
                   />
@@ -83,12 +152,12 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
                     type="number"
                     placeholder="kg"
                     value={ds.weight_kg}
-                    onChange={(e) => onUpdateSet(ex.id, idx, { weight_kg: e.target.value })}
+                    onChange={(e) => onUpdateSet(ex.id, actualIdx, { weight_kg: e.target.value })}
                     disabled={ds.completed}
                     className="w-14 h-7 text-center bg-input border-border text-xs"
                   />
                   <button
-                    onClick={() => !ds.completed && onCompleteSet(ex, idx)}
+                    onClick={() => !ds.completed && onCompleteSet(ex, actualIdx)}
                     className={cn(
                       'w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-colors',
                       ds.completed ? 'bg-primary text-primary-foreground' : 'border border-border text-muted-foreground hover:border-primary hover:text-primary'
@@ -97,81 +166,11 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
                     <Check size={11} />
                   </button>
                 </div>
-              ))}
-            </div>
+              );
+            })}
           </div>
-        );
-        i = j;
-      } else {
-        rows.push(
-          <div
-            key={i}
-            className={cn(
-              'flex items-center gap-2 rounded-xl px-3 py-2 transition-colors',
-              s.completed ? 'bg-primary/10 opacity-70' : 'bg-muted/30'
-            )}
-          >
-            <span className="text-xs text-muted-foreground w-5">{s.set_number}</span>
-            {isCardio ? (
-              <>
-                <Input
-                  type="number"
-                  placeholder={ex.target_reps || cardioUnit}
-                  value={s.reps}
-                  onChange={(e) => onUpdateSet(ex.id, i, { reps: e.target.value })}
-                  disabled={s.completed}
-                  className="flex-1 h-8 text-center bg-input border-border text-sm"
-                />
-                <span className="text-xs text-muted-foreground w-8">{cardioUnit}</span>
-              </>
-            ) : (
-              <>
-                <Input
-                  type="number"
-                  placeholder={prevSets[i]?.reps?.toString() || 'Reps'}
-                  value={s.reps}
-                  onChange={(e) => onUpdateSet(ex.id, i, { reps: e.target.value })}
-                  disabled={s.completed}
-                  className="w-16 h-8 text-center bg-input border-border text-sm"
-                />
-                <Input
-                  type="number"
-                  placeholder={prevSets[i]?.weight_kg?.toString() || 'kg'}
-                  value={s.weight_kg}
-                  onChange={(e) => onUpdateSet(ex.id, i, { weight_kg: e.target.value })}
-                  disabled={s.completed}
-                  className="w-16 h-8 text-center bg-input border-border text-sm"
-                />
-                <div className="flex gap-1 flex-1">
-                  {SET_TYPES.map((t) => (
-                    <button
-                      key={t}
-                      disabled={s.completed}
-                      onClick={() => onUpdateSet(ex.id, i, { set_type: t })}
-                      className={cn(
-                        'text-[10px] px-1.5 py-0.5 rounded-full border capitalize transition-colors',
-                        s.set_type === t ? 'bg-primary/20 text-primary border-primary/50' : 'border-border text-muted-foreground'
-                      )}
-                    >
-                      {t === 'normal' ? 'N' : t === 'dropset' ? 'D' : 'S'}
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-            <button
-              onClick={() => !s.completed && onCompleteSet(ex, i)}
-              className={cn(
-                'w-7 h-7 rounded-full flex items-center justify-center transition-colors',
-                s.completed ? 'bg-primary text-primary-foreground' : 'border border-border text-muted-foreground hover:border-primary hover:text-primary'
-              )}
-            >
-              <Check size={13} />
-            </button>
-          </div>
-        );
-        i++;
-      }
+        </div>
+      );
     }
     return rows;
   };
