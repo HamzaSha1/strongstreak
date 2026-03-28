@@ -29,6 +29,30 @@
     --font-heading: 'Space Grotesk', sans-serif;
     --font-body: 'Inter', sans-serif;
   }
+
+  @media (prefers-color-scheme: light) {
+    :root {
+      --background: 0 0% 98%;
+      --foreground: 222 18% 7%;
+      --card: 0 0% 95%;
+      --card-foreground: 222 18% 7%;
+      --popover: 0 0% 95%;
+      --popover-foreground: 222 18% 7%;
+      --primary: 35 96% 58%;
+      --primary-foreground: 222 18% 7%;
+      --secondary: 222 18% 90%;
+      --secondary-foreground: 222 18% 16%;
+      --muted: 222 18% 88%;
+      --muted-foreground: 222 18% 40%;
+      --accent: 35 96% 58%;
+      --accent-foreground: 222 18% 7%;
+      --destructive: 0 72% 51%;
+      --destructive-foreground: 0 0% 98%;
+      --border: 222 18% 85%;
+      --input: 222 18% 90%;
+      --ring: 35 96% 58%;
+    }
+  }
 }
 
 @layer base {

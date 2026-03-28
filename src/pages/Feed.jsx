@@ -64,9 +64,35 @@ export default function Feed() {
         await base44.entities.Post.update(post.id, { likes_count: (post.likes_count || 0) + 1 });
       }
     },
+    onMutate: async (post) => {
+      await queryClient.cancelQueries({ queryKey: ['myLikes', user?.email] });
+      const prevLikes = queryClient.getQueryData(['myLikes', user?.email]) || [];
+      const isLiked = prevLikes.some((l) => l.post_id === post.id);
+      
+      const newLikes = isLiked
+        ? prevLikes.filter((l) => l.post_id !== post.id)
+        : [...prevLikes, { user_id: user.email, post_id: post.id }];
+      
+      queryClient.setQueryData(['myLikes', user?.email], newLikes);
+      
+      await queryClient.cancelQueries({ queryKey: ['posts'] });
+      const prevPosts = queryClient.getQueryData(['posts']) || [];
+      const updatedPosts = prevPosts.map((p) =>
+        p.id === post.id
+          ? { ...p, likes_count: isLiked ? Math.max(0, (p.likes_count || 0) - 1) : (p.likes_count || 0) + 1 }
+          : p
+      );
+      queryClient.setQueryData(['posts'], updatedPosts);
+      
+      return { prevLikes, prevPosts };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['posts'] });
       queryClient.invalidateQueries({ queryKey: ['myLikes'] });
+    },
+    onError: (err, post, context) => {
+      if (context?.prevLikes) queryClient.setQueryData(['myLikes', user?.email], context.prevLikes);
+      if (context?.prevPosts) queryClient.setQueryData(['posts'], context.prevPosts);
     },
   });
 
@@ -143,7 +169,7 @@ export default function Feed() {
                   <button
                     onClick={() => user && likeMutation.mutate(post)}
                     className={cn(
-                      'flex items-center gap-1.5 transition-colors',
+                      'flex items-center gap-1.5 transition-colors min-h-11 min-w-11',
                       isLiked(post.id) ? 'text-red-500' : 'text-muted-foreground hover:text-foreground'
                     )}
                   >

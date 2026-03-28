@@ -110,7 +110,7 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
           <button
             onClick={() => !s.completed && onCompleteSet(ex, actualIdx)}
             className={cn(
-              'w-7 h-7 rounded-full flex items-center justify-center transition-colors ml-auto flex-shrink-0',
+              'min-h-11 min-w-11 rounded-full flex items-center justify-center transition-colors ml-auto flex-shrink-0',
               s.completed ? 'bg-primary text-primary-foreground' : 'border border-border text-muted-foreground hover:border-primary hover:text-primary'
             )}
           >
@@ -157,7 +157,7 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
                   <button
                     onClick={() => !ds.completed && onCompleteSet(ex, actualIdx)}
                     className={cn(
-                      'w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-colors',
+                      'min-h-11 min-w-11 rounded-full flex items-center justify-center flex-shrink-0 transition-colors',
                       ds.completed ? 'bg-primary text-primary-foreground' : 'border border-border text-muted-foreground hover:border-primary hover:text-primary'
                     )}
                   >
@@ -213,7 +213,7 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
           <div className="flex flex-col gap-1.5">{renderSets()}</div>
           <button
             onClick={() => onAddSet(ex.id)}
-            className="w-full mt-2 flex items-center justify-center gap-1 py-2 text-xs text-muted-foreground hover:text-primary border border-dashed border-border rounded-xl transition-colors"
+            className="w-full mt-2 flex items-center justify-center gap-1 py-2 text-xs text-muted-foreground hover:text-primary border border-dashed border-border rounded-xl transition-colors min-h-11"
           >
             <Plus size={12} /> Add set
           </button>
@@ -361,6 +361,7 @@ export default function ActiveWorkout() {
 
   const completeSet = async (ex, setIdx) => {
     const set = sets[ex.id][setIdx];
+    // Optimistic update
     updateSet(ex.id, setIdx, { completed: true });
 
     if (workoutLog) {

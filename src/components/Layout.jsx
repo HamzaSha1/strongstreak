@@ -1,7 +1,7 @@
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { Dumbbell, Rss, Users, History, UserSearch, TrendingUp, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 const NAV_ITEMS = [
   { path: '/', label: 'Workouts', icon: Dumbbell },
@@ -15,11 +15,28 @@ const NAV_ITEMS = [
 
 export default function Layout() {
   const location = useLocation();
+  const [scrollPositions, setScrollPositions] = useState({});
+  const mainRef = useRef(null);
+
+  const handleMainScroll = () => {
+    if (mainRef.current) {
+      setScrollPositions((prev) => ({
+        ...prev,
+        [location.pathname]: mainRef.current.scrollTop,
+      }));
+    }
+  };
+
+  useEffect(() => {
+    if (mainRef.current && scrollPositions[location.pathname] !== undefined) {
+      mainRef.current.scrollTop = scrollPositions[location.pathname];
+    }
+  }, [location.pathname, scrollPositions]);
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center">
       <div className="w-full max-w-[512px] flex flex-col min-h-screen relative" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-        <main className="flex-1 pb-20 overflow-y-auto">
+        <main ref={mainRef} className="flex-1 pb-20 overflow-y-auto" onScroll={handleMainScroll}>
           <Outlet />
         </main>
 
