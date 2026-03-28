@@ -15,7 +15,32 @@ const SET_TYPES = ['normal', 'dropset', 'superset'];
 
 const CARDIO_UNITS = { distance: 'km', time: 'min', calories: 'kcal' };
 
-function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onCompleteSet, onAddSet, divider }) {
+function ExerciseNotes({ ex, onNotesChange }) {
+  const [editing, setEditing] = useState(false);
+  return (
+    <div className="mb-3">
+      {editing ? (
+        <textarea
+          autoFocus
+          value={ex.notes || ''}
+          onChange={(e) => onNotesChange(ex.id, e.target.value)}
+          onBlur={() => setEditing(false)}
+          placeholder="Add a note for this exercise..."
+          className="w-full bg-muted/40 rounded-xl px-3 py-2 text-xs text-muted-foreground resize-none min-h-[60px] border border-border focus:outline-none focus:border-primary"
+        />
+      ) : (
+        <button
+          onClick={() => setEditing(true)}
+          className="w-full text-left bg-muted/40 rounded-xl px-3 py-2 text-xs text-muted-foreground italic hover:bg-muted/60 transition-colors"
+        >
+          {ex.notes || '+ Add note'}
+        </button>
+      )}
+    </div>
+  );
+}
+
+function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onCompleteSet, onAddSet, onNotesChange, divider }) {
   const isCardio = ex.exercise_type === 'cardio';
   const cardioUnit = CARDIO_UNITS[ex.cardio_metric] || 'km';
 
@@ -175,11 +200,7 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
       </button>
       {isOpen && (
         <div className="border-t border-border px-4 pb-4 pt-3">
-          {ex.notes && (
-            <div className="bg-muted/40 rounded-xl px-3 py-2 mb-3 text-xs text-muted-foreground italic">
-              {ex.notes}
-            </div>
-          )}
+          <ExerciseNotes ex={ex} onUpdateSet={onUpdateSet} onNotesChange={onNotesChange} />
           {prevSets.length > 0 && (
             <div className="bg-muted/50 rounded-xl p-2 mb-3">
               <p className="text-xs text-muted-foreground mb-1">Last session</p>
@@ -363,6 +384,11 @@ export default function ActiveWorkout() {
     }
   };
 
+  const updateExerciseNotes = (exId, notes) => {
+    const update = (list) => list.map((e) => e.id === exId ? { ...e, notes } : e);
+    setLocalExercises((prev) => update(prev ?? exercises));
+  };
+
   const addSet = (exId) => {
     setSets((prev) => ({
       ...prev,
@@ -477,6 +503,7 @@ export default function ActiveWorkout() {
                       onUpdateSet={updateSet}
                       onCompleteSet={completeSet}
                       onAddSet={addSet}
+                      onNotesChange={updateExerciseNotes}
                       divider={gi < group.length - 1}
                     />
                   ))}
@@ -496,6 +523,7 @@ export default function ActiveWorkout() {
                   onUpdateSet={updateSet}
                   onCompleteSet={completeSet}
                   onAddSet={addSet}
+                  onNotesChange={updateExerciseNotes}
                   divider={false}
                 />
               </div>
