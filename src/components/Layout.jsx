@@ -16,6 +16,7 @@ const NAV_ITEMS = [
 export default function Layout() {
   const location = useLocation();
   const [scrollPositions, setScrollPositions] = useState({});
+  const [prevPath, setPrevPath] = useState(location.pathname);
   const mainRef = useRef(null);
 
   const handleMainScroll = () => {
@@ -28,9 +29,21 @@ export default function Layout() {
   };
 
   useEffect(() => {
-    if (mainRef.current && scrollPositions[location.pathname] !== undefined) {
-      mainRef.current.scrollTop = scrollPositions[location.pathname];
+    const currentPath = location.pathname;
+    
+    // If clicking the same tab, reset to root (top of scroll)
+    if (prevPath === currentPath && mainRef.current) {
+      mainRef.current.scrollTop = 0;
+    } else {
+      // Switching tabs - restore scroll position
+      if (mainRef.current && scrollPositions[currentPath] !== undefined) {
+        setTimeout(() => {
+          if (mainRef.current) mainRef.current.scrollTop = scrollPositions[currentPath];
+        }, 0);
+      }
     }
+    
+    setPrevPath(currentPath);
   }, [location.pathname, scrollPositions]);
 
   return (

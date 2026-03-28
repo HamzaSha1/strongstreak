@@ -94,16 +94,16 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
               />
               {!s.completed && (
                 <button
-                  onClick={() => onUpdateSet(ex.id, actualIdx, { set_type: s.set_type === 'dropset' ? 'normal' : 'dropset' })}
-                  className={cn(
-                    'text-[10px] px-2 py-1 rounded-full border transition-colors whitespace-nowrap',
-                    s.set_type === 'dropset' 
-                      ? 'bg-primary/20 text-primary border-primary/50' 
-                      : 'border-border text-muted-foreground hover:border-primary/50'
-                  )}
-                >
-                  {s.set_type === 'dropset' ? 'Drop Set' : 'Make Drop Set'}
-                </button>
+                   onClick={() => onUpdateSet(ex.id, actualIdx, { set_type: s.set_type === 'dropset' ? 'normal' : 'dropset' })}
+                   className={cn(
+                     'text-[10px] px-2 py-1 rounded-full border transition-colors whitespace-nowrap min-h-11 flex items-center',
+                     s.set_type === 'dropset' 
+                       ? 'bg-primary/20 text-primary border-primary/50' 
+                       : 'border-border text-muted-foreground hover:border-primary/50'
+                   )}
+                 >
+                   {s.set_type === 'dropset' ? 'Drop Set' : 'Make Drop Set'}
+                 </button>
               )}
             </>
           )}
@@ -177,7 +177,7 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
     <>
       {divider && <div className="border-t border-border/50" />}
       <button
-        className="w-full flex items-center justify-between px-4 py-3"
+        className="w-full flex items-center justify-between px-4 py-3 min-h-11"
         onClick={onToggle}
       >
         <div>
@@ -575,14 +575,14 @@ export default function ActiveWorkout() {
       {/* Finish button */}
       <div className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-[480px]">
         <Button
-          className={cn(
-            'w-full gap-2 font-heading font-bold text-base py-5 transition-all',
-            allDone
-              ? 'bg-primary text-primary-foreground shadow-[0_0_20px_hsl(35_96%_58%/0.5)]'
-              : 'bg-secondary text-secondary-foreground'
-          )}
-          onClick={() => finishMutation.mutate()}
-          disabled={finishMutation.isPending}
+        className={cn(
+        'w-full gap-2 font-heading font-bold text-base py-5 transition-all touch-target-44',
+        allDone
+        ? 'bg-primary text-primary-foreground shadow-[0_0_20px_hsl(35_96%_58%/0.5)]'
+        : 'bg-secondary text-secondary-foreground'
+        )}
+        onClick={() => finishMutation.mutate()}
+        disabled={finishMutation.isPending}
         >
           <Flag size={18} />
           {allDone ? 'Finish Workout!' : `Finish (${totalSets - completedSets} sets left)`}
