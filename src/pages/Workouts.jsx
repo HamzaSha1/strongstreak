@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
-import { Flame, Plus, Edit, Play, BedDouble, Dumbbell, X } from 'lucide-react';
+import { Flame, Plus, Edit, Play, BedDouble, Dumbbell, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Link, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 const SESSION_COLORS = {
   Push: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
@@ -24,9 +25,11 @@ const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
 
 export default function Workouts() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [user, setUser] = useState(null);
   const [streak, setStreak] = useState(7);
   const [activeTab, setActiveTab] = useState(0);
+  const [contextMenu, setContextMenu] = useState(null);
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
@@ -42,6 +45,29 @@ export default function Workouts() {
     queryKey: ['splitExercises', user?.id],
     queryFn: () => base44.entities.SplitExercise.filter({ user_id: user?.email }),
     enabled: !!user,
+  });
+
+  const deleteSplitMutation = useMutation({
+    mutationFn: async (splitName) => {
+      const daysToDelete = splitDays.filter((d) => d.split_name === splitName);
+      for (const day of daysToDelete) {
+        const dayExercises = exercises.filter((e) => e.split_day_id === day.id);
+        for (const ex of dayExercises) {
+          await base44.entities.SplitExercise.delete(ex.id);
+        }
+        await base44.entities.SplitDay.delete(day.id);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['splitDays'] });
+      queryClient.invalidateQueries({ queryKey: ['splitExercises'] });
+      setActiveTab(0);
+      setContextMenu(null);
+      toast.success('Split deleted');
+    },
+    onError: () => {
+      toast.error('Failed to delete split');
+    },
   });
 
   // Group days by split_name
@@ -89,20 +115,36 @@ export default function Workouts() {
       </div>
 
       {/* Split Tabs — always visible, Chrome-style */}
-      <div className="flex items-center gap-1 mb-4 overflow-x-auto pb-1 scrollbar-hide">
+      <div className="flex items-center gap-1 mb-4 overflow-x-auto pb-1 scrollbar-hide relative">
         {(splitNames.length > 0 ? splitNames : ['Split 1']).map((name, i) => (
-          <button
-            key={name}
-            onClick={() => setActiveTab(i)}
-            className={cn(
-              'flex-shrink-0 px-3.5 py-1.5 rounded-xl text-sm font-medium transition-colors whitespace-nowrap',
-              i === activeTab
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-secondary text-muted-foreground hover:text-foreground'
+          <div key={name} className="relative flex-shrink-0">
+            <button
+              onClick={() => setActiveTab(i)}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                setContextMenu(contextMenu === name ? null : name);
+              }}
+              onLongPress={() => setContextMenu(contextMenu === name ? null : name)}
+              className={cn(
+                'px-3.5 py-1.5 rounded-xl text-sm font-medium transition-colors whitespace-nowrap',
+                i === activeTab
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-secondary text-muted-foreground hover:text-foreground'
+              )}
+            >
+              {name || `Split ${i + 1}`}
+            </button>
+            {contextMenu === name && (
+              <button
+                onClick={() => deleteSplitMutation.mutate(name)}
+                disabled={deleteSplitMutation.isPending}
+                className="absolute top-full mt-1 right-0 bg-destructive text-destructive-foreground rounded-lg px-2 py-1 text-xs font-medium flex items-center gap-1 z-50 whitespace-nowrap"
+              >
+                <Trash2 size={12} />
+                Delete
+              </button>
             )}
-          >
-            {name || `Split ${i + 1}`}
-          </button>
+          </div>
         ))}
         {/* + tab: go to split builder to add a new split */}
         <button
