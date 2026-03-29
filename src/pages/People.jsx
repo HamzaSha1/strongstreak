@@ -78,10 +78,24 @@ export default function People() {
 
   const isFollowing = (email) => following.some((f) => f.following_id === email);
 
-  const filtered = allProfiles.filter((p) => {
-    if (p.user_id === user?.email) return false;
+  // Build a merged user list: all unique user_ids from workout logs + profiles
+  const allUserIds = [...new Set([
+    ...allLogs.map((l) => l.user_id).filter(Boolean),
+    ...allProfiles.map((p) => p.user_id).filter(Boolean),
+  ])].filter((uid) => uid !== user?.email);
+
+  const peopleList = allUserIds.map((uid) => {
+    const profile = allProfiles.find((p) => p.user_id === uid);
+    return {
+      user_id: uid,
+      display_name: profile?.display_name || uid.split('@')[0],
+      avatar_url: profile?.avatar_url || null,
+    };
+  });
+
+  const filtered = peopleList.filter((p) => {
     if (!search.trim()) return true;
-    const name = (p.display_name || p.user_id || '').toLowerCase();
+    const name = (p.display_name + ' ' + p.user_id).toLowerCase();
     return name.includes(search.toLowerCase());
   });
 
