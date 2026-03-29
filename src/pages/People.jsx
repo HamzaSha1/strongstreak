@@ -105,7 +105,6 @@ export default function People() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-sm truncate">{p.display_name}</p>
-                <p className="text-xs text-muted-foreground truncate">{p.email}</p>
               </div>
               <button
                 onClick={() => followMutation.mutate({ email: p.email })}
