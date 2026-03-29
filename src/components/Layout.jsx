@@ -49,12 +49,12 @@ export default function Layout() {
   return (
     <div className="min-h-screen bg-background flex flex-col items-center">
       <div className="w-full max-w-[512px] flex flex-col min-h-screen relative" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-        <main ref={mainRef} className="flex-1 pb-36 overflow-y-auto" onScroll={handleMainScroll}>
+        <main ref={mainRef} className="flex-1 pb-24 overflow-y-auto" onScroll={handleMainScroll}>
           <Outlet />
         </main>
 
         {/* Bottom Nav */}
-        <nav className="fixed bottom-14 left-1/2 -translate-x-1/2 w-full max-w-[512px] z-50 bg-card/90 backdrop-blur-md border-t border-border rounded-t-2xl" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+        <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[512px] z-50 bg-card border-t border-border rounded-t-2xl" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
           <div className="flex items-center justify-around px-2 py-2">
             {NAV_ITEMS.map(({ path, label, icon: Icon }) => {
               const active = location.pathname === path;
