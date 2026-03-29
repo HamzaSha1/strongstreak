@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Flame, Plus, Edit, Play, BedDouble, Dumbbell, X } from 'lucide-react';
@@ -27,7 +27,6 @@ export default function Workouts() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [user, setUser] = useState(null);
-  const [streak, setStreak] = useState(7);
   const [activeTab, setActiveTab] = useState(0);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleteInput, setDeleteInput] = useState('');
@@ -114,6 +113,36 @@ export default function Workouts() {
       toast.error('Failed to duplicate split');
     },
   });
+
+  const { data: workoutLogs = [] } = useQuery({
+    queryKey: ['workoutLogs', user?.email],
+    queryFn: () => base44.entities.WorkoutLog.filter({ user_id: user.email }, '-started_at', 100),
+    enabled: !!user,
+  });
+
+  const streak = useMemo(() => {
+    if (!workoutLogs.length) return 0;
+    const loggedDates = new Set(
+      workoutLogs
+        .filter((l) => !l.is_rest_day)
+        .map((l) => new Date(l.started_at).toDateString())
+    );
+    let count = 0;
+    const today = new Date();
+    for (let i = 0; ; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      if (loggedDates.has(d.toDateString())) {
+        count++;
+      } else if (i > 0) {
+        break;
+      } else {
+        // Today has no log yet, check yesterday before giving up
+        continue;
+      }
+    }
+    return count;
+  }, [workoutLogs]);
 
   // Group days by split_name
   const splitNames = [...new Set(splitDays.map((d) => d.split_name).filter(Boolean))];
