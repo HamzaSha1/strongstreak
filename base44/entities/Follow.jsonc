@@ -12,5 +12,43 @@
   "required": [
     "follower_id",
     "following_id"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "data.follower_id": "{{user.email}}"
+    },
+    "read": {
+      "$or": [
+        {
+          "data.follower_id": "{{user.email}}"
+        },
+        {
+          "data.following_id": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "data.follower_id": "{{user.email}}"
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.follower_id": "{{user.email}}"
+        },
+        {
+          "data.following_id": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
 }
