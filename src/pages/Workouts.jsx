@@ -159,7 +159,7 @@ export default function Workouts() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-heading font-bold text-foreground">GymLog</h1>
+          <h1 className="text-2xl font-heading font-bold text-foreground">StrongStreak</h1>
           <p className="text-muted-foreground text-sm mt-0.5">
             {user ? `Hey, ${user.full_name?.split(' ')[0] || 'Athlete'} 👋` : 'Loading...'}
           </p>
