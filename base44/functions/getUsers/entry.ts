@@ -18,6 +18,7 @@ Deno.serve(async (req) => {
       email: u.email, // kept for follow logic (follower_id/following_id), not shown in UI
       avatar_url: profileMap[u.email]?.avatar_url || null,
       display_name: profileMap[u.email]?.display_name || u.full_name || u.email.split('@')[0],
+      is_private: profileMap[u.email]?.is_private || false,
     }));
 
   return Response.json({ users: result });

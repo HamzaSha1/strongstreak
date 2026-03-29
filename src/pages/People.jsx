@@ -4,10 +4,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Search, UserPlus, UserCheck } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import UserProfileSheet from '@/components/people/UserProfileSheet';
 
 export default function People() {
   const [user, setUser] = useState(null);
   const [search, setSearch] = useState('');
+  const [selectedUser, setSelectedUser] = useState(null);
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -63,6 +65,14 @@ export default function People() {
 
   return (
     <div className="pb-4">
+      {selectedUser && (
+        <UserProfileSheet
+          person={selectedUser}
+          currentUser={user}
+          following={following}
+          onClose={() => setSelectedUser(null)}
+        />
+      )}
       <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border px-4 py-4">
         <h1 className="text-xl font-heading font-bold mb-3">People</h1>
         <div className="relative">
@@ -97,7 +107,7 @@ export default function People() {
           </div>
         ) : (
           filtered.map((p) => (
-            <div key={p.email} className="flex items-center gap-3 px-4 py-3">
+            <div key={p.email} className="flex items-center gap-3 px-4 py-3 cursor-pointer" onClick={() => setSelectedUser(p)}>
               <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-heading font-bold overflow-hidden">
                 {p.avatar_url
                   ? <img src={p.avatar_url} alt="" className="w-full h-full object-cover" />
@@ -107,7 +117,7 @@ export default function People() {
                 <p className="font-medium text-sm truncate">{p.display_name}</p>
               </div>
               <button
-                onClick={() => followMutation.mutate({ email: p.email })}
+                onClick={(e) => { e.stopPropagation(); followMutation.mutate({ email: p.email }); }}
                 className={cn(
                   'flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-colors',
                   isFollowing(p.email)
