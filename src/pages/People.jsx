@@ -5,6 +5,7 @@ import { Search, UserPlus, UserCheck } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import UserProfileSheet from '@/components/people/UserProfileSheet';
+import FollowRequests from '@/components/people/FollowRequests';
 
 export default function People() {
   const [user, setUser] = useState(null);
@@ -85,6 +86,9 @@ export default function People() {
           />
         </div>
       </div>
+
+      {/* Follow Requests */}
+      <FollowRequests currentUser={user} />
 
       {/* Stats */}
       {user && (

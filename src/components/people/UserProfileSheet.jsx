@@ -1,7 +1,6 @@
-import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { X, Lock, UserPlus, UserCheck, Dumbbell } from 'lucide-react';
+import { X, Lock, UserPlus, UserCheck, Dumbbell, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function UserProfileSheet({ person, currentUser, following, onClose }) {
@@ -9,9 +8,19 @@ export default function UserProfileSheet({ person, currentUser, following, onClo
 
   const isFollowing = following.some((f) => f.following_id === person.email);
   const isPrivate = person.is_private;
-
-  // Fetch posts only if public or following
   const canViewContent = !isPrivate || isFollowing;
+
+  // Check if a pending follow request exists for private accounts
+  const { data: followRequests = [] } = useQuery({
+    queryKey: ['followRequest', currentUser?.email, person.email],
+    queryFn: () => base44.entities.FollowRequest.filter({
+      requester_id: currentUser.email,
+      target_id: person.email,
+    }),
+    enabled: !!currentUser && isPrivate && !isFollowing,
+  });
+
+  const pendingRequest = followRequests.find((r) => r.status === 'pending');
 
   const { data: posts = [], isLoading: postsLoading } = useQuery({
     queryKey: ['userPosts', person.email],
@@ -25,22 +34,55 @@ export default function UserProfileSheet({ person, currentUser, following, onClo
     enabled: canViewContent,
   });
 
+  // For public accounts: direct follow/unfollow
+  // For private accounts: send/cancel follow request
   const followMutation = useMutation({
     mutationFn: async () => {
-      const existing = following.find((f) => f.following_id === person.email);
-      if (existing) {
-        await base44.entities.Follow.delete(existing.id);
+      if (!isPrivate) {
+        // Public account — direct follow/unfollow
+        const existing = following.find((f) => f.following_id === person.email);
+        if (existing) {
+          await base44.entities.Follow.delete(existing.id);
+        } else {
+          await base44.entities.Follow.create({
+            follower_id: currentUser.email,
+            following_id: person.email,
+          });
+        }
       } else {
-        await base44.entities.Follow.create({
-          follower_id: currentUser.email,
-          following_id: person.email,
-        });
+        // Private account — send or cancel follow request
+        if (pendingRequest) {
+          await base44.entities.FollowRequest.delete(pendingRequest.id);
+        } else if (isFollowing) {
+          // Unfollow
+          const existing = following.find((f) => f.following_id === person.email);
+          if (existing) await base44.entities.Follow.delete(existing.id);
+        } else {
+          await base44.entities.FollowRequest.create({
+            requester_id: currentUser.email,
+            target_id: person.email,
+            status: 'pending',
+          });
+        }
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['following'] });
+      queryClient.invalidateQueries({ queryKey: ['followRequest', currentUser?.email, person.email] });
     },
   });
+
+  const getFollowLabel = () => {
+    if (isFollowing) return 'Following';
+    if (isPrivate && pendingRequest) return 'Requested';
+    return 'Follow';
+  };
+
+  const getFollowIcon = () => {
+    if (isFollowing) return <UserCheck size={15} />;
+    if (isPrivate && pendingRequest) return <Clock size={15} />;
+    return <UserPlus size={15} />;
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-background" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
@@ -69,11 +111,13 @@ export default function UserProfileSheet({ person, currentUser, following, onClo
               'flex items-center gap-2 px-5 py-2 rounded-full text-sm font-medium transition-colors',
               isFollowing
                 ? 'bg-secondary text-secondary-foreground border border-border'
-                : 'bg-primary text-primary-foreground'
+                : isPrivate && pendingRequest
+                  ? 'bg-muted text-muted-foreground border border-border'
+                  : 'bg-primary text-primary-foreground'
             )}
           >
-            {isFollowing ? <UserCheck size={15} /> : <UserPlus size={15} />}
-            {isFollowing ? 'Following' : 'Follow'}
+            {getFollowIcon()}
+            {getFollowLabel()}
           </button>
         </div>
 
@@ -84,7 +128,11 @@ export default function UserProfileSheet({ person, currentUser, following, onClo
               <Lock size={28} className="text-muted-foreground" />
             </div>
             <p className="font-heading font-semibold text-lg">This account is private</p>
-            <p className="text-sm text-muted-foreground">Follow this user to see their posts and workouts.</p>
+            <p className="text-sm text-muted-foreground">
+              {pendingRequest
+                ? 'Your follow request is pending approval.'
+                : 'Send a follow request to see their posts and workouts.'}
+            </p>
           </div>
         ) : (
           <div className="px-4 pb-8">

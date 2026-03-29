@@ -1,0 +1,27 @@
+{
+  "name": "FollowRequest",
+  "type": "object",
+  "properties": {
+    "requester_id": {
+      "type": "string",
+      "description": "Email of the user sending the follow request"
+    },
+    "target_id": {
+      "type": "string",
+      "description": "Email of the user receiving the follow request"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "accepted",
+        "declined"
+      ],
+      "default": "pending"
+    }
+  },
+  "required": [
+    "requester_id",
+    "target_id"
+  ]
+}
