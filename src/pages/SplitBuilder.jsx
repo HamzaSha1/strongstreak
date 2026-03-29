@@ -251,7 +251,7 @@ export default function SplitBuilder() {
       </div>
 
       {/* Summary bar */}
-      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-[480px] bg-card/95 backdrop-blur border border-border rounded-2xl px-4 py-3 flex justify-around text-center text-xs z-10">
+      <div className="fixed bottom-16 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-[480px] bg-card/95 backdrop-blur border border-border rounded-2xl px-4 py-3 flex justify-around text-center text-xs z-10">
         <div>
           <p className="text-primary font-bold text-xl font-heading">{trainingDays}</p>
           <p className="text-muted-foreground">Training</p>
