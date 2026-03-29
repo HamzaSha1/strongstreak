@@ -32,7 +32,7 @@
   ],
   "rls": {
     "create": {
-      "data.user_id": "{{user.email}}"
+      "created_by": "{{user.email}}"
     },
     "read": {
       "user_condition": {
@@ -43,6 +43,9 @@
       "data.user_id": "{{user.email}}"
     },
     "delete": {
+      "data.user_id": "{{user.email}}"
+    },
+    "write": {
       "data.user_id": "{{user.email}}"
     }
   }
