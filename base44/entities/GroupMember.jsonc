@@ -22,5 +22,28 @@
   "required": [
     "group_id",
     "user_id"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "data.user_id": "{{user.email}}"
+    },
+    "read": {
+      "$or": [
+        {
+          "data.user_id": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "data.user_id": "{{user.email}}"
+    },
+    "delete": {
+      "data.user_id": "{{user.email}}"
+    }
+  }
 }
