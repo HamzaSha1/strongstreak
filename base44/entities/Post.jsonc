@@ -32,20 +32,13 @@
   ],
   "rls": {
     "create": {
-      "created_by": "{{user.email}}"
+      "data.user_id": "{{user.email}}"
     },
-    "read": {
-      "user_condition": {
-        "role": "any"
-      }
-    },
+    "read": {},
     "update": {
       "data.user_id": "{{user.email}}"
     },
     "delete": {
-      "data.user_id": "{{user.email}}"
-    },
-    "write": {
       "data.user_id": "{{user.email}}"
     }
   }
