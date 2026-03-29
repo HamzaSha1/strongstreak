@@ -14,8 +14,8 @@ Deno.serve(async (req) => {
   const result = allUsers
     .filter((u) => u.email !== user.email && u.is_verified === true)
     .map((u) => ({
-      email: u.email,
-      full_name: u.full_name || u.email.split('@')[0],
+      user_id: u.id,
+      email: u.email, // kept for follow logic (follower_id/following_id), not shown in UI
       avatar_url: profileMap[u.email]?.avatar_url || null,
       display_name: profileMap[u.email]?.display_name || u.full_name || u.email.split('@')[0],
     }));
