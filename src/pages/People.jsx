@@ -54,11 +54,12 @@ export default function People() {
 
   const isFollowing = (email) => following.some((f) => f.following_id === email);
 
-  const filtered = allUsers.filter((p) => {
-    if (!search.trim()) return true;
-    const name = (p.display_name + ' ' + p.email).toLowerCase();
-    return name.includes(search.toLowerCase());
-  });
+  const filtered = search.trim()
+    ? allUsers.filter((p) => {
+        const name = (p.display_name + ' ' + p.email).toLowerCase();
+        return name.includes(search.toLowerCase());
+      })
+    : [];
 
   return (
     <div className="pb-4">
@@ -91,7 +92,9 @@ export default function People() {
 
       <div className="flex flex-col divide-y divide-border">
         {filtered.length === 0 ? (
-          <div className="py-20 text-center text-muted-foreground text-sm">No users found</div>
+          <div className="py-20 text-center text-muted-foreground text-sm">
+            {search.trim() ? 'No users found' : 'Search for people to follow'}
+          </div>
         ) : (
           filtered.map((p) => (
             <div key={p.email} className="flex items-center gap-3 px-4 py-3">

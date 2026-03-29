@@ -12,7 +12,7 @@ Deno.serve(async (req) => {
   for (const p of profiles) profileMap[p.user_id] = p;
 
   const result = allUsers
-    .filter((u) => u.email !== user.email)
+    .filter((u) => u.email !== user.email && u.is_verified === true)
     .map((u) => ({
       email: u.email,
       full_name: u.full_name || u.email.split('@')[0],
