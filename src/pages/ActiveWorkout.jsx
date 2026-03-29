@@ -430,7 +430,7 @@ export default function ActiveWorkout() {
   };
 
   return (
-    <div className="pb-32">
+    <div className="pb-32" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
       {/* Header */}
       <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border px-4 py-3">
         <div className="flex items-center justify-between mb-2">

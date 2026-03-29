@@ -175,7 +175,7 @@ export default function SplitBuilder() {
   const restDays = activeSplit.days.filter((d) => d.session_type === 'Rest' || !d.session_type).length;
 
   return (
-    <div className="pb-28 min-h-screen bg-background">
+    <div className="pb-28 min-h-screen bg-background" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
       {/* Header */}
       <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border">
         <div className="px-4 py-3 flex items-center gap-3">
