@@ -41,5 +41,19 @@
   "required": [
     "user_id",
     "day_of_week"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "data.user_id": "{{user.email}}"
+    },
+    "read": {
+      "data.user_id": "{{user.email}}"
+    },
+    "update": {
+      "data.user_id": "{{user.email}}"
+    },
+    "delete": {
+      "data.user_id": "{{user.email}}"
+    }
+  }
 }
