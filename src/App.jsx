@@ -3,21 +3,22 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
+import { lazy, Suspense } from 'react';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import Layout from '@/components/Layout';
 // Add page imports here
-import Workouts from '@/pages/Workouts';
-import Feed from '@/pages/Feed';
-import Groups from '@/pages/Groups';
-import History from '@/pages/History';
-import Progress from '@/pages/Progress';
-import SplitBuilder from '@/pages/SplitBuilder';
-import ActiveWorkout from '@/pages/ActiveWorkout';
-import People from '@/pages/People';
-import Profile from '@/pages/Profile';
-import Privacy from '@/pages/Privacy';
+const Workouts = lazy(() => import('@/pages/Workouts'));
+const Feed = lazy(() => import('@/pages/Feed'));
+const Groups = lazy(() => import('@/pages/Groups'));
+const History = lazy(() => import('@/pages/History'));
+const Progress = lazy(() => import('@/pages/Progress'));
+const SplitBuilder = lazy(() => import('@/pages/SplitBuilder'));
+const ActiveWorkout = lazy(() => import('@/pages/ActiveWorkout'));
+const People = lazy(() => import('@/pages/People'));
+const Profile = lazy(() => import('@/pages/Profile'));
+const Privacy = lazy(() => import('@/pages/Privacy'));
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -49,6 +50,11 @@ const AuthenticatedApp = () => {
         exit={{ opacity: 0, x: -40 }}
         transition={{ duration: 0.3, ease: 'easeOut' }}
       >
+        <Suspense fallback={
+          <div className="fixed inset-0 flex items-center justify-center bg-background">
+            <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin"></div>
+          </div>
+        }>
         <Routes>
           <Route element={<Layout />}>
             <Route path="/" element={<Workouts />} />
@@ -65,6 +71,7 @@ const AuthenticatedApp = () => {
           <Route path="/workout/:dayId" element={<ActiveWorkout />} />
           <Route path="*" element={<PageNotFound />} />
         </Routes>
+        </Suspense>
       </motion.div>
     </AnimatePresence>
   );
