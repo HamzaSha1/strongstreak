@@ -34,9 +34,9 @@ export default function People() {
     base44.auth.me().then(setUser).catch(() => {});
   }, []);
 
-  const { data: allUsers = [] } = useQuery({
-    queryKey: ['allUsers'],
-    queryFn: () => base44.entities.User.list(),
+  const { data: allProfiles = [] } = useQuery({
+    queryKey: ['allProfiles'],
+    queryFn: () => base44.entities.Profile.list(),
     enabled: !!user,
   });
 
@@ -78,10 +78,10 @@ export default function People() {
 
   const isFollowing = (email) => following.some((f) => f.following_id === email);
 
-  const filtered = allUsers.filter((u) => {
-    if (u.email === user?.email) return false;
+  const filtered = allProfiles.filter((p) => {
+    if (p.user_id === user?.email) return false;
     if (!search.trim()) return true;
-    const name = (u.full_name || u.email || '').toLowerCase();
+    const name = (p.display_name || p.user_id || '').toLowerCase();
     return name.includes(search.toLowerCase());
   });
 
@@ -118,17 +118,19 @@ export default function People() {
         {filtered.length === 0 ? (
           <div className="py-20 text-center text-muted-foreground text-sm">No users found</div>
         ) : (
-          filtered.map((u) => (
-            <div key={u.email} className="flex items-center gap-3 px-4 py-3">
-              <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-heading font-bold">
-                {(u.full_name || u.email)?.[0]?.toUpperCase() || '?'}
+          filtered.map((p) => (
+            <div key={p.user_id} className="flex items-center gap-3 px-4 py-3">
+              <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-heading font-bold overflow-hidden">
+                {p.avatar_url
+                  ? <img src={p.avatar_url} alt="" className="w-full h-full object-cover" />
+                  : (p.display_name || p.user_id)?.[0]?.toUpperCase() || '?'}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-sm truncate">{u.full_name || u.email?.split('@')[0]}</p>
-                <p className="text-xs text-muted-foreground truncate">{u.email}</p>
+                <p className="font-medium text-sm truncate">{p.display_name || p.user_id?.split('@')[0]}</p>
+                <p className="text-xs text-muted-foreground truncate">{p.user_id}</p>
               </div>
               {(() => {
-                const userLogs = allLogs.filter((l) => l.user_id === u.email);
+                const userLogs = allLogs.filter((l) => l.user_id === p.user_id);
                 const s = calcStreak(userLogs);
                 return s > 0 ? (
                   <div className="flex items-center gap-1 mr-1">
@@ -138,16 +140,16 @@ export default function People() {
                 ) : null;
               })()}
               <button
-                onClick={() => followMutation.mutate(u)}
+                onClick={() => followMutation.mutate({ email: p.user_id })}
                 className={cn(
                   'flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-colors',
-                  isFollowing(u.email)
+                  isFollowing(p.user_id)
                     ? 'bg-primary/10 text-primary border-primary/30'
                     : 'border-border text-muted-foreground hover:border-primary/50 hover:text-primary'
                 )}
               >
-                {isFollowing(u.email) ? <UserCheck size={13} /> : <UserPlus size={13} />}
-                {isFollowing(u.email) ? 'Following' : 'Follow'}
+                {isFollowing(p.user_id) ? <UserCheck size={13} /> : <UserPlus size={13} />}
+                {isFollowing(p.user_id) ? 'Following' : 'Follow'}
               </button>
             </div>
           ))
