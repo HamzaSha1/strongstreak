@@ -23,5 +23,40 @@
   "required": [
     "requester_id",
     "target_id"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "data.requester_id": "{{user.email}}"
+    },
+    "read": {
+      "$or": [
+        {
+          "data.requester_id": "{{user.email}}"
+        },
+        {
+          "data.target_id": "{{user.email}}"
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "data.requester_id": "{{user.email}}"
+        },
+        {
+          "data.target_id": "{{user.email}}"
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.requester_id": "{{user.email}}"
+        },
+        {
+          "data.target_id": "{{user.email}}"
+        }
+      ]
+    }
+  }
 }
