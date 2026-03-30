@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 import { DAYS } from '@/components/splitbuilder/exerciseData';
 import DayCard from '@/components/splitbuilder/DayCard';
 import { cn } from '@/lib/utils';
-import ImportSplitModal from '@/components/splitbuilder/ImportSplitModal.jsx';
+import ImportSplitModal from '@/components/splitbuilder/ImportSplitModal';
 
 const initialDays = () =>
   DAYS.map((d, i) => ({
