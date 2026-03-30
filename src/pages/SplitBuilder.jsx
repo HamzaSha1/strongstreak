@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Check, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, Check, Plus, Trash2, ImagePlus } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { DAYS } from '@/components/splitbuilder/exerciseData';
 import DayCard from '@/components/splitbuilder/DayCard';
 import { cn } from '@/lib/utils';
+import ImportSplitModal from '@/components/splitbuilder/ImportSplitModal';
 
 const initialDays = () =>
   DAYS.map((d, i) => ({
@@ -28,6 +29,7 @@ export default function SplitBuilder() {
   const [pendingNewSplit, setPendingNewSplit] = useState(
     () => new URLSearchParams(window.location.search).get('newSplit') === '1'
   );
+  const [showImport, setShowImport] = useState(false);
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
@@ -171,11 +173,23 @@ export default function SplitBuilder() {
     setSplits((prev) => prev.map((s, i) => (i === activeTab ? { ...s, name } : s)));
   };
 
+  const handleImport = ({ name, days }) => {
+    const newSplit = { name, days };
+    setSplits((prev) => [...prev, newSplit]);
+    setActiveTab(splits.length);
+    setShowImport(false);
+    toast.success(`"${name}" imported successfully!`);
+  };
+
   const trainingDays = activeSplit.days.filter((d) => d.session_type && d.session_type !== 'Rest').length;
   const restDays = activeSplit.days.filter((d) => d.session_type === 'Rest' || !d.session_type).length;
 
   return (
     <div className="pb-28 min-h-screen bg-background" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+      {showImport && (
+        <ImportSplitModal onImport={handleImport} onClose={() => setShowImport(false)} />
+      )}
+
       {/* Header */}
       <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border">
         <div className="px-4 py-3 flex items-center gap-3">
@@ -190,6 +204,13 @@ export default function SplitBuilder() {
               placeholder="Name this split"
             />
           </div>
+          <button
+            onClick={() => setShowImport(true)}
+            className="flex items-center gap-1.5 bg-secondary text-secondary-foreground px-3 py-1.5 rounded-xl text-sm font-medium"
+          >
+            <ImagePlus size={15} />
+            Import
+          </button>
           <button
             onClick={() => saveMutation.mutate()}
             disabled={saveMutation.isPending}
