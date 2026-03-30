@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import RestTimer from '@/components/workout/RestTimer';
 import PostWorkoutModal from '@/components/workout/PostWorkoutModal';
 import WorkoutExerciseEditor from '@/components/workout/WorkoutExerciseEditor.jsx';
+import RepFeedback, { parseRepRange, getRepFeedback } from '@/components/workout/RepFeedback';
 
 const SET_TYPES = ['normal', 'dropset', 'superset'];
 
@@ -239,6 +240,7 @@ export default function ActiveWorkout() {
   const [exerciseOrder, setExerciseOrder] = useState([]);
   const [showEditor, setShowEditor] = useState(false);
   const [localExercises, setLocalExercises] = useState(null); // null = use server exercises
+  const [repFeedback, setRepFeedback] = useState(null);
   const startTime = useRef(new Date());
   const timerRef = useRef(null);
 
@@ -363,6 +365,15 @@ export default function ActiveWorkout() {
     const set = sets[ex.id][setIdx];
     // Optimistic update
     updateSet(ex.id, setIdx, { completed: true });
+
+    // Rep range feedback (strength only)
+    if (ex.exercise_type !== 'cardio' && set.reps) {
+      const range = parseRepRange(ex.target_reps);
+      const completedNormalSets = (sets[ex.id] || []).filter((s, i) => i <= setIdx && s.set_type !== 'dropset').length;
+      const totalNormalSets = (sets[ex.id] || []).filter((s) => s.set_type !== 'dropset').length;
+      const feedback = getRepFeedback(set.reps, range, completedNormalSets, totalNormalSets);
+      if (feedback) setRepFeedback(feedback);
+    }
 
     if (workoutLog) {
       await base44.entities.SetLog.create({
@@ -548,6 +559,9 @@ export default function ActiveWorkout() {
           }}
         />
       )}
+
+      {/* Rep range feedback */}
+      <RepFeedback feedback={repFeedback} onDismiss={() => setRepFeedback(null)} />
 
       {/* Rest timer */}
       {restTimer && (
