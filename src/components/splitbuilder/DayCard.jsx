@@ -1,3 +1,4 @@
+import { useRef, useEffect, useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SESSION_TYPES } from './exerciseData';
@@ -7,6 +8,17 @@ import ExerciseConfig from './ExerciseConfig';
 export default function DayCard({ day, dayIndex, onUpdate }) {
   const isRest = day.session_type === 'Rest';
   const hasSessionType = !!day.session_type && day.session_type !== '';
+  const [lastAddedIdx, setLastAddedIdx] = useState(null);
+  const newExerciseRef = useRef(null);
+
+  useEffect(() => {
+    if (lastAddedIdx !== null && newExerciseRef.current) {
+      setTimeout(() => {
+        newExerciseRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 80);
+      setLastAddedIdx(null);
+    }
+  }, [lastAddedIdx, day.exercises.length]);
 
   const addExercise = (ex) => {
     const newEx = {
@@ -18,7 +30,9 @@ export default function DayCard({ day, dayIndex, onUpdate }) {
       rpe: 7,
       rest_seconds: 90,
     };
+    const newIdx = day.exercises.length;
     onUpdate({ exercises: [...day.exercises, newEx] });
+    setLastAddedIdx(newIdx);
   };
 
   const addCustomExercise = (name) => {
@@ -31,7 +45,9 @@ export default function DayCard({ day, dayIndex, onUpdate }) {
       rpe: 7,
       rest_seconds: 90,
     };
+    const newIdx = day.exercises.length;
     onUpdate({ exercises: [...day.exercises, newEx] });
+    setLastAddedIdx(newIdx);
   };
 
   const updateExercise = (idx, updated) => {
@@ -110,13 +126,14 @@ export default function DayCard({ day, dayIndex, onUpdate }) {
             <>
               {/* Added exercises */}
               {day.exercises.map((ex, idx) => (
-                <ExerciseConfig
-                  key={idx}
-                  exercise={ex}
-                  onChange={(updated) => updateExercise(idx, updated)}
-                  onDelete={() => deleteExercise(idx)}
-                  allExercises={day.exercises}
-                />
+                <div key={idx} ref={idx === lastAddedIdx ? newExerciseRef : null}>
+                  <ExerciseConfig
+                    exercise={ex}
+                    onChange={(updated) => updateExercise(idx, updated)}
+                    onDelete={() => deleteExercise(idx)}
+                    allExercises={day.exercises}
+                  />
+                </div>
               ))}
 
               {/* Exercise picker */}
