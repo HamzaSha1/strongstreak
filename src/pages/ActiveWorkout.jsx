@@ -12,6 +12,7 @@ import PostWorkoutModal from '@/components/workout/PostWorkoutModal';
 import WorkoutExerciseEditor from '@/components/workout/WorkoutExerciseEditor.jsx';
 import RepFeedback, { parseRepRange, getRepFeedback } from '@/components/workout/RepFeedback';
 import ExerciseHistory from '@/components/workout/ExerciseHistory';
+import RIRPicker from '@/components/workout/RIRPicker';
 import { useWeightUnit } from '@/hooks/useWeightUnit';
 
 const SET_TYPES = ['normal', 'dropset', 'superset'];
@@ -47,6 +48,8 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
   const { unit: weightUnit, toggle: toggleUnit, toDisplay, toKg } = useWeightUnit();
   const isCardio = ex.exercise_type === 'cardio';
   const cardioUnit = CARDIO_UNITS[ex.cardio_metric] || 'km';
+  // RIR picker state: { exId, setIdx } when open
+  const [rirPickerFor, setRirPickerFor] = useState(null);
 
   // Group sets: normal first, then dropsets side-by-side
   const renderSets = () => {
@@ -130,19 +133,19 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
                 className="flex-1 h-10 text-center bg-background border border-border rounded-xl text-sm font-bold outline-none focus:border-primary transition-colors disabled:opacity-50 min-w-0"
               />
 
-              {/* RIR input */}
-              <input
-                type="number"
-                inputMode="numeric"
-                placeholder="RIR"
-                value={s.rpe ?? ''}
-                onChange={(e) => onUpdateSet(ex.id, actualIdx, { rpe: e.target.value, rpeEdited: true })}
-                onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
+              {/* RIR badge — tap to open picker */}
+              <button
                 disabled={s.completed}
-                min={0}
-                max={10}
-                className="w-14 h-10 text-center bg-background border border-border rounded-xl text-sm font-bold outline-none focus:border-primary transition-colors disabled:opacity-50 shrink-0"
-              />
+                onClick={() => !s.completed && setRirPickerFor({ exId: ex.id, setIdx: actualIdx })}
+                className={cn(
+                  'w-14 h-10 rounded-xl border text-sm font-bold shrink-0 flex items-center justify-center transition-colors',
+                  s.rpe !== '' && s.rpe != null
+                    ? 'bg-primary/15 text-primary border-primary/40'
+                    : 'border-border text-muted-foreground hover:border-primary/50 disabled:opacity-50'
+                )}
+              >
+                {s.rpe !== '' && s.rpe != null ? s.rpe : 'RIR'}
+              </button>
 
               {/* Drop set toggle */}
               <button
@@ -162,9 +165,16 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
             </>
           )}
 
-          {/* Complete button */}
+          {/* Complete button — opens RIR picker for strength sets */}
           <button
-            onClick={() => !s.completed && onCompleteSet(ex, actualIdx)}
+            onClick={() => {
+              if (s.completed) return;
+              if (!isCardio) {
+                setRirPickerFor({ exId: ex.id, setIdx: actualIdx });
+              } else {
+                onCompleteSet(ex, actualIdx);
+              }
+            }}
             className={cn(
               'w-10 h-10 rounded-full flex items-center justify-center transition-all shrink-0',
               s.completed
@@ -236,8 +246,28 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
     return rows;
   };
 
+  const handleRirConfirm = (rirValue) => {
+    const { exId, setIdx } = rirPickerFor;
+    onUpdateSet(exId, setIdx, { rpe: rirValue != null ? String(rirValue) : '', rpeEdited: true });
+    onCompleteSet(ex, setIdx);
+    setRirPickerFor(null);
+  };
+
+  const handleRirSkip = () => {
+    const { exId, setIdx } = rirPickerFor;
+    onCompleteSet(ex, setIdx);
+    setRirPickerFor(null);
+  };
+
   return (
     <>
+      {rirPickerFor && (
+        <RIRPicker
+          initialValue={exSets[rirPickerFor.setIdx]?.rpe}
+          onConfirm={handleRirConfirm}
+          onSkip={handleRirSkip}
+        />
+      )}
       {divider && <div className="border-t border-border/50" />}
       <button
         className="w-full flex items-center justify-between px-4 py-3 min-h-11"
