@@ -193,7 +193,7 @@ export default function SplitBuilder() {
   const restDays = activeSplit.days.filter((d) => d.session_type === 'Rest' || !d.session_type).length;
 
   return (
-    <div className="pb-28 min-h-screen bg-background" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+    <div className="pb-36 min-h-screen bg-background" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
       {showImport && (
         <ImportSplitModal onImport={handleImport} onClose={() => setShowImport(false)} />
       )}
@@ -280,7 +280,7 @@ export default function SplitBuilder() {
       </div>
 
       {/* Summary bar */}
-      <div className="fixed bottom-16 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-[480px] bg-card/95 backdrop-blur border border-border rounded-2xl px-4 py-3 flex justify-around text-center text-xs z-10">
+      <div className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur border-t border-border px-4 py-3 flex justify-around text-center text-xs z-10" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 0.75rem)' }}>
         <div>
           <p className="text-primary font-bold text-xl font-heading">{trainingDays}</p>
           <p className="text-muted-foreground">Training</p>
