@@ -63,8 +63,11 @@ export default function WorkoutExerciseEditor({ exercises, sessionType, onClose,
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
           <h2 className="font-heading font-bold text-base">Edit Exercises</h2>
-          <button onClick={onClose} className="text-muted-foreground p-2 -m-2 touch-target-44">
-            <X size={20} />
+          <button
+            onClick={onClose}
+            className="px-4 py-1.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold"
+          >
+            Done
           </button>
         </div>
 
