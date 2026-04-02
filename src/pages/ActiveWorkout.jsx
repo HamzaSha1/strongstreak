@@ -13,6 +13,7 @@ import WorkoutExerciseEditor from '@/components/workout/WorkoutExerciseEditor.js
 import RepFeedback, { parseRepRange, getRepFeedback } from '@/components/workout/RepFeedback';
 import ExerciseHistory from '@/components/workout/ExerciseHistory';
 import RIRPicker from '@/components/workout/RIRPicker';
+import WorkoutSummaryScreen from '@/components/workout/WorkoutSummaryScreen';
 import { useWeightUnit } from '@/hooks/useWeightUnit';
 
 const SET_TYPES = ['normal', 'dropset', 'superset'];
@@ -266,6 +267,8 @@ export default function ActiveWorkout() {
   const [restTimer, setRestTimer] = useState(null); // { seconds, total }
   const [timerMinimized, setTimerMinimized] = useState(false);
   const [showPostModal, setShowPostModal] = useState(false);
+  const [showSummary, setShowSummary] = useState(false);
+  const [currentStreak, setCurrentStreak] = useState(0);
   const [persistedGameState, setPersistedGameState] = useState(null);
   const [exerciseOrder, setExerciseOrder] = useState([]);
   const [showEditor, setShowEditor] = useState(false);
@@ -460,9 +463,18 @@ export default function ActiveWorkout() {
         });
       }
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ['workoutLogs'] });
-      setShowPostModal(true);
+      // Fetch & increment streak
+      if (user) {
+        const members = await base44.entities.GroupMember.filter({ user_id: user.email });
+        const newStreak = (members[0]?.streak || 0) + 1;
+        if (members[0]) {
+          await base44.entities.GroupMember.update(members[0].id, { streak: newStreak });
+        }
+        setCurrentStreak(newStreak);
+      }
+      setShowSummary(true);
     },
   });
 
@@ -608,6 +620,17 @@ export default function ActiveWorkout() {
           onToggleMinimize={() => setTimerMinimized(!timerMinimized)}
           gameState={persistedGameState}
           onGameStateChange={setPersistedGameState}
+        />
+      )}
+
+      {/* Workout summary screen */}
+      {showSummary && (
+        <WorkoutSummaryScreen
+          sets={sets}
+          exercises={activeExercises}
+          streak={currentStreak}
+          durationMinutes={Math.round(elapsed / 60)}
+          onContinue={() => { setShowSummary(false); setShowPostModal(true); }}
         />
       )}
 
