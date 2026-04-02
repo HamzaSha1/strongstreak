@@ -63,7 +63,6 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
         ) : (
           <>
             <span className="flex-1 text-[10px] text-muted-foreground text-center uppercase tracking-widest">Reps</span>
-            <span className="mx-1 w-3" />
             <span className="flex-1 text-[10px] text-muted-foreground text-center uppercase tracking-widest">Weight ({weightUnit})</span>
             <span className="w-14 text-[10px] text-muted-foreground text-center uppercase tracking-widest ml-2">RIR</span>
             <span className="w-16 text-[10px] text-muted-foreground text-center uppercase tracking-widest ml-1">Drop Set</span>
@@ -80,7 +79,7 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
         <div
           key={actualIdx}
           className={cn(
-            'flex items-center gap-2 rounded-2xl px-3 py-2.5 transition-all',
+            'flex items-center gap-1.5 rounded-2xl px-3 py-2.5 transition-all',
             s.completed ? 'bg-primary/10' : 'bg-muted/40'
           )}
         >
@@ -104,33 +103,32 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
             </>
           ) : (
             <>
-              {/* Reps + Weight pill group */}
-              <div className="flex flex-1 items-center bg-background border border-border rounded-xl overflow-hidden">
-                <input
-                  type="number"
-                  inputMode="decimal"
-                  placeholder={prevSets[normalIdx]?.reps?.toString() || '—'}
-                  value={s.reps}
-                  onChange={(e) => onUpdateSet(ex.id, actualIdx, { reps: e.target.value })}
-                  onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
-                  disabled={s.completed}
-                  className="flex-1 h-10 text-center bg-transparent text-sm font-bold outline-none disabled:opacity-50 min-w-0"
-                />
-                <div className="w-px h-6 bg-border shrink-0" />
-                <input
-                  type="number"
-                  inputMode="decimal"
-                  placeholder={prevSets[normalIdx]?.weight_kg != null ? toDisplay(prevSets[normalIdx].weight_kg).toString() : '—'}
-                  value={s.weight_display ?? ''}
-                  onChange={(e) => {
-                    const displayVal = e.target.value;
-                    onUpdateSet(ex.id, actualIdx, { weight_display: displayVal, weight_kg: toKg(displayVal) });
-                  }}
-                  onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
-                  disabled={s.completed}
-                  className="flex-1 h-10 text-center bg-transparent text-sm font-bold outline-none disabled:opacity-50 min-w-0"
-                />
-              </div>
+              {/* Reps input */}
+              <input
+                type="number"
+                inputMode="decimal"
+                placeholder={prevSets[normalIdx]?.reps?.toString() || '—'}
+                value={s.reps}
+                onChange={(e) => onUpdateSet(ex.id, actualIdx, { reps: e.target.value })}
+                onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
+                disabled={s.completed}
+                className="flex-1 h-10 text-center bg-background border border-border rounded-xl text-sm font-bold outline-none focus:border-primary transition-colors disabled:opacity-50 min-w-0"
+              />
+
+              {/* Weight input */}
+              <input
+                type="number"
+                inputMode="decimal"
+                placeholder={prevSets[normalIdx]?.weight_kg != null ? toDisplay(prevSets[normalIdx].weight_kg).toString() : '—'}
+                value={s.weight_display ?? ''}
+                onChange={(e) => {
+                  const displayVal = e.target.value;
+                  onUpdateSet(ex.id, actualIdx, { weight_display: displayVal, weight_kg: toKg(displayVal) });
+                }}
+                onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
+                disabled={s.completed}
+                className="flex-1 h-10 text-center bg-background border border-border rounded-xl text-sm font-bold outline-none focus:border-primary transition-colors disabled:opacity-50 min-w-0"
+              />
 
               {/* RIR input */}
               <input
