@@ -124,19 +124,35 @@ export default function WorkoutExerciseEditor({ exercises, sessionType, onClose,
                 </div>
 
               {/* Rep range editor */}
-              {editingRepRangeId === ex.id && onUpdateExercise && ex.exercise_type === 'strength' && (
-                <div className="bg-primary/10 border border-primary/30 rounded-xl mt-2 p-3 flex items-center gap-2">
-                  <span className="text-xs text-primary font-semibold">Rep range:</span>
-                  <input
-                    type="text"
-                    value={ex.target_reps || ''}
-                    onChange={(e) => onUpdateExercise(ex.id, { target_reps: e.target.value })}
-                    placeholder="e.g. 8-12"
-                    className="w-20 h-8 bg-input border border-primary rounded-lg px-2 text-sm text-center"
-                  />
-                  <span className="text-xs text-muted-foreground">reps</span>
-                </div>
-              )}
+              {editingRepRangeId === ex.id && onUpdateExercise && ex.exercise_type === 'strength' && (() => {
+                const parts = (ex.target_reps || '').split('-');
+                const minVal = parts[0] || '';
+                const maxVal = parts[1] || '';
+                const update = (min, max) => onUpdateExercise(ex.id, { target_reps: max ? `${min}-${max}` : min });
+                return (
+                  <div className="bg-primary/10 border border-primary/30 rounded-xl mt-2 p-3 flex items-center gap-2">
+                    <span className="text-xs text-primary font-semibold shrink-0">Rep range:</span>
+                    <input
+                      type="number"
+                      value={minVal}
+                      onChange={(e) => update(e.target.value, maxVal)}
+                      placeholder="Min"
+                      className="w-14 h-8 bg-input border border-primary rounded-lg px-2 text-sm text-center"
+                      min="1"
+                    />
+                    <span className="text-xs text-muted-foreground">–</span>
+                    <input
+                      type="number"
+                      value={maxVal}
+                      onChange={(e) => update(minVal, e.target.value)}
+                      placeholder="Max"
+                      className="w-14 h-8 bg-input border border-primary rounded-lg px-2 text-sm text-center"
+                      min="1"
+                    />
+                    <span className="text-xs text-muted-foreground">reps</span>
+                  </div>
+                );
+              })()}
 
               {/* Rest time editor */}
               {editingRestId === ex.id && onUpdateExercise && ex.exercise_type === 'strength' && (
