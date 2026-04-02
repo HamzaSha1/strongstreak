@@ -64,6 +64,7 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
             <span className="mx-1 w-3" />
             <span className="flex-1 text-[10px] text-muted-foreground text-center uppercase tracking-widest">Weight (kg)</span>
             <span className="w-14 text-[10px] text-muted-foreground text-center uppercase tracking-widest ml-2">RIR</span>
+            <span className="w-10 text-[10px] text-muted-foreground text-center uppercase tracking-widest ml-1">Drop</span>
             <span className="w-10 shrink-0" />
           </>
         )}
@@ -139,6 +140,20 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
                 max={10}
                 className="w-14 h-10 text-center bg-background border border-border rounded-xl text-sm font-bold outline-none focus:border-primary transition-colors disabled:opacity-50 shrink-0"
               />
+
+              {/* Drop set toggle */}
+              <button
+                onClick={() => !s.completed && onUpdateSet(ex.id, actualIdx, { set_type: s.set_type === 'dropset' ? 'normal' : 'dropset' })}
+                disabled={s.completed}
+                className={cn(
+                  'w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 transition-colors text-[10px] font-bold',
+                  s.set_type === 'dropset'
+                    ? 'bg-primary/20 text-primary border-primary/50'
+                    : 'border-border text-muted-foreground hover:border-primary/50'
+                )}
+              >
+                D
+              </button>
 
 
             </>
