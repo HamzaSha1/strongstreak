@@ -64,7 +64,7 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
             <span className="mx-1 w-3" />
             <span className="flex-1 text-[10px] text-muted-foreground text-center uppercase tracking-widest">Weight (kg)</span>
             <span className="w-14 text-[10px] text-muted-foreground text-center uppercase tracking-widest ml-2">RIR</span>
-            <span className="w-10 text-[10px] text-muted-foreground text-center uppercase tracking-widest ml-1">Drop</span>
+            <span className="w-10 text-[10px] text-muted-foreground text-center uppercase tracking-widest ml-1">DS</span>
             <span className="w-10 shrink-0" />
           </>
         )}
@@ -152,7 +152,7 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
                     : 'border-border text-muted-foreground hover:border-primary/50'
                 )}
               >
-                D
+                {s.set_type === 'dropset' ? '✓' : 'DS'}
               </button>
 
 
