@@ -52,6 +52,22 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
     const normalSets = exSets.filter((s) => s.set_type !== 'dropset');
     const dropsets = exSets.filter((s) => s.set_type === 'dropset');
 
+    // Column headers
+    rows.push(
+      <div key="headers" className="flex items-center gap-2 px-3 mb-1">
+        <span className="w-5" />
+        {isCardio ? (
+          <span className="flex-1 text-[10px] text-muted-foreground text-center uppercase tracking-wide">{ex.cardio_metric || 'Distance'}</span>
+        ) : (
+          <>
+            <span className="w-16 text-[10px] text-muted-foreground text-center uppercase tracking-wide">Reps</span>
+            <span className="w-16 text-[10px] text-muted-foreground text-center uppercase tracking-wide">Weight</span>
+            <span className="w-12 text-[10px] text-muted-foreground text-center uppercase tracking-wide">RIR</span>
+          </>
+        )}
+      </div>
+    );
+
     // Render normal sets
     normalSets.forEach((s, normalIdx) => {
       const actualIdx = exSets.indexOf(s);
@@ -81,7 +97,7 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
             <>
               <Input
                 type="number"
-                placeholder={prevSets[normalIdx]?.reps?.toString() || 'Reps'}
+                placeholder={prevSets[normalIdx]?.reps?.toString() || '—'}
                 value={s.reps}
                 onChange={(e) => onUpdateSet(ex.id, actualIdx, { reps: e.target.value })}
                 onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
@@ -90,12 +106,23 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
               />
               <Input
                 type="number"
-                placeholder={prevSets[normalIdx]?.weight_kg?.toString() || 'kg'}
+                placeholder={prevSets[normalIdx]?.weight_kg?.toString() || '—'}
                 value={s.weight_kg}
                 onChange={(e) => onUpdateSet(ex.id, actualIdx, { weight_kg: e.target.value })}
                 onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
                 disabled={s.completed}
                 className="w-16 h-8 text-center bg-input border-border text-sm"
+              />
+              <Input
+                type="number"
+                placeholder="RIR"
+                value={s.rpe || ''}
+                onChange={(e) => onUpdateSet(ex.id, actualIdx, { rpe: e.target.value })}
+                onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
+                disabled={s.completed}
+                min={0}
+                max={10}
+                className="w-12 h-8 text-center bg-input border-border text-sm"
               />
               {!s.completed && (
                 <button
