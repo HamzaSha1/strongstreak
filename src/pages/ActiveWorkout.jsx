@@ -54,15 +54,17 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
 
     // Column headers
     rows.push(
-      <div key="headers" className="flex items-center gap-2 px-3 mb-1">
-        <span className="w-5" />
+      <div key="headers" className="flex items-center px-1 mb-1">
+        <span className="w-6 shrink-0" />
         {isCardio ? (
-          <span className="flex-1 text-[10px] text-muted-foreground text-center uppercase tracking-wide">{ex.cardio_metric || 'Distance'}</span>
+          <span className="flex-1 text-[10px] text-muted-foreground text-center uppercase tracking-widest">{ex.cardio_metric || 'Distance'}</span>
         ) : (
           <>
-            <span className="w-16 text-[10px] text-muted-foreground text-center uppercase tracking-wide">Reps</span>
-            <span className="w-16 text-[10px] text-muted-foreground text-center uppercase tracking-wide">Weight</span>
-            <span className="w-12 text-[10px] text-muted-foreground text-center uppercase tracking-wide">RIR</span>
+            <span className="flex-1 text-[10px] text-muted-foreground text-center uppercase tracking-widest">Reps</span>
+            <span className="mx-1 w-3" />
+            <span className="flex-1 text-[10px] text-muted-foreground text-center uppercase tracking-widest">Weight (kg)</span>
+            <span className="w-14 text-[10px] text-muted-foreground text-center uppercase tracking-widest ml-2">RIR</span>
+            <span className="w-10 shrink-0" />
           </>
         )}
       </div>
@@ -75,11 +77,15 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
         <div
           key={actualIdx}
           className={cn(
-            'flex items-center gap-2 rounded-xl px-3 py-2 transition-colors',
-            s.completed ? 'bg-primary/10 opacity-70' : 'bg-muted/30'
+            'flex items-center gap-2 rounded-2xl px-3 py-2.5 transition-all',
+            s.completed ? 'bg-primary/10' : 'bg-muted/40'
           )}
         >
-          <span className="text-xs text-muted-foreground w-5">{s.set_number}</span>
+          {/* Set number */}
+          <span className={cn('text-xs font-semibold w-5 shrink-0 text-center', s.completed ? 'text-primary' : 'text-muted-foreground')}>
+            {s.set_number}
+          </span>
+
           {isCardio ? (
             <>
               <Input
@@ -89,64 +95,80 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
                 onChange={(e) => onUpdateSet(ex.id, actualIdx, { reps: e.target.value })}
                 onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
                 disabled={s.completed}
-                className="flex-1 h-8 text-center bg-input border-border text-sm"
+                className="flex-1 h-10 text-center bg-background border-border rounded-xl text-sm font-semibold"
               />
-              <span className="text-xs text-muted-foreground w-8">{cardioUnit}</span>
+              <span className="text-xs text-muted-foreground shrink-0">{cardioUnit}</span>
             </>
           ) : (
             <>
-              <Input
+              {/* Reps + Weight pill group */}
+              <div className="flex flex-1 items-center bg-background border border-border rounded-xl overflow-hidden">
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  placeholder={prevSets[normalIdx]?.reps?.toString() || '—'}
+                  value={s.reps}
+                  onChange={(e) => onUpdateSet(ex.id, actualIdx, { reps: e.target.value })}
+                  onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
+                  disabled={s.completed}
+                  className="flex-1 h-10 text-center bg-transparent text-sm font-bold outline-none disabled:opacity-50 min-w-0"
+                />
+                <div className="w-px h-6 bg-border shrink-0" />
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  placeholder={prevSets[normalIdx]?.weight_kg?.toString() || '—'}
+                  value={s.weight_kg}
+                  onChange={(e) => onUpdateSet(ex.id, actualIdx, { weight_kg: e.target.value })}
+                  onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
+                  disabled={s.completed}
+                  className="flex-1 h-10 text-center bg-transparent text-sm font-bold outline-none disabled:opacity-50 min-w-0"
+                />
+              </div>
+
+              {/* RIR input */}
+              <input
                 type="number"
-                placeholder={prevSets[normalIdx]?.reps?.toString() || '—'}
-                value={s.reps}
-                onChange={(e) => onUpdateSet(ex.id, actualIdx, { reps: e.target.value })}
-                onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
-                disabled={s.completed}
-                className="w-16 h-8 text-center bg-input border-border text-sm"
-              />
-              <Input
-                type="number"
-                placeholder={prevSets[normalIdx]?.weight_kg?.toString() || '—'}
-                value={s.weight_kg}
-                onChange={(e) => onUpdateSet(ex.id, actualIdx, { weight_kg: e.target.value })}
-                onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
-                disabled={s.completed}
-                className="w-16 h-8 text-center bg-input border-border text-sm"
-              />
-              <Input
-                type="number"
+                inputMode="numeric"
                 placeholder="RIR"
-                value={s.rpe || ''}
-                onChange={(e) => onUpdateSet(ex.id, actualIdx, { rpe: e.target.value })}
+                value={s.rpe === 7 && !s.rpeEdited ? '' : (s.rpe ?? '')}
+                onChange={(e) => onUpdateSet(ex.id, actualIdx, { rpe: e.target.value, rpeEdited: true })}
                 onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
                 disabled={s.completed}
                 min={0}
                 max={10}
-                className="w-12 h-8 text-center bg-input border-border text-sm"
+                className="w-14 h-10 text-center bg-background border border-border rounded-xl text-sm font-bold outline-none focus:border-primary transition-colors disabled:opacity-50 shrink-0"
               />
+
+              {/* Drop set toggle */}
               {!s.completed && (
                 <button
-                   onClick={() => onUpdateSet(ex.id, actualIdx, { set_type: s.set_type === 'dropset' ? 'normal' : 'dropset' })}
-                   className={cn(
-                     'text-[10px] px-2 py-1 rounded-full border transition-colors whitespace-nowrap min-h-11 flex items-center',
-                     s.set_type === 'dropset' 
-                       ? 'bg-primary/20 text-primary border-primary/50' 
-                       : 'border-border text-muted-foreground hover:border-primary/50'
-                   )}
-                 >
-                   {s.set_type === 'dropset' ? 'Drop Set' : 'Make Drop Set'}
-                 </button>
+                  onClick={() => onUpdateSet(ex.id, actualIdx, { set_type: s.set_type === 'dropset' ? 'normal' : 'dropset' })}
+                  className={cn(
+                    'w-8 h-8 rounded-full border flex items-center justify-center shrink-0 transition-colors text-[10px] font-bold',
+                    s.set_type === 'dropset'
+                      ? 'bg-primary/20 text-primary border-primary/50'
+                      : 'border-border text-muted-foreground hover:border-primary/50'
+                  )}
+                  title={s.set_type === 'dropset' ? 'Remove drop set' : 'Make drop set'}
+                >
+                  D
+                </button>
               )}
             </>
           )}
+
+          {/* Complete button */}
           <button
             onClick={() => !s.completed && onCompleteSet(ex, actualIdx)}
             className={cn(
-              'min-h-11 min-w-11 rounded-full flex items-center justify-center transition-colors ml-auto flex-shrink-0',
-              s.completed ? 'bg-primary text-primary-foreground' : 'border border-border text-muted-foreground hover:border-primary hover:text-primary'
+              'w-10 h-10 rounded-full flex items-center justify-center transition-all shrink-0',
+              s.completed
+                ? 'bg-primary text-primary-foreground shadow-[0_0_10px_hsl(35_96%_58%/0.4)]'
+                : 'border-2 border-border text-muted-foreground hover:border-primary hover:text-primary'
             )}
           >
-            <Check size={13} />
+            <Check size={14} />
           </button>
         </div>
       );
