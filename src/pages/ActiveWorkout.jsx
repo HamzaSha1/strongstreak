@@ -43,7 +43,8 @@ function ExerciseNotes({ ex, onNotesChange }) {
   );
 }
 
-function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onCompleteSet, onAddSet, onNotesChange, divider, userId, weightUnit, toDisplay, toKg }) {
+function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onCompleteSet, onAddSet, onNotesChange, divider, userId }) {
+  const { unit: weightUnit, toggle: toggleUnit, toDisplay, toKg } = useWeightUnit();
   const isCardio = ex.exercise_type === 'cardio';
   const cardioUnit = CARDIO_UNITS[ex.cardio_metric] || 'km';
 
@@ -253,6 +254,14 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {!isCardio && (
+            <button
+              onClick={(e) => { e.stopPropagation(); toggleUnit(); }}
+              className="text-[10px] px-2 py-0.5 rounded-lg border border-border font-bold text-primary"
+            >
+              {weightUnit.toUpperCase()}
+            </button>
+          )}
           <span className="text-xs text-muted-foreground">
             {exSets.filter((s) => s.completed).length}/{exSets.length}
           </span>
@@ -305,7 +314,6 @@ export default function ActiveWorkout() {
   const [showEditor, setShowEditor] = useState(false);
   const [localExercises, setLocalExercises] = useState(null); // null = use server exercises
   const [repFeedback, setRepFeedback] = useState(null);
-  const { unit: weightUnit, toggle: toggleUnit, toDisplay, toKg } = useWeightUnit();
   const startTime = useRef(new Date());
   const timerRef = useRef(null);
 
@@ -521,12 +529,6 @@ export default function ActiveWorkout() {
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={toggleUnit}
-              className="text-xs px-2 py-1 rounded-lg border border-border font-semibold text-primary"
-            >
-              {weightUnit.toUpperCase()}
-            </button>
-            <button
               onClick={() => setShowEditor(true)}
               className="text-xs flex items-center gap-1 px-2 py-1 rounded-lg border border-border text-muted-foreground"
             >
@@ -591,9 +593,6 @@ export default function ActiveWorkout() {
                       onNotesChange={updateExerciseNotes}
                       divider={gi < group.length - 1}
                       userId={user?.email}
-                      weightUnit={weightUnit}
-                      toDisplay={toDisplay}
-                      toKg={toKg}
                     />
                   ))}
                 </div>
@@ -615,9 +614,6 @@ export default function ActiveWorkout() {
                   onNotesChange={updateExerciseNotes}
                   divider={false}
                   userId={user?.email}
-                  weightUnit={weightUnit}
-                  toDisplay={toDisplay}
-                  toKg={toKg}
                 />
               </div>
             );
