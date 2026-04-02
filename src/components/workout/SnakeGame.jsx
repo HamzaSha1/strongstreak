@@ -54,7 +54,7 @@ export default function SnakeGame({ isActive, onGameEnd, gameState, onGameStateC
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [direction, isActive]);
 
-  // Handle touch/swipe input
+  // Handle touch/swipe input + block page scroll while game is active
   useEffect(() => {
     let touchStartX = 0;
     let touchStartY = 0;
@@ -62,6 +62,11 @@ export default function SnakeGame({ isActive, onGameEnd, gameState, onGameStateC
     const handleTouchStart = (e) => {
       touchStartX = e.touches[0].clientX;
       touchStartY = e.touches[0].clientY;
+    };
+
+    const handleTouchMove = (e) => {
+      // Prevent the page from scrolling while the game is active
+      e.preventDefault();
     };
 
     const handleTouchEnd = (e) => {
@@ -81,12 +86,14 @@ export default function SnakeGame({ isActive, onGameEnd, gameState, onGameStateC
     };
 
     if (isActive) {
-      document.addEventListener('touchstart', handleTouchStart, false);
-      document.addEventListener('touchend', handleTouchEnd, false);
+      document.addEventListener('touchstart', handleTouchStart, { passive: false });
+      document.addEventListener('touchmove', handleTouchMove, { passive: false });
+      document.addEventListener('touchend', handleTouchEnd, { passive: false });
     }
 
     return () => {
       document.removeEventListener('touchstart', handleTouchStart);
+      document.removeEventListener('touchmove', handleTouchMove);
       document.removeEventListener('touchend', handleTouchEnd);
     };
   }, [direction, isActive]);
