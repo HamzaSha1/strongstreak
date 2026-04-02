@@ -131,7 +131,7 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
                 type="number"
                 inputMode="numeric"
                 placeholder="RIR"
-                value={s.rpe === 7 && !s.rpeEdited ? '' : (s.rpe ?? '')}
+                value={s.rpe ?? ''}
                 onChange={(e) => onUpdateSet(ex.id, actualIdx, { rpe: e.target.value, rpeEdited: true })}
                 onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
                 disabled={s.completed}
@@ -140,21 +140,7 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
                 className="w-14 h-10 text-center bg-background border border-border rounded-xl text-sm font-bold outline-none focus:border-primary transition-colors disabled:opacity-50 shrink-0"
               />
 
-              {/* Drop set toggle */}
-              {!s.completed && (
-                <button
-                  onClick={() => onUpdateSet(ex.id, actualIdx, { set_type: s.set_type === 'dropset' ? 'normal' : 'dropset' })}
-                  className={cn(
-                    'w-8 h-8 rounded-full border flex items-center justify-center shrink-0 transition-colors text-[10px] font-bold',
-                    s.set_type === 'dropset'
-                      ? 'bg-primary/20 text-primary border-primary/50'
-                      : 'border-border text-muted-foreground hover:border-primary/50'
-                  )}
-                  title={s.set_type === 'dropset' ? 'Remove drop set' : 'Make drop set'}
-                >
-                  D
-                </button>
-              )}
+
             </>
           )}
 
@@ -345,7 +331,7 @@ export default function ActiveWorkout() {
           set_number: i + 1,
           reps: '',
           weight_kg: '',
-          rpe: 7,
+          rpe: '',
           set_type: 'normal',
           completed: false,
         }));
@@ -380,7 +366,7 @@ export default function ActiveWorkout() {
     setSets((prev) => ({
       ...prev,
       [ex.id]: Array.from({ length: ex.target_sets || 3 }, (_, i) => ({
-        set_number: i + 1, reps: '', weight_kg: '', rpe: 7, set_type: 'normal', completed: false,
+        set_number: i + 1, reps: '', weight_kg: '', rpe: '', set_type: 'normal', completed: false,
       })),
     }));
     setExpanded((prev) => ({ ...prev, [ex.id]: true }));
@@ -464,7 +450,7 @@ export default function ActiveWorkout() {
         set_number: prev[exId].length + 1,
         reps: '',
         weight_kg: '',
-        rpe: 7,
+        rpe: '',
         set_type: 'normal',
         completed: false,
       }],
