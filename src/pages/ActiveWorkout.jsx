@@ -54,8 +54,7 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
   // Group sets: normal first, then dropsets side-by-side
   const renderSets = () => {
     const rows = [];
-    const normalSets = exSets.filter((s) => s.set_type !== 'dropset');
-    const dropsets = exSets.filter((s) => s.set_type === 'dropset');
+    const normalSets = exSets;
 
     // Column headers
     rows.push(
@@ -68,7 +67,6 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
             <span className="flex-1 text-[10px] text-muted-foreground text-center uppercase tracking-widest">Reps</span>
             <span className="flex-1 text-[10px] text-muted-foreground text-center uppercase tracking-widest">Weight ({weightUnit})</span>
             <span className="w-14 text-[10px] text-muted-foreground text-center uppercase tracking-widest ml-2">RIR</span>
-            <span className="w-16 text-[10px] text-muted-foreground text-center uppercase tracking-widest ml-1">Drop Set</span>
             <span className="w-10 shrink-0" />
           </>
         )}
@@ -147,20 +145,6 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
                 {s.rpe !== '' && s.rpe != null ? s.rpe : 'RIR'}
               </button>
 
-              {/* Drop set toggle */}
-              <button
-                onClick={() => !s.completed && onUpdateSet(ex.id, actualIdx, { set_type: s.set_type === 'dropset' ? 'normal' : 'dropset' })}
-                disabled={s.completed}
-                className={cn(
-                  'w-16 h-10 rounded-xl border flex items-center justify-center shrink-0 transition-colors text-[10px] font-bold',
-                  s.set_type === 'dropset'
-                    ? 'bg-primary/20 text-primary border-primary/50'
-                    : 'border-border text-muted-foreground hover:border-primary/50'
-                )}
-              >
-                {s.set_type === 'dropset' ? '✓ Drop Set' : 'Drop Set'}
-              </button>
-
 
             </>
           )}
@@ -188,61 +172,6 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
       );
     });
 
-    // Render dropsets side-by-side if any
-    if (dropsets.length > 0) {
-      rows.push(
-        <div key="dropsets" className="flex flex-col gap-1">
-          <span className="text-[10px] text-primary font-semibold px-1">Dropsets</span>
-          <div className="flex gap-1.5 flex-wrap">
-            {dropsets.map((ds) => {
-              const actualIdx = exSets.indexOf(ds);
-              const dropsetNum = dropsets.indexOf(ds) + 1;
-              return (
-                <div
-                  key={actualIdx}
-                  className={cn(
-                    'flex items-center gap-1.5 rounded-xl px-2 py-2 transition-colors flex-1 min-w-0',
-                    ds.completed ? 'bg-primary/10 opacity-70' : 'bg-muted/30'
-                  )}
-                >
-                  <span className="text-[10px] text-muted-foreground">D{dropsetNum}</span>
-                  <Input
-                   type="number"
-                   placeholder="Reps"
-                   value={ds.reps}
-                   onChange={(e) => onUpdateSet(ex.id, actualIdx, { reps: e.target.value })}
-                   onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
-                   disabled={ds.completed}
-                   className="w-14 h-7 text-center bg-input border-border text-xs"
-                  />
-                  <Input
-                  type="number"
-                  placeholder={weightUnit}
-                  value={ds.weight_display ?? ''}
-                  onChange={(e) => {
-                    const displayVal = e.target.value;
-                    onUpdateSet(ex.id, actualIdx, { weight_display: displayVal, weight_kg: toKg(displayVal) });
-                  }}
-                  onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
-                  disabled={ds.completed}
-                  className="w-14 h-7 text-center bg-input border-border text-xs"
-                  />
-                  <button
-                    onClick={() => !ds.completed && onCompleteSet(ex, actualIdx)}
-                    className={cn(
-                      'min-h-11 min-w-11 rounded-full flex items-center justify-center flex-shrink-0 transition-colors',
-                      ds.completed ? 'bg-primary text-primary-foreground' : 'border border-border text-muted-foreground hover:border-primary hover:text-primary'
-                    )}
-                  >
-                    <Check size={11} />
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      );
-    }
     return rows;
   };
 
