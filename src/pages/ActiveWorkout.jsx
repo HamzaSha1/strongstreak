@@ -71,6 +71,7 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
                 placeholder={ex.target_reps || cardioUnit}
                 value={s.reps}
                 onChange={(e) => onUpdateSet(ex.id, actualIdx, { reps: e.target.value })}
+                onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
                 disabled={s.completed}
                 className="flex-1 h-8 text-center bg-input border-border text-sm"
               />
@@ -83,6 +84,7 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
                 placeholder={prevSets[normalIdx]?.reps?.toString() || 'Reps'}
                 value={s.reps}
                 onChange={(e) => onUpdateSet(ex.id, actualIdx, { reps: e.target.value })}
+                onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
                 disabled={s.completed}
                 className="w-16 h-8 text-center bg-input border-border text-sm"
               />
@@ -91,6 +93,7 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
                 placeholder={prevSets[normalIdx]?.weight_kg?.toString() || 'kg'}
                 value={s.weight_kg}
                 onChange={(e) => onUpdateSet(ex.id, actualIdx, { weight_kg: e.target.value })}
+                onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
                 disabled={s.completed}
                 className="w-16 h-8 text-center bg-input border-border text-sm"
               />
@@ -141,20 +144,22 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
                 >
                   <span className="text-[10px] text-muted-foreground">D{dropsetNum}</span>
                   <Input
-                    type="number"
-                    placeholder="Reps"
-                    value={ds.reps}
-                    onChange={(e) => onUpdateSet(ex.id, actualIdx, { reps: e.target.value })}
-                    disabled={ds.completed}
-                    className="w-14 h-7 text-center bg-input border-border text-xs"
+                   type="number"
+                   placeholder="Reps"
+                   value={ds.reps}
+                   onChange={(e) => onUpdateSet(ex.id, actualIdx, { reps: e.target.value })}
+                   onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
+                   disabled={ds.completed}
+                   className="w-14 h-7 text-center bg-input border-border text-xs"
                   />
                   <Input
-                    type="number"
-                    placeholder="kg"
-                    value={ds.weight_kg}
-                    onChange={(e) => onUpdateSet(ex.id, actualIdx, { weight_kg: e.target.value })}
-                    disabled={ds.completed}
-                    className="w-14 h-7 text-center bg-input border-border text-xs"
+                   type="number"
+                   placeholder="kg"
+                   value={ds.weight_kg}
+                   onChange={(e) => onUpdateSet(ex.id, actualIdx, { weight_kg: e.target.value })}
+                   onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
+                   disabled={ds.completed}
+                   className="w-14 h-7 text-center bg-input border-border text-xs"
                   />
                   <button
                     onClick={() => !ds.completed && onCompleteSet(ex, actualIdx)}
