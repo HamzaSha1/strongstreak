@@ -131,7 +131,12 @@ export default function WorkoutExerciseEditor({ exercises, sessionType, onClose,
                 const parts = (ex.target_reps || '').split('-');
                 const minVal = parts[0] || '';
                 const maxVal = parts[1] || '';
-                const update = (min, max) => onUpdateExercise(ex.id, { target_reps: max ? `${min}-${max}` : min });
+                const update = (min, max) => {
+                  const minN = parseInt(min);
+                  const maxN = parseInt(max);
+                  if (max && !isNaN(minN) && !isNaN(maxN) && minN > maxN) return;
+                  onUpdateExercise(ex.id, { target_reps: max ? `${min}-${max}` : min });
+                };
                 return (
                   <div className="bg-primary/10 border border-primary/30 rounded-xl mt-2 p-3 flex items-center gap-2">
                     <span className="text-xs text-primary font-semibold shrink-0">Rep range:</span>
