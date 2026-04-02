@@ -144,24 +144,9 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
             </>
           )}
 
-          {/* Drop set toggle */}
-          {!s.completed && (
-            <button
-              onClick={() => onUpdateSet(ex.id, actualIdx, { set_type: s.set_type === 'dropset' ? 'normal' : 'dropset' })}
-              className={cn(
-                'text-[10px] px-2.5 py-1.5 rounded-xl border transition-colors whitespace-nowrap shrink-0 font-medium',
-                s.set_type === 'dropset'
-                  ? 'bg-primary/20 text-primary border-primary/50'
-                  : 'border-border text-muted-foreground hover:border-primary/50'
-              )}
-            >
-              {s.set_type === 'dropset' ? 'Drop ✓' : '+ Drop'}
-            </button>
-          )}
-
           {/* Complete button */}
           <button
-          onClick={() => !s.completed && onCompleteSet(ex, actualIdx)}
+            onClick={() => !s.completed && onCompleteSet(ex, actualIdx)}
             className={cn(
               'w-10 h-10 rounded-full flex items-center justify-center transition-all shrink-0',
               s.completed
