@@ -8,7 +8,7 @@ import { format } from 'date-fns';
  * Shows the user's history for a specific exercise.
  * Groups set logs by workout session and displays up to N recent sessions.
  */
-export default function ExerciseHistory({ exerciseName, userId }) {
+export default function ExerciseHistory({ exerciseName, userId, weightUnit = 'kg', toDisplay = (v) => v }) {
   const [expanded, setExpanded] = useState(false);
 
   const { data: logs = [] } = useQuery({
@@ -58,7 +58,7 @@ export default function ExerciseHistory({ exerciseName, userId }) {
                 <div className="flex flex-wrap gap-1.5">
                   {session.sets.map((s, i) => (
                     <span key={i} className="text-xs bg-muted rounded-lg px-2 py-0.5 font-mono">
-                      {s.reps}×{s.weight_kg}kg
+                      {s.reps}×{toDisplay(s.weight_kg)}{weightUnit}
                     </span>
                   ))}
                 </div>

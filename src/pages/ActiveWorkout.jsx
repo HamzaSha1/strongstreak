@@ -12,6 +12,7 @@ import PostWorkoutModal from '@/components/workout/PostWorkoutModal';
 import WorkoutExerciseEditor from '@/components/workout/WorkoutExerciseEditor.jsx';
 import RepFeedback, { parseRepRange, getRepFeedback } from '@/components/workout/RepFeedback';
 import ExerciseHistory from '@/components/workout/ExerciseHistory';
+import { useWeightUnit } from '@/hooks/useWeightUnit';
 
 const SET_TYPES = ['normal', 'dropset', 'superset'];
 
@@ -42,7 +43,7 @@ function ExerciseNotes({ ex, onNotesChange }) {
   );
 }
 
-function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onCompleteSet, onAddSet, onNotesChange, divider, userId }) {
+function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onCompleteSet, onAddSet, onNotesChange, divider, userId, weightUnit, toDisplay, toKg }) {
   const isCardio = ex.exercise_type === 'cardio';
   const cardioUnit = CARDIO_UNITS[ex.cardio_metric] || 'km';
 
@@ -62,7 +63,7 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
           <>
             <span className="flex-1 text-[10px] text-muted-foreground text-center uppercase tracking-widest">Reps</span>
             <span className="mx-1 w-3" />
-            <span className="flex-1 text-[10px] text-muted-foreground text-center uppercase tracking-widest">Weight (kg)</span>
+            <span className="flex-1 text-[10px] text-muted-foreground text-center uppercase tracking-widest">Weight ({weightUnit})</span>
             <span className="w-14 text-[10px] text-muted-foreground text-center uppercase tracking-widest ml-2">RIR</span>
             <span className="w-16 text-[10px] text-muted-foreground text-center uppercase tracking-widest ml-1">Drop Set</span>
             <span className="w-10 shrink-0" />
@@ -118,9 +119,12 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
                 <input
                   type="number"
                   inputMode="decimal"
-                  placeholder={prevSets[normalIdx]?.weight_kg?.toString() || '—'}
-                  value={s.weight_kg}
-                  onChange={(e) => onUpdateSet(ex.id, actualIdx, { weight_kg: e.target.value })}
+                  placeholder={prevSets[normalIdx]?.weight_kg != null ? toDisplay(prevSets[normalIdx].weight_kg).toString() : '—'}
+                  value={s.weight_display ?? ''}
+                  onChange={(e) => {
+                    const displayVal = e.target.value;
+                    onUpdateSet(ex.id, actualIdx, { weight_display: displayVal, weight_kg: toKg(displayVal) });
+                  }}
                   onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
                   disabled={s.completed}
                   className="flex-1 h-10 text-center bg-transparent text-sm font-bold outline-none disabled:opacity-50 min-w-0"
@@ -203,13 +207,16 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
                    className="w-14 h-7 text-center bg-input border-border text-xs"
                   />
                   <Input
-                   type="number"
-                   placeholder="kg"
-                   value={ds.weight_kg}
-                   onChange={(e) => onUpdateSet(ex.id, actualIdx, { weight_kg: e.target.value })}
-                   onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
-                   disabled={ds.completed}
-                   className="w-14 h-7 text-center bg-input border-border text-xs"
+                  type="number"
+                  placeholder={weightUnit}
+                  value={ds.weight_display ?? ''}
+                  onChange={(e) => {
+                    const displayVal = e.target.value;
+                    onUpdateSet(ex.id, actualIdx, { weight_display: displayVal, weight_kg: toKg(displayVal) });
+                  }}
+                  onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
+                  disabled={ds.completed}
+                  className="w-14 h-7 text-center bg-input border-border text-xs"
                   />
                   <button
                     onClick={() => !ds.completed && onCompleteSet(ex, actualIdx)}
@@ -255,14 +262,14 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
       {isOpen && (
         <div className="border-t border-border px-4 pb-4 pt-3">
           <ExerciseNotes ex={ex} onUpdateSet={onUpdateSet} onNotesChange={onNotesChange} />
-          <ExerciseHistory exerciseName={ex.name} userId={userId} />
+          <ExerciseHistory exerciseName={ex.name} userId={userId} weightUnit={weightUnit} toDisplay={toDisplay} />
           {prevSets.length > 0 && (
             <div className="bg-muted/50 rounded-xl p-2 mb-3">
               <p className="text-xs text-muted-foreground mb-1">Last session</p>
               <div className="flex flex-wrap gap-1.5">
                 {prevSets.map((s, i) => (
                   <span key={i} className="text-xs bg-muted rounded-lg px-2 py-0.5">
-                    {s.reps}×{s.weight_kg}kg
+                    {s.reps}×{toDisplay(s.weight_kg)}{weightUnit}
                   </span>
                 ))}
               </div>
@@ -298,6 +305,7 @@ export default function ActiveWorkout() {
   const [showEditor, setShowEditor] = useState(false);
   const [localExercises, setLocalExercises] = useState(null); // null = use server exercises
   const [repFeedback, setRepFeedback] = useState(null);
+  const { unit: weightUnit, toggle: toggleUnit, toDisplay, toKg } = useWeightUnit();
   const startTime = useRef(new Date());
   const timerRef = useRef(null);
 
@@ -346,6 +354,7 @@ export default function ActiveWorkout() {
           set_number: i + 1,
           reps: '',
           weight_kg: '',
+          weight_display: '',
           rpe: '',
           set_type: 'normal',
           completed: false,
@@ -381,7 +390,7 @@ export default function ActiveWorkout() {
     setSets((prev) => ({
       ...prev,
       [ex.id]: Array.from({ length: ex.target_sets || 3 }, (_, i) => ({
-        set_number: i + 1, reps: '', weight_kg: '', rpe: '', set_type: 'normal', completed: false,
+        set_number: i + 1, reps: '', weight_kg: '', weight_display: '', rpe: '', set_type: 'normal', completed: false,
       })),
     }));
     setExpanded((prev) => ({ ...prev, [ex.id]: true }));
@@ -465,6 +474,7 @@ export default function ActiveWorkout() {
         set_number: prev[exId].length + 1,
         reps: '',
         weight_kg: '',
+        weight_display: '',
         rpe: '',
         set_type: 'normal',
         completed: false,
@@ -510,6 +520,12 @@ export default function ActiveWorkout() {
             <p className="text-primary font-mono text-lg font-bold">{formatTime(elapsed)}</p>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              onClick={toggleUnit}
+              className="text-xs px-2 py-1 rounded-lg border border-border font-semibold text-primary"
+            >
+              {weightUnit.toUpperCase()}
+            </button>
             <button
               onClick={() => setShowEditor(true)}
               className="text-xs flex items-center gap-1 px-2 py-1 rounded-lg border border-border text-muted-foreground"
@@ -575,6 +591,9 @@ export default function ActiveWorkout() {
                       onNotesChange={updateExerciseNotes}
                       divider={gi < group.length - 1}
                       userId={user?.email}
+                      weightUnit={weightUnit}
+                      toDisplay={toDisplay}
+                      toKg={toKg}
                     />
                   ))}
                 </div>
@@ -596,6 +615,9 @@ export default function ActiveWorkout() {
                   onNotesChange={updateExerciseNotes}
                   divider={false}
                   userId={user?.email}
+                  weightUnit={weightUnit}
+                  toDisplay={toDisplay}
+                  toKg={toKg}
                 />
               </div>
             );
