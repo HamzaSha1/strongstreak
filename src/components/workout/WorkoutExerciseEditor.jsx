@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, ArrowUp, ArrowDown, Trash2, Plus, Clock } from 'lucide-react';
+import { X, ArrowUp, ArrowDown, Trash2, Plus, Clock, Target } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SESSION_MUSCLE_GROUPS, EXERCISES_BY_MUSCLE } from '@/components/splitbuilder/exerciseData';
 import { useExerciseLibrary } from '@/hooks/useExerciseLibrary';
@@ -10,6 +10,7 @@ export default function WorkoutExerciseEditor({ exercises, sessionType, onClose,
   const [customName, setCustomName] = useState('');
   const [editingSupersetId, setEditingSupersetId] = useState(null);
   const [editingRestId, setEditingRestId] = useState(null);
+  const [editingRepRangeId, setEditingRepRangeId] = useState(null);
 
   const muscleGroups = SESSION_MUSCLE_GROUPS[sessionType] ||
     SESSION_MUSCLE_GROUPS['Custom'];
@@ -82,13 +83,22 @@ export default function WorkoutExerciseEditor({ exercises, sessionType, onClose,
                 </div>
                 <div className="flex items-center gap-1">
                      {ex.exercise_type === 'strength' && (
-                       <button
-                         onClick={() => setEditingRestId(editingRestId === ex.id ? null : ex.id)}
-                         className="p-2 rounded-lg bg-secondary flex items-center justify-center hover:bg-secondary/80 touch-target-44"
-                         title="Edit rest time"
-                       >
-                         <Clock size={13} />
-                       </button>
+                       <>
+                         <button
+                           onClick={() => { setEditingRepRangeId(editingRepRangeId === ex.id ? null : ex.id); setEditingRestId(null); }}
+                           className="p-2 rounded-lg bg-secondary flex items-center justify-center hover:bg-secondary/80 touch-target-44"
+                           title="Edit rep range"
+                         >
+                           <Target size={13} />
+                         </button>
+                         <button
+                           onClick={() => { setEditingRestId(editingRestId === ex.id ? null : ex.id); setEditingRepRangeId(null); }}
+                           className="p-2 rounded-lg bg-secondary flex items-center justify-center hover:bg-secondary/80 touch-target-44"
+                           title="Edit rest time"
+                         >
+                           <Clock size={13} />
+                         </button>
+                       </>
                      )}
                      <button
                        onClick={() => onReorder(idx, idx - 1)}
@@ -112,6 +122,21 @@ export default function WorkoutExerciseEditor({ exercises, sessionType, onClose,
                      </button>
                    </div>
                 </div>
+
+              {/* Rep range editor */}
+              {editingRepRangeId === ex.id && onUpdateExercise && ex.exercise_type === 'strength' && (
+                <div className="bg-primary/10 border border-primary/30 rounded-xl mt-2 p-3 flex items-center gap-2">
+                  <span className="text-xs text-primary font-semibold">Rep range:</span>
+                  <input
+                    type="text"
+                    value={ex.target_reps || ''}
+                    onChange={(e) => onUpdateExercise(ex.id, { target_reps: e.target.value })}
+                    placeholder="e.g. 8-12"
+                    className="w-20 h-8 bg-input border border-primary rounded-lg px-2 text-sm text-center"
+                  />
+                  <span className="text-xs text-muted-foreground">reps</span>
+                </div>
+              )}
 
               {/* Rest time editor */}
               {editingRestId === ex.id && onUpdateExercise && ex.exercise_type === 'strength' && (

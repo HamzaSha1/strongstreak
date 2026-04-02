@@ -65,6 +65,7 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
           <span className="flex-1 text-[10px] text-muted-foreground text-center uppercase tracking-widest">{ex.cardio_metric || 'Distance'}</span>
         ) : (
           <>
+            <span className="w-14 text-[10px] text-muted-foreground text-center uppercase tracking-widest shrink-0">Range</span>
             <span className="flex-1 text-[10px] text-muted-foreground text-center uppercase tracking-widest">Reps</span>
             <span className="flex-1 text-[10px] text-muted-foreground text-center uppercase tracking-widest">Weight ({weightUnit})</span>
             <span className="w-14 text-[10px] text-muted-foreground text-center uppercase tracking-widest ml-2">RIR</span>
@@ -105,6 +106,11 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
             </>
           ) : (
             <>
+              {/* Rep range badge (read-only) */}
+              <span className="w-14 shrink-0 h-10 flex items-center justify-center rounded-xl bg-muted/60 border border-border text-xs font-semibold text-muted-foreground">
+                {ex.target_reps || '—'}
+              </span>
+
               {/* Reps input */}
               <input
                 type="number"
