@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { LogOut, Trash2, User, Camera, Eye, EyeOff, Lock } from 'lucide-react';
+import { LogOut, Trash2, User, Camera, Eye, EyeOff, Lock, Weight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useWeightUnit } from '@/hooks/useWeightUnit';
 
 export default function Profile() {
   const [user, setUser] = useState(null);
@@ -18,6 +19,7 @@ export default function Profile() {
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [uploading, setUploading] = useState(false);
   const navigate = useNavigate();
+  const { unit: weightUnit, toggle: toggleUnit } = useWeightUnit();
 
   useEffect(() => {
     const loadData = async () => {
@@ -224,6 +226,20 @@ export default function Profile() {
           </div>
         </div>
       )}
+
+      {/* Weight unit preference */}
+      <div className="bg-card border border-border rounded-2xl p-4 mb-6 flex items-center justify-between">
+        <div>
+          <p className="font-semibold text-sm">Weight Unit</p>
+          <p className="text-xs text-muted-foreground">Used across all workouts</p>
+        </div>
+        <button
+          onClick={toggleUnit}
+          className="flex items-center gap-1 px-4 py-2 rounded-xl border border-primary text-primary font-heading font-bold text-sm"
+        >
+          {weightUnit === 'kg' ? 'KG' : 'LBS'}
+        </button>
+      </div>
 
       {/* Actions */}
       <div className="flex flex-col gap-3">
