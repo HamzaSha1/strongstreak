@@ -1,0 +1,34 @@
+{
+  "name": "Exercise",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Exercise name (lowercase normalized for deduplication)"
+    },
+    "display_name": {
+      "type": "string",
+      "description": "Display name as entered by user"
+    },
+    "exercise_type": {
+      "type": "string",
+      "enum": [
+        "strength",
+        "cardio"
+      ],
+      "default": "strength"
+    },
+    "muscle_group": {
+      "type": "string",
+      "description": "Primary muscle group"
+    },
+    "created_by": {
+      "type": "string",
+      "description": "Email of the user who first added this exercise"
+    }
+  },
+  "required": [
+    "name",
+    "display_name"
+  ]
+}

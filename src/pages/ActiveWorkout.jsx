@@ -11,6 +11,7 @@ import RestTimer from '@/components/workout/RestTimer';
 import PostWorkoutModal from '@/components/workout/PostWorkoutModal';
 import WorkoutExerciseEditor from '@/components/workout/WorkoutExerciseEditor.jsx';
 import RepFeedback, { parseRepRange, getRepFeedback } from '@/components/workout/RepFeedback';
+import ExerciseHistory from '@/components/workout/ExerciseHistory';
 
 const SET_TYPES = ['normal', 'dropset', 'superset'];
 
@@ -41,7 +42,7 @@ function ExerciseNotes({ ex, onNotesChange }) {
   );
 }
 
-function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onCompleteSet, onAddSet, onNotesChange, divider }) {
+function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onCompleteSet, onAddSet, onNotesChange, divider, userId }) {
   const isCardio = ex.exercise_type === 'cardio';
   const cardioUnit = CARDIO_UNITS[ex.cardio_metric] || 'km';
 
@@ -199,6 +200,7 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
       {isOpen && (
         <div className="border-t border-border px-4 pb-4 pt-3">
           <ExerciseNotes ex={ex} onUpdateSet={onUpdateSet} onNotesChange={onNotesChange} />
+          <ExerciseHistory exerciseName={ex.name} userId={userId} />
           {prevSets.length > 0 && (
             <div className="bg-muted/50 rounded-xl p-2 mb-3">
               <p className="text-xs text-muted-foreground mb-1">Last session</p>
@@ -517,6 +519,7 @@ export default function ActiveWorkout() {
                       onAddSet={addSet}
                       onNotesChange={updateExerciseNotes}
                       divider={gi < group.length - 1}
+                      userId={user?.email}
                     />
                   ))}
                 </div>
@@ -537,6 +540,7 @@ export default function ActiveWorkout() {
                   onAddSet={addSet}
                   onNotesChange={updateExerciseNotes}
                   divider={false}
+                  userId={user?.email}
                 />
               </div>
             );

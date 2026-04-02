@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { X, ArrowUp, ArrowDown, Trash2, Plus, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SESSION_MUSCLE_GROUPS, EXERCISES_BY_MUSCLE } from '@/components/splitbuilder/exerciseData';
+import { useExerciseLibrary } from '@/hooks/useExerciseLibrary';
 
 export default function WorkoutExerciseEditor({ exercises, sessionType, onClose, onReorder, onRemove, onAdd, onUpdateExercise }) {
   const [showPicker, setShowPicker] = useState(false);
@@ -15,7 +16,10 @@ export default function WorkoutExerciseEditor({ exercises, sessionType, onClose,
 
   const existingNames = new Set(exercises.map((e) => e.name));
 
-  const handleAdd = (name, isCardio = false) => {
+  const { libraryExercises, ensureExercise } = useExerciseLibrary();
+
+  const handleAdd = async (name, isCardio = false, muscleGroup = '') => {
+    await ensureExercise({ display_name: name, exercise_type: isCardio ? 'cardio' : 'strength', muscle_group: muscleGroup });
     const ex = {
       id: `temp_${Date.now()}_${Math.random()}`,
       name,
@@ -34,6 +38,14 @@ export default function WorkoutExerciseEditor({ exercises, sessionType, onClose,
     if (!customName.trim()) return;
     handleAdd(customName.trim());
   };
+
+  // Library search
+  const [searchQuery, setSearchQuery] = useState('');
+  const isSearching = searchQuery.trim().length > 0;
+  const searchLower = searchQuery.trim().toLowerCase();
+  const libraryMatches = isSearching
+    ? libraryExercises.filter((e) => e.name.includes(searchLower) && !existingNames.has(e.display_name))
+    : [];
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col justify-end">
@@ -185,32 +197,71 @@ export default function WorkoutExerciseEditor({ exercises, sessionType, onClose,
             </button>
           ) : (
             <div className="bg-secondary/50 rounded-2xl p-3 flex flex-col gap-3">
-              {/* Muscle group tabs */}
-              <div className="flex flex-wrap gap-1.5">
-                {muscleGroups.map((mg) => (
+              {/* Search / custom input */}
+              <div className="flex gap-2">
+                <input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' && searchQuery.trim()) handleAdd(searchQuery.trim(), false, selectedMuscle || ''); }}
+                  placeholder="Search or type exercise name..."
+                  className="flex-1 h-9 rounded-xl bg-input border border-border px-3 text-sm"
+                  autoFocus
+                />
+                {searchQuery.trim() && (
                   <button
-                    key={mg}
-                    onClick={() => setSelectedMuscle(mg === selectedMuscle ? null : mg)}
-                    className={cn(
-                      'px-3 py-1 rounded-xl text-xs border transition-colors',
-                      selectedMuscle === mg
-                        ? 'bg-primary text-primary-foreground border-primary'
-                        : 'border-border text-muted-foreground hover:border-primary/50'
-                    )}
+                    onClick={() => handleAdd(searchQuery.trim(), false, selectedMuscle || '')}
+                    className="px-3 py-1 bg-primary text-primary-foreground rounded-xl text-sm font-semibold whitespace-nowrap"
                   >
-                    {mg}
+                    Add
                   </button>
-                ))}
+                )}
               </div>
 
+              {/* Library search results */}
+              {isSearching && libraryMatches.length > 0 && (
+                <div className="flex flex-col gap-1">
+                  <p className="text-[10px] text-muted-foreground uppercase">From library</p>
+                  {libraryMatches.map((e) => (
+                    <button
+                      key={e.id}
+                      onClick={() => handleAdd(e.display_name, e.exercise_type === 'cardio', e.muscle_group || '')}
+                      className="text-left px-3 py-2 rounded-xl text-sm hover:bg-primary/10 hover:text-primary transition-colors"
+                    >
+                      {e.display_name}
+                      {e.muscle_group && <span className="text-muted-foreground text-xs ml-1">· {e.muscle_group}</span>}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Muscle group tabs */}
+              {!isSearching && (
+                <div className="flex flex-wrap gap-1.5">
+                  {muscleGroups.map((mg) => (
+                    <button
+                      key={mg}
+                      onClick={() => setSelectedMuscle(mg === selectedMuscle ? null : mg)}
+                      className={cn(
+                        'px-3 py-1 rounded-xl text-xs border transition-colors',
+                        selectedMuscle === mg
+                          ? 'bg-primary text-primary-foreground border-primary'
+                          : 'border-border text-muted-foreground hover:border-primary/50'
+                      )}
+                    >
+                      {mg}
+                    </button>
+                  ))}
+                </div>
+              )}
+
               {/* Exercise list for selected muscle */}
-              {selectedMuscle && (
+              {!isSearching && selectedMuscle && (
                 <div className="flex flex-col gap-1">
                   {(EXERCISES_BY_MUSCLE[selectedMuscle] || []).map((e) => (
                     <button
                       key={e.name}
                       disabled={existingNames.has(e.name)}
-                      onClick={() => handleAdd(e.name, selectedMuscle === 'Cardio')}
+                      onClick={() => handleAdd(e.name, selectedMuscle === 'Cardio', selectedMuscle)}
                       className={cn(
                         'text-left px-3 py-2 rounded-xl text-sm transition-colors',
                         existingNames.has(e.name)
@@ -224,25 +275,8 @@ export default function WorkoutExerciseEditor({ exercises, sessionType, onClose,
                 </div>
               )}
 
-              {/* Custom exercise */}
-              <div className="flex gap-2">
-                <input
-                  value={customName}
-                  onChange={(e) => setCustomName(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleCustomAdd()}
-                  placeholder="Custom exercise name..."
-                  className="flex-1 h-9 rounded-xl bg-input border border-border px-3 text-sm"
-                />
-                <button
-                  onClick={handleCustomAdd}
-                  className="px-3 py-1 bg-primary text-primary-foreground rounded-xl text-sm font-semibold"
-                >
-                  Add
-                </button>
-              </div>
-
               <button
-                onClick={() => setShowPicker(false)}
+                onClick={() => { setShowPicker(false); setSearchQuery(''); }}
                 className="text-xs text-muted-foreground text-center"
               >
                 Cancel

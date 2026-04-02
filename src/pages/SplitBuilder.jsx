@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { DAYS } from '@/components/splitbuilder/exerciseData';
+import { useExerciseLibrary } from '@/hooks/useExerciseLibrary';
 import DayCard from '@/components/splitbuilder/DayCard';
 import { cn } from '@/lib/utils';
 import ImportSplitModal from '@/components/splitbuilder/ImportSplitModal';
@@ -30,6 +31,7 @@ export default function SplitBuilder() {
     () => new URLSearchParams(window.location.search).get('newSplit') === '1'
   );
   const [showImport, setShowImport] = useState(false);
+  const { ensureExercise } = useExerciseLibrary();
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
@@ -120,6 +122,12 @@ export default function SplitBuilder() {
           });
           for (let i = 0; i < d.exercises.length; i++) {
             const ex = d.exercises[i];
+            // Save to global exercise library
+            await ensureExercise({
+              display_name: ex.name,
+              exercise_type: ex.exercise_type || 'strength',
+              muscle_group: ex.muscle || '',
+            });
             await base44.entities.SplitExercise.create({
               split_day_id: savedDay.id,
               user_id: user.email,
