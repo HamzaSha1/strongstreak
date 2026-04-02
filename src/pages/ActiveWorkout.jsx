@@ -236,16 +236,23 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
         <div className="border-t border-border px-4 pb-4 pt-3">
           <ExerciseNotes ex={ex} onUpdateSet={onUpdateSet} onNotesChange={onNotesChange} />
           <ExerciseHistory exerciseName={ex.name} userId={userId} weightUnit={weightUnit} toDisplay={toDisplay} />
-          {prevSets.length > 0 && (
-            <div className="bg-muted/50 rounded-xl p-2 mb-3">
-              <p className="text-xs text-muted-foreground mb-1">Last session</p>
-              <div className="flex flex-wrap gap-1.5">
+          {/* Last session — always visible, most important reference */}
+          {prevSets.length > 0 ? (
+            <div className="bg-primary/8 border border-primary/20 rounded-xl p-3 mb-3">
+              <p className="text-[10px] font-semibold text-primary uppercase tracking-wider mb-2">Last time — same day</p>
+              <div className="flex flex-wrap gap-2">
                 {prevSets.map((s, i) => (
-                  <span key={i} className="text-xs bg-muted rounded-lg px-2 py-0.5">
-                    {s.reps}×{toDisplay(s.weight_kg)}{weightUnit}
-                  </span>
+                  <div key={i} className="flex flex-col items-center bg-muted rounded-xl px-3 py-1.5 min-w-[52px]">
+                    <span className="text-[10px] text-muted-foreground">Set {s.set_number}</span>
+                    <span className="text-sm font-bold text-foreground">{s.reps}<span className="text-muted-foreground font-normal text-xs"> reps</span></span>
+                    <span className="text-xs font-semibold text-primary">{toDisplay(s.weight_kg)}{weightUnit}</span>
+                  </div>
                 ))}
               </div>
+            </div>
+          ) : (
+            <div className="bg-muted/30 rounded-xl px-3 py-2 mb-3">
+              <p className="text-xs text-muted-foreground italic">No previous data for this exercise on this day</p>
             </div>
           )}
           <div className="flex flex-col gap-1.5">{renderSets()}</div>
@@ -303,9 +310,24 @@ export default function ActiveWorkout() {
   });
 
   const { data: prevLogs = [] } = useQuery({
-    queryKey: ['prevSetLogs', user?.email],
-    queryFn: () => base44.entities.SetLog.filter({ user_id: user?.email }, '-created_date', 200),
-    enabled: !!user,
+    queryKey: ['prevSetLogs', user?.email, dayId],
+    queryFn: async () => {
+      // Get workout logs for this specific split day
+      const dayLogs = await base44.entities.WorkoutLog.filter({ user_id: user?.email, split_day_id: dayId }, '-created_date', 10);
+      if (!dayLogs.length) return [];
+      // Get set logs from those sessions (skip the current one if it exists)
+      const pastLogIds = dayLogs
+        .filter((l) => l.id !== workoutLog?.id)
+        .slice(0, 5)
+        .map((l) => l.id);
+      if (!pastLogIds.length) return [];
+      const allSets = await Promise.all(
+        pastLogIds.map((id) => base44.entities.SetLog.filter({ workout_log_id: id, completed: true }))
+      );
+      return allSets.flat();
+    },
+    enabled: !!user && !!dayId,
+    staleTime: 0,
   });
 
   // The active exercise list: prefer local edits, fall back to server data
@@ -388,8 +410,9 @@ export default function ActiveWorkout() {
   }, [user, day]);
 
   const getPrevSets = (exName) => {
-    const prev = prevLogs.filter((s) => s.exercise_name === exName && s.completed);
+    const prev = prevLogs.filter((s) => s.exercise_name === exName);
     if (!prev.length) return [];
+    // Pick the most recent session for this exercise
     const lastLogId = prev[0].workout_log_id;
     return prev.filter((s) => s.workout_log_id === lastLogId).sort((a, b) => a.set_number - b.set_number);
   };
