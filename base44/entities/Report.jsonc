@@ -49,7 +49,6 @@
   },
   "required": [
     "reporter_id",
-    "reported_user_id",
     "content_type"
   ],
   "rls": {

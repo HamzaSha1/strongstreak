@@ -207,9 +207,9 @@ export default function Feed() {
                     />
                     <span className="text-sm font-medium">{post.likes_count || 0}</span>
                   </button>
-                  {user && post.created_by && post.created_by !== user.email && (
+                  {user && post.created_by !== user.email && (
                     <button
-                      onClick={() => setReportTarget({ postId: post.id, postedBy: post.created_by })}
+                      onClick={() => setReportTarget({ postId: post.id, postedBy: post.created_by || 'unknown' })}
                       className="ml-auto text-muted-foreground hover:text-destructive transition-colors min-h-11 min-w-11 flex items-center justify-center"
                     >
                       <Flag size={16} />
