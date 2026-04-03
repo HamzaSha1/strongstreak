@@ -1,0 +1,82 @@
+{
+  "name": "Report",
+  "type": "object",
+  "properties": {
+    "reporter_id": {
+      "type": "string",
+      "description": "Email of the reporting user"
+    },
+    "reported_user_id": {
+      "type": "string",
+      "description": "Email of the reported user"
+    },
+    "content_type": {
+      "type": "string",
+      "enum": [
+        "post",
+        "user",
+        "group"
+      ],
+      "description": "Type of reported content"
+    },
+    "content_id": {
+      "type": "string",
+      "description": "ID of the reported content"
+    },
+    "reason": {
+      "type": "string",
+      "enum": [
+        "spam",
+        "harassment",
+        "inappropriate_content",
+        "fake_account",
+        "other"
+      ],
+      "default": "other"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "reviewed",
+        "dismissed"
+      ],
+      "default": "pending"
+    }
+  },
+  "required": [
+    "reporter_id",
+    "reported_user_id",
+    "content_type"
+  ],
+  "rls": {
+    "create": {
+      "data.reporter_id": "{{user.email}}"
+    },
+    "read": {
+      "$or": [
+        {
+          "data.reporter_id": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

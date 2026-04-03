@@ -1,12 +1,16 @@
 import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Heart, Clock } from 'lucide-react';
+import { Heart, Clock, Flag } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
+import TermsModal from '@/components/moderation/TermsModal';
+import ReportModal from '@/components/moderation/ReportModal';
 
 export default function Feed() {
   const [user, setUser] = useState(null);
+  const [termsAccepted, setTermsAccepted] = useState(true); // assume accepted until we know
+  const [reportTarget, setReportTarget] = useState(null); // { postId, postedBy }
   const [pullProgress, setPullProgress] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const scrollContainerRef = useRef(null);
@@ -14,7 +18,10 @@ export default function Feed() {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
+    base44.auth.me().then((u) => {
+      setUser(u);
+      setTermsAccepted(!!u?.terms_accepted);
+    }).catch(() => {});
   }, []);
 
   const handleTouchStart = (e) => {
@@ -46,6 +53,13 @@ export default function Feed() {
     queryKey: ['posts'],
     queryFn: () => base44.entities.Post.list('-created_date', 50),
   });
+
+  const { data: blocks = [] } = useQuery({
+    queryKey: ['blocks', user?.email],
+    queryFn: () => base44.entities.Block.filter({ blocker_id: user?.email }),
+    enabled: !!user,
+  });
+  const blockedIds = new Set(blocks.map((b) => b.blocked_id));
 
   const { data: myLikes = [] } = useQuery({
     queryKey: ['myLikes', user?.email],
@@ -98,7 +112,21 @@ export default function Feed() {
 
   const isLiked = (postId) => myLikes.some((l) => l.post_id === postId);
 
+  if (user && !termsAccepted) {
+    return <TermsModal onAccepted={() => setTermsAccepted(true)} />;
+  }
+
   return (
+    <>
+    {reportTarget && (
+      <ReportModal
+        reporterId={user?.email}
+        reportedUserId={reportTarget.postedBy}
+        contentType="post"
+        contentId={reportTarget.postId}
+        onClose={() => setReportTarget(null)}
+      />
+    )}
     <div
       ref={scrollContainerRef}
       className="pb-4 h-screen overflow-y-auto"
@@ -138,7 +166,7 @@ export default function Feed() {
       ) : (
         <div className="flex flex-col gap-0">
           {posts
-            .filter((p) => p.visibility === 'public')
+            .filter((p) => p.visibility === 'public' && !blockedIds.has(p.created_by))
             .map((post) => (
               <div key={post.id} className="border-b border-border">
                 {/* User row */}
@@ -179,6 +207,14 @@ export default function Feed() {
                     />
                     <span className="text-sm font-medium">{post.likes_count || 0}</span>
                   </button>
+                  {user && post.created_by !== user.email && (
+                    <button
+                      onClick={() => setReportTarget({ postId: post.id, postedBy: post.created_by })}
+                      className="ml-auto text-muted-foreground hover:text-destructive transition-colors min-h-11 min-w-11 flex items-center justify-center"
+                    >
+                      <Flag size={16} />
+                    </button>
+                  )}
                 </div>
 
                 {/* Caption */}
@@ -190,5 +226,6 @@ export default function Feed() {
         </div>
       )}
     </div>
+    </>
   );
 }

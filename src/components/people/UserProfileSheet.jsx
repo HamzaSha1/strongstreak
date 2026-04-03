@@ -1,10 +1,42 @@
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { X, Lock, UserPlus, UserCheck, Dumbbell, Clock } from 'lucide-react';
+import { X, Lock, UserPlus, UserCheck, Dumbbell, Clock, Flag, ShieldOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import ReportModal from '@/components/moderation/ReportModal';
+import { useState as useLocalState } from 'react';
+import { toast } from 'sonner';
 
 export default function UserProfileSheet({ person, currentUser, following, onClose }) {
   const queryClient = useQueryClient();
+  const [showReport, setShowReport] = useLocalState(false);
+
+  // Block state
+  const { data: blocks = [] } = useQuery({
+    queryKey: ['blocks', currentUser?.email],
+    queryFn: () => base44.entities.Block.filter({ blocker_id: currentUser.email }),
+    enabled: !!currentUser,
+  });
+  const isBlocked = blocks.some((b) => b.blocked_id === person.email);
+
+  const blockMutation = useMutation({
+    mutationFn: async () => {
+      if (isBlocked) {
+        const existing = blocks.find((b) => b.blocked_id === person.email);
+        if (existing) await base44.entities.Block.delete(existing.id);
+      } else {
+        await base44.entities.Block.create({ blocker_id: currentUser.email, blocked_id: person.email });
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['blocks', currentUser?.email] });
+      if (!isBlocked) {
+        toast.success(`${person.display_name} has been blocked.`);
+        onClose();
+      } else {
+        toast.success(`${person.display_name} has been unblocked.`);
+      }
+    },
+  });
 
   const isFollowing = following.some((f) => f.following_id === person.email);
   const isPrivate = person.is_private;
@@ -85,6 +117,16 @@ export default function UserProfileSheet({ person, currentUser, following, onClo
   };
 
   return (
+    <>
+    {showReport && (
+      <ReportModal
+        reporterId={currentUser?.email}
+        reportedUserId={person.email}
+        contentType="user"
+        contentId={person.email}
+        onClose={() => setShowReport(false)}
+      />
+    )}
     <div className="fixed inset-0 z-50 flex flex-col bg-background" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-4 border-b border-border">
@@ -92,6 +134,25 @@ export default function UserProfileSheet({ person, currentUser, following, onClo
           <X size={20} />
         </button>
         <h2 className="font-heading font-bold text-lg flex-1">Profile</h2>
+        {currentUser && person.email !== currentUser.email && (
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setShowReport(true)}
+              className="p-2 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+              title="Report user"
+            >
+              <Flag size={17} />
+            </button>
+            <button
+              onClick={() => blockMutation.mutate()}
+              disabled={blockMutation.isPending}
+              className="p-2 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+              title={isBlocked ? 'Unblock user' : 'Block user'}
+            >
+              <ShieldOff size={17} />
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto">
@@ -181,5 +242,6 @@ export default function UserProfileSheet({ person, currentUser, following, onClo
         )}
       </div>
     </div>
+    </>
   );
 }
