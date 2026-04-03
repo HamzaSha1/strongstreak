@@ -1,17 +1,24 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Shield, Flag, CheckCircle, XCircle, Trash2, RefreshCw, Filter } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { toast } from 'sonner';
+import { Shield, Flag, Users, BarChart2, Settings } from 'lucide-react';
 import ReportCard from '@/components/admin/ReportCard';
+import UserManagement from '@/components/admin/UserManagement';
+import AppAnalytics from '@/components/admin/AppAnalytics';
+import AppSettings from '@/components/admin/AppSettings';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+
+const TABS = [
+  { key: 'reports', label: 'Reports', icon: Flag },
+  { key: 'users', label: 'Users', icon: Users },
+  { key: 'analytics', label: 'Analytics', icon: BarChart2 },
+  { key: 'settings', label: 'Settings', icon: Settings },
+];
 
 export default function AdminDashboard() {
   const [user, setUser] = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [activeTab, setActiveTab] = useState('reports');
 
   useEffect(() => {
     base44.auth.me().then((u) => {
@@ -38,13 +45,48 @@ export default function AdminDashboard() {
     );
   }
 
-  return <AdminContent statusFilter={statusFilter} setStatusFilter={setStatusFilter} user={user} />;
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border px-4 py-4 flex items-center gap-2">
+        <Shield size={20} className="text-primary" />
+        <h1 className="font-heading font-bold text-lg">Admin Dashboard</h1>
+      </div>
+
+      {/* Tab bar */}
+      <div className="flex gap-1 px-3 py-2 border-b border-border overflow-x-auto">
+        {TABS.map(({ key, label, icon: Icon }) => (
+          <button
+            key={key}
+            onClick={() => setActiveTab(key)}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-colors ${
+              activeTab === key
+                ? 'bg-primary text-primary-foreground'
+                : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+            }`}
+          >
+            <Icon size={14} />
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* Tab content */}
+      <div>
+        {activeTab === 'reports' && <ReportsTab />}
+        {activeTab === 'users' && <UserManagement currentUser={user} />}
+        {activeTab === 'analytics' && <AppAnalytics />}
+        {activeTab === 'settings' && <AppSettings />}
+      </div>
+    </div>
+  );
 }
 
-function AdminContent({ statusFilter, setStatusFilter, user }) {
+function ReportsTab() {
+  const [statusFilter, setStatusFilter] = useState('all');
   const queryClient = useQueryClient();
 
-  const { data: reports = [], isLoading, refetch } = useQuery({
+  const { data: reports = [], isLoading } = useQuery({
     queryKey: ['adminReports'],
     queryFn: () => base44.entities.Report.list('-created_date', 200),
   });
@@ -69,10 +111,7 @@ function AdminContent({ statusFilter, setStatusFilter, user }) {
     },
   });
 
-  const filtered = statusFilter === 'all'
-    ? reports
-    : reports.filter((r) => r.status === statusFilter);
-
+  const filtered = statusFilter === 'all' ? reports : reports.filter((r) => r.status === statusFilter);
   const counts = {
     all: reports.length,
     pending: reports.filter((r) => r.status === 'pending').length,
@@ -81,19 +120,7 @@ function AdminContent({ statusFilter, setStatusFilter, user }) {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border px-4 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Shield size={20} className="text-primary" />
-          <h1 className="font-heading font-bold text-lg">Moderation Dashboard</h1>
-        </div>
-        <button onClick={() => refetch()} className="p-2 rounded-xl hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors">
-          <RefreshCw size={16} />
-        </button>
-      </div>
-
-      {/* Filter tabs */}
+    <>
       <div className="flex gap-2 px-4 py-3 overflow-x-auto border-b border-border">
         {[
           { key: 'all', label: 'All' },
@@ -118,7 +145,6 @@ function AdminContent({ statusFilter, setStatusFilter, user }) {
         ))}
       </div>
 
-      {/* Content */}
       <div className="p-4 flex flex-col gap-3">
         {isLoading ? (
           <div className="flex justify-center py-20">
@@ -141,6 +167,6 @@ function AdminContent({ statusFilter, setStatusFilter, user }) {
           ))
         )}
       </div>
-    </div>
+    </>
   );
 }
