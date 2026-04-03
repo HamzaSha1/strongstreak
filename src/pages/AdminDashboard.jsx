@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { Shield, Flag, Users, BarChart2, Settings } from 'lucide-react';
+import { Shield, Flag, Users, BarChart2, Settings, ArrowLeft } from 'lucide-react';
 import ReportCard from '@/components/admin/ReportCard';
 import UserManagement from '@/components/admin/UserManagement';
 import AppAnalytics from '@/components/admin/AppAnalytics';
@@ -19,6 +20,7 @@ export default function AdminDashboard() {
   const [user, setUser] = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [activeTab, setActiveTab] = useState('reports');
+  const navigate = useNavigate();
 
   useEffect(() => {
     base44.auth.me().then((u) => {
@@ -48,7 +50,10 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border px-4 py-4 flex items-center gap-2">
+      <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border px-4 py-4 flex items-center gap-3">
+        <button onClick={() => navigate('/profile')} className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground transition-colors">
+          <ArrowLeft size={18} />
+        </button>
         <Shield size={20} className="text-primary" />
         <h1 className="font-heading font-bold text-lg">Admin Dashboard</h1>
       </div>
