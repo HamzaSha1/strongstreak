@@ -2,6 +2,7 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { appParams } from '@/lib/app-params';
 import { createAxiosClient } from '@base44/sdk/dist/utils/axios-client';
+import TermsModal from '@/components/moderation/TermsModal';
 
 const AuthContext = createContext();
 
@@ -128,6 +129,23 @@ export const AuthProvider = ({ children }) => {
     base44.auth.redirectToLogin(window.location.href);
   };
 
+  const [termsAccepted, setTermsAccepted] = useState(true);
+
+  // After user loads, check if they accepted terms
+  useEffect(() => {
+    if (user) {
+      setTermsAccepted(!!user.terms_accepted);
+    }
+  }, [user]);
+
+  // If logged in and hasn't accepted terms, show modal over everything
+  const renderTermsGate = (children) => {
+    if (isAuthenticated && user && !termsAccepted) {
+      return <TermsModal onAccepted={() => setTermsAccepted(true)} />;
+    }
+    return children;
+  };
+
   return (
     <AuthContext.Provider value={{ 
       user, 
@@ -140,7 +158,7 @@ export const AuthProvider = ({ children }) => {
       navigateToLogin,
       checkAppState
     }}>
-      {children}
+      {renderTermsGate(children)}
     </AuthContext.Provider>
   );
 };

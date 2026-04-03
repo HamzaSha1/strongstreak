@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Copy, Users, Flame, LogOut } from 'lucide-react';
+import { Plus, Copy, Users, Flame, LogOut, Flag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import ReportModal from '@/components/moderation/ReportModal';
 
 function generateCode() {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -17,6 +18,7 @@ export default function Groups() {
   const [user, setUser] = useState(null);
   const [view, setView] = useState('list'); // list | create | join | detail
   const [selectedGroup, setSelectedGroup] = useState(null);
+  const [reportTarget, setReportTarget] = useState(null);
   const [groupName, setGroupName] = useState('');
   const [groupDesc, setGroupDesc] = useState('');
   const [joinCode, setJoinCode] = useState('');
@@ -129,9 +131,28 @@ export default function Groups() {
   if (view === 'detail' && selectedGroup) {
     return (
       <div className="px-4 pt-6">
-        <button onClick={() => setView('list')} className="text-muted-foreground text-sm mb-4">
-          ← Back
-        </button>
+        {reportTarget && (
+          <ReportModal
+            reporterId={user?.email}
+            reportedUserId={selectedGroup.created_by}
+            contentType="group"
+            contentId={selectedGroup.id}
+            onClose={() => setReportTarget(null)}
+          />
+        )}
+        <div className="flex items-center gap-2 mb-4">
+          <button onClick={() => setView('list')} className="text-muted-foreground text-sm flex-1 text-left">
+            ← Back
+          </button>
+          {user && selectedGroup.created_by !== user.email && (
+            <button
+              onClick={() => setReportTarget(selectedGroup)}
+              className="p-2 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+            >
+              <Flag size={16} />
+            </button>
+          )}
+        </div>
         <h2 className="font-heading font-bold text-xl mb-1">{selectedGroup.name}</h2>
         {selectedGroup.description && (
           <p className="text-muted-foreground text-sm mb-4">{selectedGroup.description}</p>

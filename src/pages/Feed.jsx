@@ -20,7 +20,7 @@ export default function Feed() {
   useEffect(() => {
     base44.auth.me().then((u) => {
       setUser(u);
-      setTermsAccepted(!!u?.terms_accepted);
+      setTermsAccepted(true); // terms now handled globally in AuthContext
     }).catch(() => {});
   }, []);
 

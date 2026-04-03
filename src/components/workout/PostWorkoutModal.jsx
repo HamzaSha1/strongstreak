@@ -24,6 +24,15 @@ export default function PostWorkoutModal({ workoutLog, user, onClose }) {
   };
 
   const handlePost = async () => {
+    // AI moderation check on caption
+    if (caption.trim()) {
+      const res = await base44.functions.invoke('moderateContent', { text: caption });
+      if (res.data?.safe === false) {
+        toast.error(`Post blocked: ${res.data.reason || 'Content violates community guidelines.'}`);
+        return;
+      }
+    }
+
     await base44.entities.Post.create({
       user_id: user.email,
       workout_log_id: workoutLog.id,
