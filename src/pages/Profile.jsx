@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { LogOut, Trash2, User, Camera, Eye, EyeOff, Lock, Weight } from 'lucide-react';
+import { LogOut, Trash2, User, Camera, Eye, EyeOff, Lock, Weight, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -243,6 +243,15 @@ export default function Profile() {
 
       {/* Actions */}
       <div className="flex flex-col gap-3">
+        {user?.role === 'admin' && (
+          <Button
+            variant="outline"
+            className="gap-2 justify-start border-primary text-primary hover:bg-primary/10"
+            onClick={() => navigate('/admin')}
+          >
+            <Shield size={16} /> Admin Dashboard
+          </Button>
+        )}
         <Button
           variant="outline"
           className="gap-2 justify-start"
