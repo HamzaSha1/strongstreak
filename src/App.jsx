@@ -19,6 +19,7 @@ const ActiveWorkout = lazy(() => import('@/pages/ActiveWorkout'));
 const People = lazy(() => import('@/pages/People'));
 const Profile = lazy(() => import('@/pages/Profile'));
 const Privacy = lazy(() => import('@/pages/Privacy'));
+const AdminDashboard = lazy(() => import('@/pages/AdminDashboard'));
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -67,6 +68,7 @@ const AuthenticatedApp = () => {
           </Route>
           <Route path="/split-builder" element={<SplitBuilder />} />
           <Route path="/privacy" element={<Privacy />} />
+          <Route path="/admin" element={<AdminDashboard />} />
 
           <Route path="/workout/:dayId" element={<ActiveWorkout />} />
           <Route path="*" element={<PageNotFound />} />
