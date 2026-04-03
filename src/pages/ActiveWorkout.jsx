@@ -447,7 +447,7 @@ export default function ActiveWorkout() {
         set_number: set.set_number,
         reps: Number(set.reps),
         weight_kg: Number(set.weight_kg),
-        rpe: set.rpe,
+        rpe: set.rpe !== '' && set.rpe != null ? Number(set.rpe) : undefined,
         set_type: set.set_type,
         completed: true,
       });
