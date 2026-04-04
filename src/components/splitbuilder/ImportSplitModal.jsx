@@ -153,7 +153,7 @@ Extract every exercise and return JSON:
     {
       "name": "Exercise name",
       "exercise_type": "strength|cardio",
-      "target_sets": 3,
+      "target_sets": 4,
       "target_reps": "8-12",
       "rpe": 7,
       "rest_seconds": 90,
@@ -165,6 +165,7 @@ Extract every exercise and return JSON:
 Rules:
 - target_reps: ALWAYS return a rep RANGE as a string like "8-12", "6-10", "12-15", "AMRAP". Never return a single specific number unless the screenshot explicitly shows a fixed rep count with no range. If the rep range is unclear or not shown, return null so the user can fill it in.
 - notes: capture any tempo notation (e.g. "3-1-2"), form cues, coaching notes, or any additional text attached to the exercise in the screenshot. If nothing extra is written, return an empty string.
+- target_sets: extract the EXACT number of sets shown in the screenshot. Do NOT default to 3 — read it directly from the image (e.g. "4 x 8-12" means target_sets=4).
 - rpe: infer from rep range if not stated (15+ reps → 7, 8-12 → 7.5, 4-6 → 8.5). Default 7.
 - rest_seconds: infer if not stated (compound → 120-180, isolation → 60-90, cardio → 30-60).
 - exercise_type: "cardio" only for cardio exercises.
@@ -202,7 +203,7 @@ Rules:
           name: ex.name,
           image_url: null,
           exercise_type: ex.exercise_type || 'strength',
-          target_sets: ex.target_sets || 3,
+          target_sets: ex.target_sets != null ? ex.target_sets : null,
           target_reps: ex.target_reps ? String(ex.target_reps) : '',
           rpe: ex.rpe || 7,
           rest_seconds: ex.rest_seconds || 90,
