@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
+// Session type color map
 const SESSION_COLORS = {
   Push: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
   Pull: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
