@@ -106,13 +106,10 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
             </>
           ) : (
             <>
-              {/* Rep range badge (editable) */}
-              <input
-                value={ex.target_reps || ''}
-                onChange={(e) => onRepRangeChange(ex.id, e.target.value)}
-                placeholder="—"
-                className="w-14 shrink-0 h-10 text-center bg-muted/60 border border-border rounded-xl text-xs font-semibold text-muted-foreground focus:border-primary focus:outline-none"
-              />
+              {/* Rep range badge */}
+              <div className="w-14 shrink-0 h-10 flex items-center justify-center bg-muted/60 border border-border rounded-xl text-xs font-semibold text-muted-foreground">
+                {ex.target_reps || '—'}
+              </div>
 
               {/* Reps input */}
               <input
