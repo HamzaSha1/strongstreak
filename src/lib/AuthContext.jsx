@@ -139,9 +139,9 @@ export const AuthProvider = ({ children }) => {
     }
   }, [user]);
 
-  // If logged in and hasn't accepted terms, show modal only on /feed page
-  const location = useLocation();
-  const renderTermsGate = (children) => {
+  const TermsGate = ({ children }) => {
+    const location = useLocation();
+    
     if (isAuthenticated && user && !termsAccepted && location.pathname === '/feed') {
       return <TermsModal onAccepted={() => setTermsAccepted(true)} />;
     }
@@ -160,7 +160,7 @@ export const AuthProvider = ({ children }) => {
       navigateToLogin,
       checkAppState
     }}>
-      {renderTermsGate(children)}
+      <TermsGate>{children}</TermsGate>
     </AuthContext.Provider>
   );
 };
