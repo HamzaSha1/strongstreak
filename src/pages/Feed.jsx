@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Heart, Clock, Flag } from 'lucide-react';
@@ -16,6 +16,13 @@ export default function Feed() {
   const scrollContainerRef = useRef(null);
   const startYRef = useRef(0);
   const queryClient = useQueryClient();
+
+  // Refetch blocks on component mount to ensure fresh data
+  useEffect(() => {
+    if (user?.email) {
+      queryClient.refetchQueries({ queryKey: ['blocks', user.email] });
+    }
+  }, [user?.email, queryClient]);
 
   const handleTouchStart = (e) => {
     if (scrollContainerRef.current?.scrollTop === 0) {
