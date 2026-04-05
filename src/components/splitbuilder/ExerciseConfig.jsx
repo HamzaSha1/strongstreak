@@ -70,7 +70,7 @@ export default function ExerciseConfig({ exercise, onChange, onDelete, allExerci
           <p className="text-xs text-muted-foreground">
             {isCardio(exercise)
               ? `${exercise.cardio_metric || 'distance'} · ${exercise.target_reps || '—'} ${CARDIO_METRICS.find(m => m.value === (exercise.cardio_metric || 'distance'))?.unit || ''}`
-              : `${exercise.target_sets ? `${exercise.target_sets} sets` : '—'}${exercise.target_reps ? ` · ${exercise.target_reps} reps` : ''}${exercise.rpe ? ` · RPE ${exercise.rpe}` : ''}`
+              : `${exercise.target_sets ? `${exercise.target_sets} sets` : '—'}${exercise.target_reps ? ` · ${exercise.target_reps}${exercise.rep_mode === 'time' ? '' : ' reps'}` : ''}${exercise.rpe ? ` · RPE ${exercise.rpe}` : ''}`
             }
           </p>
         </div>
@@ -152,28 +152,86 @@ export default function ExerciseConfig({ exercise, onChange, onDelete, allExerci
         </StepRow>
       )}
 
-      {/* Reps (strength only) */}
+      {/* Reps / Time (strength only) */}
       {!isCardio(exercise) && (
-        <StepRow label="Reps" open={openStep === 'reps'} onToggle={() => toggleStep('reps')}>
-          <div className="flex flex-wrap gap-2 py-2">
-            {['6', '8', '10', '12', '15', '20', 'Failure'].map((r) => (
-              <button
-                key={r}
-                onClick={() => onChange({ ...exercise, target_reps: r })}
-                className={cn(
-                  'px-4 py-2 rounded-xl border text-sm transition-colors',
-                  exercise.target_reps === r
-                    ? 'bg-primary text-primary-foreground border-primary'
-                    : 'border-border text-muted-foreground hover:border-primary/50'
-                )}
-              >
-                {r}
-              </button>
-            ))}
+        <StepRow label={exercise.rep_mode === 'time' ? 'Time' : 'Reps'} open={openStep === 'reps'} onToggle={() => toggleStep('reps')}>
+          {/* Mode toggle */}
+          <div className="flex gap-2 mb-3 mt-1">
+            <button
+              onClick={() => onChange({ ...exercise, rep_mode: 'reps', target_reps: '' })}
+              className={cn(
+                'flex-1 py-2 rounded-xl border text-sm transition-colors',
+                (exercise.rep_mode || 'reps') === 'reps'
+                  ? 'bg-primary text-primary-foreground border-primary'
+                  : 'border-border text-muted-foreground hover:border-primary/50'
+              )}
+            >
+              Reps
+            </button>
+            <button
+              onClick={() => onChange({ ...exercise, rep_mode: 'time', target_reps: '' })}
+              className={cn(
+                'flex-1 py-2 rounded-xl border text-sm transition-colors',
+                exercise.rep_mode === 'time'
+                  ? 'bg-primary text-primary-foreground border-primary'
+                  : 'border-border text-muted-foreground hover:border-primary/50'
+              )}
+            >
+              Time
+            </button>
           </div>
+
+          {exercise.rep_mode === 'time' ? (
+            <div className="flex flex-wrap gap-2 py-1">
+              {['20s', '30s', '45s', '60s', '90s', '2min', '3min'].map((t) => (
+                <button
+                  key={t}
+                  onClick={() => onChange({ ...exercise, target_reps: t })}
+                  className={cn(
+                    'px-4 py-2 rounded-xl border text-sm transition-colors',
+                    exercise.target_reps === t
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : 'border-border text-muted-foreground hover:border-primary/50'
+                  )}
+                >
+                  {t}
+                </button>
+              ))}
+              <input
+                value={!['20s','30s','45s','60s','90s','2min','3min'].includes(exercise.target_reps) ? exercise.target_reps || '' : ''}
+                onChange={(e) => onChange({ ...exercise, target_reps: e.target.value })}
+                placeholder="Custom (e.g. 40s)"
+                className="flex-1 min-w-[120px] bg-input border border-border rounded-xl px-3 py-2 text-sm"
+              />
+            </div>
+          ) : (
+            <div className="flex flex-wrap gap-2 py-1">
+              {['6', '8', '10', '12', '15', '20', 'Failure', 'AMRAP'].map((r) => (
+                <button
+                  key={r}
+                  onClick={() => onChange({ ...exercise, target_reps: r })}
+                  className={cn(
+                    'px-4 py-2 rounded-xl border text-sm transition-colors',
+                    exercise.target_reps === r
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : 'border-border text-muted-foreground hover:border-primary/50'
+                  )}
+                >
+                  {r}
+                </button>
+              ))}
+              <input
+                value={!['6','8','10','12','15','20','Failure','AMRAP'].includes(exercise.target_reps) ? exercise.target_reps || '' : ''}
+                onChange={(e) => onChange({ ...exercise, target_reps: e.target.value })}
+                placeholder="Custom (e.g. 8-12)"
+                className="flex-1 min-w-[120px] bg-input border border-border rounded-xl px-3 py-2 text-sm"
+              />
+            </div>
+          )}
+
           <button
             onClick={() => nextStep('reps')}
-            className="w-full mt-2 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-semibold"
+            className="w-full mt-3 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-semibold"
           >
             Next
           </button>
