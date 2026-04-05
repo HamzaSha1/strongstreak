@@ -10,6 +10,7 @@ import { useAuth } from '@/lib/AuthContext';
 export default function Feed() {
   const { user } = useAuth();
   const [reportTarget, setReportTarget] = useState(null); // { postId, postedBy }
+  const [locallyBlockedIds, setLocallyBlockedIds] = useState(new Set());
   const [pullProgress, setPullProgress] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const scrollContainerRef = useRef(null);
@@ -44,14 +45,17 @@ export default function Feed() {
   const { data: posts = [], isLoading } = useQuery({
     queryKey: ['posts'],
     queryFn: () => base44.entities.Post.list('-created_date', 50),
+    staleTime: 0,
   });
 
   const { data: blocks = [] } = useQuery({
     queryKey: ['blocks', user?.email],
     queryFn: () => base44.entities.Block.filter({ blocker_id: user?.email }),
     enabled: !!user,
+    staleTime: 0,
+    refetchOnMount: true,
   });
-  const blockedIds = new Set(blocks.map((b) => b.blocked_id));
+  const blockedIds = new Set([...blocks.map((b) => b.blocked_id), ...locallyBlockedIds]);
 
   const { data: myLikes = [] } = useQuery({
     queryKey: ['myLikes', user?.email],
@@ -114,9 +118,8 @@ export default function Feed() {
         contentId={reportTarget.postId}
         onClose={() => setReportTarget(null)}
         onBlocked={(blockedUserId) => {
-          // Instantly remove blocked user's posts from the feed cache
-          const current = queryClient.getQueryData(['posts']) || [];
-          queryClient.setQueryData(['posts'], current.filter((p) => p.created_by !== blockedUserId));
+          // Immediately hide posts via local state (instant, no cache dependency)
+          setLocallyBlockedIds((prev) => new Set([...prev, blockedUserId]));
           queryClient.invalidateQueries({ queryKey: ['blocks', user?.email] });
         }}
       />
