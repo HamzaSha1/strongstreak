@@ -587,7 +587,7 @@ export default function ActiveWorkout() {
   };
 
   return (
-    <div className="pb-32" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+    <div className="pb-36" style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'calc(9rem + env(safe-area-inset-bottom))' }}>
       {/* Header */}
       <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border px-4 py-3">
         <div className="flex items-center justify-between mb-2">
@@ -744,7 +744,7 @@ export default function ActiveWorkout() {
       )}
 
       {/* Finish / Discard buttons */}
-      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-[480px] flex gap-2">
+      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-2xl flex gap-2 px-4 pb-4 pt-2 bg-background/80 backdrop-blur-md" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
         <Button
           variant="outline"
           className="border-destructive text-destructive hover:bg-destructive/10 font-heading font-bold py-5 px-4 touch-target-44 shrink-0"
