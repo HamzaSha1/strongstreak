@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, ChevronDown, ChevronUp, Plus, Check, Flag, Pencil } from 'lucide-react';
+import { ArrowLeft, ChevronDown, ChevronUp, Plus, Check, Flag, Pencil, GripVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -15,6 +15,7 @@ import ExerciseHistory from '@/components/workout/ExerciseHistory';
 import RIRPicker from '@/components/workout/RIRPicker';
 import WorkoutSummaryScreen from '@/components/workout/WorkoutSummaryScreen';
 import { useWeightUnit } from '@/hooks/useWeightUnit';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 
 const SET_TYPES = ['normal', 'dropset', 'superset'];
 
@@ -335,6 +336,7 @@ export default function ActiveWorkout() {
   const [showEditor, setShowEditor] = useState(false);
   const [localExercises, setLocalExercises] = useState(null); // null = use server exercises
   const [repFeedback, setRepFeedback] = useState(null);
+  const [isReordering, setIsReordering] = useState(false);
   const startTime = useRef(new Date());
   const timerRef = useRef(null);
 
@@ -522,6 +524,19 @@ export default function ActiveWorkout() {
     setLocalExercises((prev) => update(prev ?? exercises));
   };
 
+  const handleDragEnd = (result) => {
+    setIsReordering(false);
+    if (!result.destination) return;
+    const orderedExercises = exerciseOrder.length
+      ? exerciseOrder.map((id) => activeExercises.find((e) => e.id === id)).filter(Boolean)
+      : activeExercises;
+    const next = [...orderedExercises];
+    const [moved] = next.splice(result.source.index, 1);
+    next.splice(result.destination.index, 0, moved);
+    setLocalExercises(next);
+    setExerciseOrder(next.map((e) => e.id));
+  };
+
   const addSet = (exId) => {
     setSets((prev) => ({
       ...prev,
@@ -603,83 +618,77 @@ export default function ActiveWorkout() {
         </div>
       </div>
 
-      <div className="px-4 pt-4 flex flex-col gap-3">
-        {(() => {
-          const orderedExercises = exerciseOrder.length
-            ? exerciseOrder.map((id) => activeExercises.find((e) => e.id === id)).filter(Boolean)
-            : activeExercises;
+      {/* Reorder mode banner */}
+      {isReordering && (
+        <div className="mx-4 mt-3 px-4 py-2 bg-primary/10 border border-primary/30 rounded-xl text-xs text-primary font-semibold text-center">
+          Drag to reorder · release to confirm
+        </div>
+      )}
 
-          // Group exercises: supersets grouped, others individual
-          const rendered = [];
-          const usedIds = new Set();
+      <DragDropContext onDragEnd={handleDragEnd} onDragStart={() => { setIsReordering(true); setExpanded({}); }}>
+        <Droppable droppableId="exercises">
+          {(provided) => (
+            <div
+              className="px-4 pt-4 flex flex-col gap-3"
+              ref={provided.innerRef}
+              {...provided.droppableProps}
+            >
+              {(() => {
+                const orderedExercises = exerciseOrder.length
+                  ? exerciseOrder.map((id) => activeExercises.find((e) => e.id === id)).filter(Boolean)
+                  : activeExercises;
 
-          orderedExercises.forEach((ex) => {
-            if (usedIds.has(ex.id)) return;
-
-            if (ex.superset_group) {
-              // Find all exercises in this superset group
-              const group = orderedExercises.filter((e) => e.superset_group === ex.superset_group);
-              group.forEach((e) => usedIds.add(e.id));
-              rendered.push({ type: 'superset', exercises: group });
-            } else {
-              usedIds.add(ex.id);
-              rendered.push({ type: 'single', exercises: [ex] });
-            }
-          });
-
-          return rendered.map((item, itemIdx) => {
-            if (item.type === 'superset') {
-              const group = item.exercises;
-              return (
-                <div key={itemIdx} className="border border-primary/30 rounded-2xl overflow-hidden">
-                  <div className="bg-primary/10 px-4 py-1.5 text-[10px] text-primary font-semibold uppercase tracking-wider">
-                    Superset
-                  </div>
-                  {group.map((ex, gi) => (
-                    <ExerciseCard
-                      key={ex.id}
-                      ex={ex}
-                      exSets={sets[ex.id] || []}
-                      isOpen={expanded[ex.id]}
-                      prevSets={getPrevSets(ex.name)}
-                      onToggle={() => setExpanded((p) => ({ ...p, [ex.id]: !p[ex.id] }))}
-                      onUpdateSet={updateSet}
-                      onCompleteSet={completeSet}
-                      onAddSet={addSet}
-                      onNotesChange={updateExerciseNotes}
-                      onRepRangeChange={updateRepRange}
-                      onRepModeChange={updateRepMode}
-                      divider={gi < group.length - 1}
-                      userId={user?.email}
-                    />
-                  ))}
-                </div>
-              );
-            }
-
-            const ex = item.exercises[0];
-            return (
-              <div key={ex.id} className="bg-card border border-border rounded-2xl overflow-hidden">
-                <ExerciseCard
-                  ex={ex}
-                  exSets={sets[ex.id] || []}
-                  isOpen={expanded[ex.id]}
-                  prevSets={getPrevSets(ex.name)}
-                  onToggle={() => setExpanded((p) => ({ ...p, [ex.id]: !p[ex.id] }))}
-                  onUpdateSet={updateSet}
-                  onCompleteSet={completeSet}
-                  onAddSet={addSet}
-                  onNotesChange={updateExerciseNotes}
-                  onRepRangeChange={updateRepRange}
-                  onRepModeChange={updateRepMode}
-                  divider={false}
-                  userId={user?.email}
-                />
-              </div>
-            );
-          });
-        })()}
-      </div>
+                return orderedExercises.map((ex, idx) => (
+                  <Draggable key={ex.id} draggableId={ex.id} index={idx}>
+                    {(drag, snapshot) => (
+                      <div
+                        ref={drag.innerRef}
+                        {...drag.draggableProps}
+                        className={cn(
+                          'bg-card border border-border rounded-2xl overflow-hidden transition-shadow',
+                          snapshot.isDragging && 'shadow-2xl border-primary/50 scale-[1.02]'
+                        )}
+                      >
+                        {/* Drag handle — long-press activates drag on mobile */}
+                        <div className="flex items-center">
+                          <div
+                            {...drag.dragHandleProps}
+                            className="px-3 py-4 text-muted-foreground touch-none flex items-center self-stretch"
+                            onTouchStart={() => {
+                              // Collapse all when drag starts
+                              setExpanded({});
+                            }}
+                          >
+                            <GripVertical size={16} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <ExerciseCard
+                              ex={ex}
+                              exSets={sets[ex.id] || []}
+                              isOpen={!isReordering && expanded[ex.id]}
+                              prevSets={getPrevSets(ex.name)}
+                              onToggle={() => !isReordering && setExpanded((p) => ({ ...p, [ex.id]: !p[ex.id] }))}
+                              onUpdateSet={updateSet}
+                              onCompleteSet={completeSet}
+                              onAddSet={addSet}
+                              onNotesChange={updateExerciseNotes}
+                              onRepRangeChange={updateRepRange}
+                              onRepModeChange={updateRepMode}
+                              divider={false}
+                              userId={user?.email}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </Draggable>
+                ));
+              })()}
+              {provided.placeholder}
+            </div>
+          )}
+        </Droppable>
+      </DragDropContext>
 
       {/* Exercise editor panel */}
       {showEditor && (
