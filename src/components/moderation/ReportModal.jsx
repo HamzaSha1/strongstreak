@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { X, Flag } from 'lucide-react';
+import { X, Flag, ShieldBan } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
@@ -12,9 +12,10 @@ const REASONS = [
   { value: 'other', label: 'Other' },
 ];
 
-export default function ReportModal({ reporterId, reportedUserId, contentType, contentId, onClose }) {
+export default function ReportModal({ reporterId, reportedUserId, contentType, contentId, onClose, onBlocked }) {
   const [reason, setReason] = useState('');
   const [loading, setLoading] = useState(false);
+  const [blocking, setBlocking] = useState(false);
 
   const handleSubmit = async () => {
     if (!reason) return;
@@ -31,6 +32,24 @@ export default function ReportModal({ reporterId, reportedUserId, contentType, c
     setLoading(false);
   };
 
+  const handleBlock = async () => {
+    setBlocking(true);
+    // Create block record
+    await base44.entities.Block.create({
+      blocker_id: reporterId,
+      blocked_id: reportedUserId,
+    });
+    // Notify developer via backend function
+    base44.functions.invoke('notifyBlockEvent', {
+      event: { type: 'create' },
+      data: { blocker_id: reporterId, blocked_id: reportedUserId },
+    }).catch(() => {});
+    toast.success('User blocked. Their content has been removed from your feed.');
+    onBlocked?.(reportedUserId);
+    onClose();
+    setBlocking(false);
+  };
+
   return (
     <div className="fixed inset-0 z-[80] flex items-end">
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
@@ -38,11 +57,36 @@ export default function ReportModal({ reporterId, reportedUserId, contentType, c
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Flag size={18} className="text-destructive" />
-            <h2 className="font-heading font-bold text-base">Report Content</h2>
+            <h2 className="font-heading font-bold text-base">Report or Block</h2>
           </div>
           <button onClick={onClose} className="p-1"><X size={18} /></button>
         </div>
-        <p className="text-sm text-muted-foreground">Why are you reporting this?</p>
+
+        {/* Block section */}
+        <div className="bg-destructive/10 border border-destructive/30 rounded-2xl p-4 flex items-center justify-between gap-3">
+          <div>
+            <p className="font-heading font-semibold text-sm text-foreground">Block this user</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Removes their content from your feed instantly and notifies our team.</p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleBlock}
+            disabled={blocking}
+            className="border-destructive text-destructive hover:bg-destructive/10 shrink-0"
+          >
+            <ShieldBan size={14} />
+            {blocking ? 'Blocking...' : 'Block'}
+          </Button>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <div className="flex-1 h-px bg-border" />
+          <span className="text-xs text-muted-foreground">or report content</span>
+          <div className="flex-1 h-px bg-border" />
+        </div>
+
+        <p className="text-sm text-muted-foreground -mt-2">Why are you reporting this?</p>
         <div className="flex flex-col gap-2">
           {REASONS.map((r) => (
             <button

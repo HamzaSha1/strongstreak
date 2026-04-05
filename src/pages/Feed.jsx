@@ -125,6 +125,12 @@ export default function Feed() {
         contentType="post"
         contentId={reportTarget.postId}
         onClose={() => setReportTarget(null)}
+        onBlocked={(blockedUserId) => {
+          // Instantly remove blocked user's posts from the feed cache
+          const current = queryClient.getQueryData(['posts']) || [];
+          queryClient.setQueryData(['posts'], current.filter((p) => p.created_by !== blockedUserId));
+          queryClient.invalidateQueries({ queryKey: ['blocks', user?.email] });
+        }}
       />
     )}
     <div
