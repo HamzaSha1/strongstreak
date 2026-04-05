@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Shield, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Link } from 'react-router-dom';
+
 
 export default function TermsModal({ onAccepted }) {
   const [loading, setLoading] = useState(false);
@@ -104,10 +104,10 @@ export default function TermsModal({ onAccepted }) {
           </section>
 
           <div className="pt-2 border-t border-border">
-            <Link to="/terms" className="flex items-center gap-1.5 text-primary text-xs font-semibold">
+            <a href="/terms" className="flex items-center gap-1.5 text-primary text-xs font-semibold">
               <ExternalLink size={12} />
               Read full Terms & Conditions
-            </Link>
+            </a>
           </div>
         </div>
 
