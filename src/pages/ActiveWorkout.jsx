@@ -144,7 +144,7 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
                 className={cn(
                   'w-14 h-10 rounded-xl border text-sm font-bold shrink-0 flex items-center justify-center transition-colors',
                   s.rpe !== '' && s.rpe != null
-                    ? 'bg-primary/15 text-primary border-primary/40'
+                    ? 'bg-primary/10 text-primary border-primary/40'
                     : 'border-border text-muted-foreground hover:border-primary/50 disabled:opacity-50'
                 )}
               >

@@ -84,7 +84,7 @@ export default function WorkoutSummaryScreen({ sets, exercises, streak, duration
             initial={{ opacity: 0, scale: 0.6, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={{ type: 'spring', stiffness: 260, damping: 16 }}
-            className="flex items-center gap-3 bg-primary/15 border border-primary/30 rounded-2xl px-6 py-3 mb-6"
+            className="flex items-center gap-3 bg-primary/10 border border-primary/30 rounded-2xl px-6 py-3 mb-6"
           >
             <Flame size={28} className="text-primary flame-glow" />
             <div>
