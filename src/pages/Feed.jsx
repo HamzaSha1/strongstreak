@@ -66,6 +66,12 @@ export default function Feed() {
   });
   const blockedIds = new Set([...blocks.map((b) => b.blocked_id), ...locallyBlockedIds]);
 
+  const { data: following = [] } = useQuery({
+    queryKey: ['following', user?.email],
+    queryFn: () => base44.entities.Follow.filter({ follower_id: user?.email }),
+    enabled: !!user,
+  });
+
   const { data: allUsers = [] } = useQuery({
     queryKey: ['allUsers', user?.email],
     queryFn: async () => {

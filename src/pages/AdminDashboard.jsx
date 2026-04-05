@@ -23,10 +23,19 @@ export default function AdminDashboard() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    base44.auth.me().then((u) => {
-      setUser(u);
-      setAuthChecked(true);
-    }).catch(() => setAuthChecked(true));
+    const checkAuth = async () => {
+      try {
+        const u = await base44.auth.me();
+        if (u?.role === 'admin') {
+          setUser(u);
+        }
+      } catch (err) {
+        console.error('Auth check failed:', err);
+      } finally {
+        setAuthChecked(true);
+      }
+    };
+    checkAuth();
   }, []);
 
   if (!authChecked) {
