@@ -120,7 +120,8 @@ export default function Feed() {
         onBlocked={(blockedUserId) => {
           // Immediately hide posts via local state (instant, no cache dependency)
           setLocallyBlockedIds((prev) => new Set([...prev, blockedUserId]));
-          queryClient.invalidateQueries({ queryKey: ['blocks', user?.email] });
+          // Refetch blocks to sync with server
+          queryClient.refetchQueries({ queryKey: ['blocks', user?.email] });
         }}
       />
     )}
@@ -206,7 +207,9 @@ export default function Feed() {
                   </button>
                   {user && post.created_by !== user.email && (
                     <button
-                      onClick={() => setReportTarget({ postId: post.id, postedBy: post.created_by || 'unknown' })}
+                      onClick={() => {
+                        setReportTarget({ postId: post.id, postedBy: post.created_by || 'unknown' });
+                      }}
                       className="ml-auto text-muted-foreground hover:text-destructive transition-colors min-h-11 min-w-11 flex items-center justify-center"
                     >
                       <Flag size={16} />
