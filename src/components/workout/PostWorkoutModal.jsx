@@ -5,9 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 
-export default function PostWorkoutModal({ workoutLog, user, onClose }) {
-  const [image, setImage] = useState(null);
-  const [imageUrl, setImageUrl] = useState('');
+export default function PostWorkoutModal({ workoutLog, user, onClose, summaryImageUrl }) {
+  const [image, setImage] = useState(summaryImageUrl || null);
+  const [imageUrl, setImageUrl] = useState(summaryImageUrl || '');
   const [caption, setCaption] = useState('');
   const [visibility, setVisibility] = useState('public');
   const [uploading, setUploading] = useState(false);

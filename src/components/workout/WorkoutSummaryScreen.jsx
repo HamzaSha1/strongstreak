@@ -33,7 +33,7 @@ function computeAchievements(sets, exercises) {
   return achievements.slice(0, 3);
 }
 
-export default function WorkoutSummaryScreen({ sets, exercises, streak, durationMinutes, onContinue }) {
+export default function WorkoutSummaryScreen({ sets, exercises, streak, durationMinutes, onContinue, summaryRef }) {
   const [showStreak, setShowStreak] = useState(false);
   const [showAchievements, setShowAchievements] = useState(false);
   const achievements = computeAchievements(sets, exercises);
@@ -46,6 +46,28 @@ export default function WorkoutSummaryScreen({ sets, exercises, streak, duration
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background p-6 overflow-hidden">
+      {/* Capturable summary card */}
+      <div ref={summaryRef} className="absolute opacity-0 pointer-events-none w-[340px] bg-background p-6 rounded-3xl border border-border flex flex-col items-center gap-4" style={{ left: -9999, top: -9999 }}>
+        <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center">
+          <Trophy size={32} className="text-primary" />
+        </div>
+        <p className="font-heading font-bold text-xl text-foreground">Workout Done!</p>
+        {durationMinutes > 0 && <p className="text-muted-foreground text-sm">{durationMinutes} min session</p>}
+        <div className="flex items-center gap-2 bg-primary/10 border border-primary/30 rounded-2xl px-4 py-2">
+          <Flame size={20} className="text-primary" />
+          <p className="font-heading font-bold text-primary">{streak} day streak 🔥</p>
+        </div>
+        {computeAchievements(sets, exercises).map((ach, i) => (
+          <div key={i} className="flex items-center gap-3 bg-card border border-border rounded-2xl px-4 py-3 w-full">
+            <ach.icon size={18} className={ach.color} />
+            <div>
+              <p className="text-xs text-muted-foreground">{ach.label}</p>
+              <p className="font-heading font-semibold text-sm text-foreground">{ach.value}</p>
+            </div>
+          </div>
+        ))}
+        <p className="text-xs text-muted-foreground mt-1">StrongStreak</p>
+      </div>
 
       {/* Background glow */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">

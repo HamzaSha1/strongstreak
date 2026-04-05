@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import html2canvas from 'html2canvas';
 import { useParams, useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -335,6 +336,8 @@ export default function ActiveWorkout() {
   const [localExercises, setLocalExercises] = useState(null); // null = use server exercises
   const [repFeedback, setRepFeedback] = useState(null);
   const [isReordering, setIsReordering] = useState(false);
+  const [summaryImageUrl, setSummaryImageUrl] = useState(null);
+  const summaryRef = useRef(null);
   const startTime = useRef(new Date());
   const timerRef = useRef(null);
 
@@ -562,9 +565,6 @@ export default function ActiveWorkout() {
           duration_minutes: Math.round(elapsed / 60),
         });
       }
-    },
-    onSuccess: async () => {
-      queryClient.invalidateQueries({ queryKey: ['workoutLogs'] });
       // Fetch & increment streak
       if (user) {
         const members = await base44.entities.GroupMember.filter({ user_id: user.email });
@@ -574,6 +574,13 @@ export default function ActiveWorkout() {
         }
         setCurrentStreak(newStreak);
       }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['workoutLogs'] });
+      setShowSummary(true);
+    },
+    onError: () => {
+      // Still show summary even if saving failed
       setShowSummary(true);
     },
   });
@@ -724,11 +731,27 @@ export default function ActiveWorkout() {
       {/* Workout summary screen */}
       {showSummary && (
         <WorkoutSummaryScreen
+          summaryRef={summaryRef}
           sets={sets}
           exercises={activeExercises}
           streak={currentStreak}
           durationMinutes={Math.round(elapsed / 60)}
-          onContinue={() => { setShowSummary(false); setShowPostModal(true); }}
+          onContinue={async () => {
+            // Capture summary as image for sharing
+            if (summaryRef.current) {
+              try {
+                const canvas = await html2canvas(summaryRef.current, { backgroundColor: null, scale: 2 });
+                const blob = await new Promise((res) => canvas.toBlob(res, 'image/png'));
+                const file = new File([blob], 'workout-summary.png', { type: 'image/png' });
+                const { file_url } = await base44.integrations.Core.UploadFile({ file });
+                setSummaryImageUrl(file_url);
+              } catch (e) {
+                // If capture fails, proceed without image
+              }
+            }
+            setShowSummary(false);
+            setShowPostModal(true);
+          }}
         />
       )}
 
@@ -737,6 +760,7 @@ export default function ActiveWorkout() {
         <PostWorkoutModal
           workoutLog={workoutLog}
           user={user}
+          summaryImageUrl={summaryImageUrl}
           onClose={() => navigate('/')}
         />
       )}
