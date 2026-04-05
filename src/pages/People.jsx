@@ -18,12 +18,13 @@ export default function People() {
   }, []);
 
   const { data: allUsers = [] } = useQuery({
-    queryKey: ['allUsers'],
+    queryKey: ['allUsers', user?.email],
     queryFn: async () => {
       const res = await base44.functions.invoke('getUsers', {});
       return res.data.users || [];
     },
     enabled: !!user,
+    staleTime: 30_000,
   });
 
   const { data: following = [] } = useQuery({
