@@ -131,8 +131,6 @@ export default function Workouts() {
         count++;
       } else if (i > 0) {
         break;
-      } else {
-        continue;
       }
     }
     return count;
