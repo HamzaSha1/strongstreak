@@ -743,11 +743,23 @@ export default function ActiveWorkout() {
         />
       )}
 
-      {/* Finish button */}
-      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-[480px]">
+      {/* Finish / Discard buttons */}
+      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-[480px] flex gap-2">
+        <Button
+          variant="outline"
+          className="border-destructive text-destructive hover:bg-destructive/10 font-heading font-bold py-5 px-4 touch-target-44 shrink-0"
+          onClick={() => {
+            if (confirm('Discard this workout? All progress will be lost.')) {
+              if (workoutLog) base44.entities.WorkoutLog.delete(workoutLog.id).catch(() => {});
+              navigate('/');
+            }
+          }}
+        >
+          Discard
+        </Button>
         <Button
         className={cn(
-        'w-full gap-2 font-heading font-bold text-base py-5 transition-all touch-target-44',
+        'flex-1 gap-2 font-heading font-bold text-base py-5 transition-all touch-target-44',
         allDone
         ? 'bg-primary text-primary-foreground shadow-[0_0_20px_hsl(35_96%_58%/0.5)]'
         : 'bg-secondary text-secondary-foreground'
