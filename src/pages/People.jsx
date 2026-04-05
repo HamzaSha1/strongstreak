@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Search, UserPlus, UserCheck } from 'lucide-react';
@@ -6,16 +6,13 @@ import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import UserProfileSheet from '@/components/people/UserProfileSheet';
 import FollowRequests from '@/components/people/FollowRequests';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function People() {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [search, setSearch] = useState('');
   const [selectedUser, setSelectedUser] = useState(null);
   const queryClient = useQueryClient();
-
-  useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
 
   const { data: allUsers = [] } = useQuery({
     queryKey: ['allUsers', user?.email],

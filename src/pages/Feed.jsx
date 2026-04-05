@@ -1,28 +1,20 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Heart, Clock, Flag } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
-import TermsModal from '@/components/moderation/TermsModal';
 import ReportModal from '@/components/moderation/ReportModal';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function Feed() {
-  const [user, setUser] = useState(null);
-  const [termsAccepted, setTermsAccepted] = useState(true); // assume accepted until we know
+  const { user } = useAuth();
   const [reportTarget, setReportTarget] = useState(null); // { postId, postedBy }
   const [pullProgress, setPullProgress] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const scrollContainerRef = useRef(null);
   const startYRef = useRef(0);
   const queryClient = useQueryClient();
-
-  useEffect(() => {
-    base44.auth.me().then((u) => {
-      setUser(u);
-      setTermsAccepted(true); // terms now handled globally in AuthContext
-    }).catch(() => {});
-  }, []);
 
   const handleTouchStart = (e) => {
     if (scrollContainerRef.current?.scrollTop === 0) {
@@ -111,10 +103,6 @@ export default function Feed() {
   });
 
   const isLiked = (postId) => myLikes.some((l) => l.post_id === postId);
-
-  if (user && !termsAccepted) {
-    return <TermsModal onAccepted={() => setTermsAccepted(true)} />;
-  }
 
   return (
     <>
