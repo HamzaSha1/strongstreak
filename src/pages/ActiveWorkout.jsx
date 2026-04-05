@@ -45,7 +45,7 @@ function ExerciseNotes({ ex, onNotesChange }) {
   );
 }
 
-function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onCompleteSet, onAddSet, onNotesChange, divider, userId }) {
+function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onCompleteSet, onAddSet, onNotesChange, onRepRangeChange, divider, userId }) {
   const { unit: weightUnit, toggle: toggleUnit, toDisplay, toKg } = useWeightUnit();
   const isCardio = ex.exercise_type === 'cardio';
   const cardioUnit = CARDIO_UNITS[ex.cardio_metric] || 'km';
@@ -106,10 +106,13 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
             </>
           ) : (
             <>
-              {/* Rep range badge (read-only) */}
-              <span className="w-14 shrink-0 h-10 flex items-center justify-center rounded-xl bg-muted/60 border border-border text-xs font-semibold text-muted-foreground">
-                {ex.target_reps || '—'}
-              </span>
+              {/* Rep range badge (editable) */}
+              <input
+                value={ex.target_reps || ''}
+                onChange={(e) => onRepRangeChange(ex.id, e.target.value)}
+                placeholder="—"
+                className="w-14 shrink-0 h-10 text-center bg-muted/60 border border-border rounded-xl text-xs font-semibold text-muted-foreground focus:border-primary focus:outline-none"
+              />
 
               {/* Reps input */}
               <input
@@ -464,6 +467,11 @@ export default function ActiveWorkout() {
     setLocalExercises((prev) => update(prev ?? exercises));
   };
 
+  const updateRepRange = (exId, target_reps) => {
+    const update = (list) => list.map((e) => e.id === exId ? { ...e, target_reps } : e);
+    setLocalExercises((prev) => update(prev ?? exercises));
+  };
+
   const addSet = (exId) => {
     setSets((prev) => ({
       ...prev,
@@ -589,6 +597,7 @@ export default function ActiveWorkout() {
                       onCompleteSet={completeSet}
                       onAddSet={addSet}
                       onNotesChange={updateExerciseNotes}
+                      onRepRangeChange={updateRepRange}
                       divider={gi < group.length - 1}
                       userId={user?.email}
                     />
@@ -610,6 +619,7 @@ export default function ActiveWorkout() {
                   onCompleteSet={completeSet}
                   onAddSet={addSet}
                   onNotesChange={updateExerciseNotes}
+                  onRepRangeChange={updateRepRange}
                   divider={false}
                   userId={user?.email}
                 />
