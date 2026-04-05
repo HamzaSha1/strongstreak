@@ -1,24 +1,23 @@
 import { useState, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
-import { Flame, Plus, Edit, Play, BedDouble, Dumbbell, X } from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Flame, Plus, Edit, Play, BedDouble, Dumbbell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Link, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 const SESSION_COLORS = {
-  Push:       'bg-orange-500/20 text-orange-400 border-orange-500/30',
-  Pull:       'bg-blue-500/20 text-blue-400 border-blue-500/30',
-  Legs:       'bg-green-500/20 text-green-400 border-green-500/30',
-  Upper:      'bg-purple-500/20 text-purple-400 border-purple-500/30',
-  Lower:      'bg-pink-500/20 text-pink-400 border-pink-500/30',
-  'Full Body':'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
-  Cardio:     'bg-cyan-500/20 text-cyan-400 border-cyan-500/30',
-  Rest:       'bg-muted text-muted-foreground border-border',
-  Custom:     'bg-primary/20 text-primary border-primary/30',
+  Push:        'bg-orange-500/20 text-orange-400 border-orange-500/30',
+  Pull:        'bg-blue-500/20 text-blue-400 border-blue-500/30',
+  Legs:        'bg-green-500/20 text-green-400 border-green-500/30',
+  Upper:       'bg-purple-500/20 text-purple-400 border-purple-500/30',
+  Lower:       'bg-pink-500/20 text-pink-400 border-pink-500/30',
+  'Full Body': 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
+  Cardio:      'bg-cyan-500/20 text-cyan-400 border-cyan-500/30',
+  Rest:        'bg-muted text-muted-foreground border-border',
+  Custom:      'bg-primary/20 text-primary border-primary/30',
 };
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -66,9 +65,7 @@ export default function Workouts() {
       setDeleteInput('');
       toast.success('Split deleted');
     },
-    onError: () => {
-      toast.error('Failed to delete split');
-    },
+    onError: () => toast.error('Failed to delete split'),
   });
 
   const duplicateSplitMutation = useMutation({
@@ -109,9 +106,7 @@ export default function Workouts() {
       queryClient.invalidateQueries({ queryKey: ['splitExercises'] });
       toast.success('Split duplicated');
     },
-    onError: () => {
-      toast.error('Failed to duplicate split');
-    },
+    onError: () => toast.error('Failed to duplicate split'),
   });
 
   const { data: workoutLogs = [] } = useQuery({
@@ -137,21 +132,16 @@ export default function Workouts() {
       } else if (i > 0) {
         break;
       } else {
-        // Today has no log yet, check yesterday before giving up
         continue;
       }
     }
     return count;
   }, [workoutLogs]);
 
-  // Group days by split_name
   const splitNames = [...new Set(splitDays.map((d) => d.split_name).filter(Boolean))];
   const activeSplitName = splitNames[activeTab] || splitNames[0];
   const activeDays = splitDays.filter((d) => d.split_name === activeSplitName);
-
-  const getExerciseCount = (dayId) =>
-    exercises.filter((e) => e.split_day_id === dayId).length;
-
+  const getExerciseCount = (dayId) => exercises.filter((e) => e.split_day_id === dayId).length;
   const today = DAYS[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1];
 
   return (
@@ -164,7 +154,6 @@ export default function Workouts() {
             {user ? `Hey, ${user.full_name?.split(' ')[0] || 'Athlete'} 👋` : 'Loading...'}
           </p>
         </div>
-        {/* Streak */}
         <div className="flex items-center gap-1.5 bg-primary/10 border border-primary/30 rounded-2xl px-3 py-2">
           <Flame size={20} className="text-primary flame-glow" />
           <span className="text-primary font-heading font-bold text-lg streak-pulse">{streak}</span>
@@ -179,17 +168,14 @@ export default function Workouts() {
             {splitDays.length ? 'Edit Splits' : 'Build Split'}
           </Button>
         </Link>
-        <Button
-          variant="outline"
-          className="flex-1 border-border gap-2 text-sm text-muted-foreground"
-        >
+        <Button variant="outline" className="flex-1 border-border gap-2 text-sm text-muted-foreground">
           <BedDouble size={15} />
           Log Rest Day
         </Button>
       </div>
 
-      {/* Split Tabs — always visible, Chrome-style */}
-      <div className="flex items-center gap-1 mb-4 overflow-x-auto pb-1 scrollbar-hide">
+      {/* Split Tabs */}
+      <div className="flex items-center gap-1 mb-4 overflow-x-auto pb-1">
         {(splitNames.length > 0 ? splitNames : ['Split 1']).map((name, i) => (
           <button
             key={name}
@@ -204,7 +190,6 @@ export default function Workouts() {
             {name || `Split ${i + 1}`}
           </button>
         ))}
-        {/* + tab: go to split builder to add a new split */}
         <button
           onClick={() => navigate('/split-builder?newSplit=1')}
           className="flex-shrink-0 w-8 h-8 rounded-xl bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors ml-0.5"
@@ -239,9 +224,7 @@ export default function Workouts() {
                 key={day.id}
                 className={cn(
                   'slide-up rounded-2xl border p-4 transition-all',
-                  isToday
-                    ? 'border-primary/50 bg-primary/5'
-                    : 'border-border bg-card'
+                  isToday ? 'border-primary/50 bg-primary/5' : 'border-border bg-card'
                 )}
                 style={{ animationDelay: `${i * 40}ms` }}
               >
@@ -270,10 +253,7 @@ export default function Workouts() {
 
                 {day.session_type !== 'Rest' && (
                   <Link to={`/workout/${day.id}`}>
-                    <Button
-                      size="sm"
-                      className="bg-primary text-primary-foreground gap-1.5 w-full"
-                    >
+                    <Button size="sm" className="bg-primary text-primary-foreground gap-1.5 w-full">
                       <Play size={13} fill="currentColor" />
                       Start Workout
                     </Button>
@@ -325,10 +305,7 @@ export default function Workouts() {
               <Button
                 variant="outline"
                 className="flex-1"
-                onClick={() => {
-                  setDeleteConfirm(false);
-                  setDeleteInput('');
-                }}
+                onClick={() => { setDeleteConfirm(false); setDeleteInput(''); }}
               >
                 Cancel
               </Button>
