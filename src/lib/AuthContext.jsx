@@ -1,4 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { appParams } from '@/lib/app-params';
 import { createAxiosClient } from '@base44/sdk/dist/utils/axios-client';
@@ -138,9 +139,10 @@ export const AuthProvider = ({ children }) => {
     }
   }, [user]);
 
-  // If logged in and hasn't accepted terms, show modal over everything
+  // If logged in and hasn't accepted terms, show modal only on /feed page
+  const location = useLocation();
   const renderTermsGate = (children) => {
-    if (isAuthenticated && user && !termsAccepted) {
+    if (isAuthenticated && user && !termsAccepted && location.pathname === '/feed') {
       return <TermsModal onAccepted={() => setTermsAccepted(true)} />;
     }
     return children;
