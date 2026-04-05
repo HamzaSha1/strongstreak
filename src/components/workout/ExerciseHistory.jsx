@@ -118,7 +118,7 @@ export default function ExerciseHistory({ exerciseName, userId, weightUnit = 'kg
                     <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Session History</p>
                     <div className="flex flex-col gap-3">
                       {[...sessions].reverse().map((session, i) => (
-                        <div key={session.workout_log_id} className={`rounded-2xl p-3 border ${i === 0 ? 'border-primary/30 bg-primary/8' : 'border-border bg-muted/30'}`}>
+                        <div key={session.workout_log_id} className={`rounded-2xl p-3 border ${i === 0 ? 'border-primary/30 bg-primary/10' : 'border-border bg-muted/30'}`}>
                           <div className="flex items-center justify-between mb-2">
                             <p className="text-[11px] font-semibold text-muted-foreground">
                               {session.date ? format(new Date(session.date), 'MMM d, yyyy') : 'Past session'}
