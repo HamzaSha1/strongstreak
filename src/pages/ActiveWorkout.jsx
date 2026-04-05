@@ -17,8 +17,6 @@ import WorkoutSummaryScreen from '@/components/workout/WorkoutSummaryScreen';
 import { useWeightUnit } from '@/hooks/useWeightUnit';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 
-const SET_TYPES = ['normal', 'dropset', 'superset'];
-
 const CARDIO_UNITS = { distance: 'km', time: 'min', calories: 'kcal' };
 
 function ExerciseNotes({ ex, onNotesChange }) {
