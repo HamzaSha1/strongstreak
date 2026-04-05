@@ -45,7 +45,7 @@ function ExerciseNotes({ ex, onNotesChange }) {
   );
 }
 
-function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onCompleteSet, onAddSet, onNotesChange, onRepRangeChange, divider, userId }) {
+function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onCompleteSet, onAddSet, onNotesChange, onRepRangeChange, onRepModeChange, divider, userId }) {
   const { unit: weightUnit, toggle: toggleUnit, toDisplay, toKg } = useWeightUnit();
   const isCardio = ex.exercise_type === 'cardio';
   const cardioUnit = CARDIO_UNITS[ex.cardio_metric] || 'km';
@@ -256,6 +256,54 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
           ) : (
             <div className="bg-muted/30 rounded-xl px-3 py-2 mb-3">
               <p className="text-xs text-muted-foreground italic">No previous data for this exercise on this day</p>
+            </div>
+          )}
+          {/* Reps / Time mode toggle + quick presets */}
+          {!isCardio && (
+            <div className="mb-3">
+              <div className="flex gap-1.5 mb-2">
+                <button
+                  onClick={() => onRepModeChange(ex.id, 'reps')}
+                  className={cn(
+                    'flex-1 py-1.5 rounded-xl border text-xs font-semibold transition-colors',
+                    (ex.rep_mode || 'reps') === 'reps'
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : 'border-border text-muted-foreground'
+                  )}
+                >
+                  Reps
+                </button>
+                <button
+                  onClick={() => onRepModeChange(ex.id, 'time')}
+                  className={cn(
+                    'flex-1 py-1.5 rounded-xl border text-xs font-semibold transition-colors',
+                    ex.rep_mode === 'time'
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : 'border-border text-muted-foreground'
+                  )}
+                >
+                  Time
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {(ex.rep_mode === 'time'
+                  ? ['20s', '30s', '45s', '60s', '90s', '2min', '3min']
+                  : ['6', '8', '10', '12', '15', '20', 'AMRAP']
+                ).map((preset) => (
+                  <button
+                    key={preset}
+                    onClick={() => onRepRangeChange(ex.id, preset)}
+                    className={cn(
+                      'px-3 py-1 rounded-xl border text-xs transition-colors',
+                      ex.target_reps === preset
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'border-border text-muted-foreground hover:border-primary/50'
+                    )}
+                  >
+                    {preset}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
           <div className="flex flex-col gap-1.5">{renderSets()}</div>
@@ -472,6 +520,11 @@ export default function ActiveWorkout() {
     setLocalExercises((prev) => update(prev ?? exercises));
   };
 
+  const updateRepMode = (exId, rep_mode) => {
+    const update = (list) => list.map((e) => e.id === exId ? { ...e, rep_mode, target_reps: '' } : e);
+    setLocalExercises((prev) => update(prev ?? exercises));
+  };
+
   const addSet = (exId) => {
     setSets((prev) => ({
       ...prev,
@@ -598,6 +651,7 @@ export default function ActiveWorkout() {
                       onAddSet={addSet}
                       onNotesChange={updateExerciseNotes}
                       onRepRangeChange={updateRepRange}
+                      onRepModeChange={updateRepMode}
                       divider={gi < group.length - 1}
                       userId={user?.email}
                     />
@@ -620,6 +674,7 @@ export default function ActiveWorkout() {
                   onAddSet={addSet}
                   onNotesChange={updateExerciseNotes}
                   onRepRangeChange={updateRepRange}
+                  onRepModeChange={updateRepMode}
                   divider={false}
                   userId={user?.email}
                 />
