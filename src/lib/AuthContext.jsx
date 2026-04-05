@@ -1,5 +1,4 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { appParams } from '@/lib/app-params';
 import { createAxiosClient } from '@base44/sdk/dist/utils/axios-client';
@@ -139,15 +138,6 @@ export const AuthProvider = ({ children }) => {
     }
   }, [user]);
 
-  const TermsGate = ({ children }) => {
-    const location = useLocation();
-    
-    if (isAuthenticated && user && !termsAccepted && location.pathname === '/feed') {
-      return <TermsModal onAccepted={() => setTermsAccepted(true)} />;
-    }
-    return children;
-  };
-
   return (
     <AuthContext.Provider value={{ 
       user, 
@@ -160,7 +150,7 @@ export const AuthProvider = ({ children }) => {
       navigateToLogin,
       checkAppState
     }}>
-      <TermsGate>{children}</TermsGate>
+      {children}
     </AuthContext.Provider>
   );
 };
