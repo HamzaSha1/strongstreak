@@ -1,6 +1,6 @@
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { X, Lock, UserPlus, UserCheck, Dumbbell, Clock, Flag, ShieldOff } from 'lucide-react';
+import { X, Lock, UserPlus, UserCheck, Dumbbell, Clock, Flag, ShieldOff, ShieldBan } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import ReportModal from '@/components/moderation/ReportModal';
 import { useState as useLocalState } from 'react';
@@ -105,12 +105,14 @@ export default function UserProfileSheet({ person, currentUser, following, onClo
   });
 
   const getFollowLabel = () => {
+    if (isBlocked) return 'Blocked';
     if (isFollowing) return 'Following';
     if (isPrivate && pendingRequest) return 'Requested';
     return 'Follow';
   };
 
   const getFollowIcon = () => {
+    if (isBlocked) return <ShieldBan size={15} />;
     if (isFollowing) return <UserCheck size={15} />;
     if (isPrivate && pendingRequest) return <Clock size={15} />;
     return <UserPlus size={15} />;
@@ -167,14 +169,16 @@ export default function UserProfileSheet({ person, currentUser, following, onClo
 
           <button
             onClick={() => followMutation.mutate()}
-            disabled={followMutation.isPending}
+            disabled={followMutation.isPending || isBlocked}
             className={cn(
               'flex items-center gap-2 px-5 py-2 rounded-full text-sm font-medium transition-colors',
-              isFollowing
-                ? 'bg-secondary text-secondary-foreground border border-border'
-                : isPrivate && pendingRequest
-                  ? 'bg-muted text-muted-foreground border border-border'
-                  : 'bg-primary text-primary-foreground'
+              isBlocked
+                ? 'bg-destructive/10 text-destructive border border-destructive/30'
+                : isFollowing
+                  ? 'bg-secondary text-secondary-foreground border border-border'
+                  : isPrivate && pendingRequest
+                    ? 'bg-muted text-muted-foreground border border-border'
+                    : 'bg-primary text-primary-foreground'
             )}
           >
             {getFollowIcon()}
@@ -182,8 +186,16 @@ export default function UserProfileSheet({ person, currentUser, following, onClo
           </button>
         </div>
 
-        {/* Private account lock */}
-        {isPrivate && !isFollowing ? (
+        {/* Blocked user */}
+        {isBlocked ? (
+          <div className="flex flex-col items-center gap-3 py-16 px-8 text-center">
+            <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center">
+              <ShieldBan size={28} className="text-destructive" />
+            </div>
+            <p className="font-heading font-semibold text-lg">User blocked</p>
+            <p className="text-sm text-muted-foreground">You have blocked this user. Click the shield icon to unblock.</p>
+          </div>
+        ) : isPrivate && !isFollowing ? (
           <div className="flex flex-col items-center gap-3 py-16 px-8 text-center">
             <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
               <Lock size={28} className="text-muted-foreground" />
