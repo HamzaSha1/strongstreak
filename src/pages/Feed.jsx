@@ -5,11 +5,13 @@ import { Heart, Clock, Flag } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import ReportModal from '@/components/moderation/ReportModal';
+import UserProfileSheet from '@/components/people/UserProfileSheet';
 import { useAuth } from '@/lib/AuthContext';
 
 export default function Feed() {
   const { user } = useAuth();
   const [reportTarget, setReportTarget] = useState(null); // { postId, postedBy }
+  const [selectedProfile, setSelectedProfile] = useState(null);
   const [locallyBlockedIds, setLocallyBlockedIds] = useState(new Set());
   const [pullProgress, setPullProgress] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -64,6 +66,16 @@ export default function Feed() {
   });
   const blockedIds = new Set([...blocks.map((b) => b.blocked_id), ...locallyBlockedIds]);
 
+  const { data: allUsers = [] } = useQuery({
+    queryKey: ['allUsers', user?.email],
+    queryFn: async () => {
+      const res = await base44.functions.invoke('getUsers', {});
+      return res.data.users || [];
+    },
+    enabled: !!user,
+    staleTime: 30_000,
+  });
+
   const { data: myLikes = [] } = useQuery({
     queryKey: ['myLikes', user?.email],
     queryFn: () => base44.entities.PostLike.filter({ user_id: user?.email }),
@@ -115,8 +127,20 @@ export default function Feed() {
 
   const isLiked = (postId) => myLikes.some((l) => l.post_id === postId);
 
+  const getProfileData = (email) => {
+    return allUsers.find((u) => u.email === email);
+  };
+
   return (
     <>
+    {selectedProfile && (
+      <UserProfileSheet
+        person={selectedProfile}
+        currentUser={user}
+        following={following}
+        onClose={() => setSelectedProfile(null)}
+      />
+    )}
     {reportTarget && (
       <ReportModal
         reporterId={user?.email}
@@ -176,10 +200,22 @@ export default function Feed() {
               <div key={post.id} className="border-b border-border">
                 {/* User row */}
                 <div className="flex items-center gap-3 px-4 py-3">
-                  <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center text-primary font-heading font-bold text-sm">
+                  <div 
+                    onClick={() => {
+                      const profile = getProfileData(post.created_by);
+                      if (profile) setSelectedProfile(profile);
+                    }}
+                    className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center text-primary font-heading font-bold text-sm cursor-pointer hover:opacity-80 transition-opacity"
+                  >
                     {post.created_by?.[0]?.toUpperCase() || '?'}
                   </div>
-                  <div>
+                  <div 
+                    onClick={() => {
+                      const profile = getProfileData(post.created_by);
+                      if (profile) setSelectedProfile(profile);
+                    }}
+                    className="cursor-pointer hover:opacity-80 transition-opacity"
+                  >
                     <p className="font-medium text-sm">{post.created_by?.split('@')[0] || 'User'}</p>
                     <div className="flex items-center gap-1 text-muted-foreground text-xs">
                       <Clock size={10} />
