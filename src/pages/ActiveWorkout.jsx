@@ -239,7 +239,7 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
           <ExerciseHistory exerciseName={ex.name} userId={userId} weightUnit={weightUnit} toDisplay={toDisplay} />
           {/* Last session — always visible, most important reference */}
           {prevSets.length > 0 ? (
-            <div className="bg-primary/8 border border-primary/20 rounded-xl p-3 mb-3">
+            <div className="bg-primary/10 border border-primary/20 rounded-xl p-3 mb-3">
               <p className="text-[10px] font-semibold text-primary uppercase tracking-wider mb-2">Last time — same day</p>
               <div className="flex flex-wrap gap-2">
                 {prevSets.map((s, i) => (
