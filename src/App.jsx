@@ -9,7 +9,7 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import Layout from '@/components/Layout';
 // Add page imports here
-const Workouts = lazy(() => import('./pages/Workouts'));
+const Workouts = lazy(() => import('./pages/Workouts.jsx'));
 const Feed = lazy(() => import('@/pages/Feed'));
 const Groups = lazy(() => import('@/pages/Groups'));
 const History = lazy(() => import('@/pages/History'));
