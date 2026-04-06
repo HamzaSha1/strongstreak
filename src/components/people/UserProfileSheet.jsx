@@ -62,7 +62,10 @@ export default function UserProfileSheet({ person, currentUser, following, onClo
 
   const { data: workoutLogs = [] } = useQuery({
     queryKey: ['userWorkoutLogs', person.email],
-    queryFn: () => base44.entities.WorkoutLog.filter({ user_id: person.email }, '-created_date', 5),
+    queryFn: async () => {
+      const res = await base44.functions.invoke('getUserWorkoutLogs', { userId: person.email });
+      return res.data.logs || [];
+    },
     enabled: canViewContent,
   });
 
