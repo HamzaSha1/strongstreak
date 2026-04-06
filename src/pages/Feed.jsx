@@ -134,8 +134,10 @@ export default function Feed() {
   const isLiked = (postId) => myLikes.some((l) => l.post_id === postId);
 
   const getProfileData = (email) => {
+    if (email === user?.email) {
+      return { email, full_name: user.full_name || email?.split('@')[0], avatar_url: null };
+    }
     const found = allUsers.find((u) => u.email === email);
-    // Fall back to a minimal object so the sheet always opens
     return found || { email, full_name: email?.split('@')[0] || 'User', avatar_url: null };
   };
 
