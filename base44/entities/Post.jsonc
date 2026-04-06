@@ -50,10 +50,28 @@
       ]
     },
     "update": {
-      "data.user_id": "{{user.email}}"
+      "$or": [
+        {
+          "data.user_id": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
     },
     "delete": {
-      "data.user_id": "{{user.email}}"
+      "$or": [
+        {
+          "data.user_id": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
     }
   }
 }
