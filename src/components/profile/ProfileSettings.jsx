@@ -1,15 +1,44 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { LogOut, Trash2, Camera, Eye, EyeOff, Lock, Shield, User, AtSign, Check, X, Loader2 } from 'lucide-react';
+import { LogOut, Trash2, Camera, Eye, EyeOff, Lock, Shield, User, AtSign, Check, X, Loader2, ShieldOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { useWeightUnit } from '@/hooks/useWeightUnit';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 export default function ProfileSettings({ user, profile, setProfile }) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { unit: weightUnit, toggle: toggleUnit } = useWeightUnit();
+
+  const { data: blocks = [] } = useQuery({
+    queryKey: ['blocks', user?.email],
+    queryFn: () => base44.entities.Block.filter({ blocker_id: user?.email }),
+    enabled: !!user,
+    staleTime: 0,
+  });
+
+  const { data: allUsers = [] } = useQuery({
+    queryKey: ['allUsers'],
+    queryFn: async () => {
+      const res = await base44.functions.invoke('getUsers', {});
+      return res.data.users || [];
+    },
+    enabled: !!user,
+  });
+
+  const handleUnblock = async (block) => {
+    await base44.entities.Block.delete(block.id);
+    queryClient.invalidateQueries({ queryKey: ['blocks', user?.email] });
+    toast.success('User unblocked');
+  };
+
+  const getBlockedUserInfo = (email) => {
+    const found = allUsers.find((u) => u.email === email);
+    return found || { email, display_name: email.split('@')[0], handle: null, avatar_url: null };
+  };
   const [uploading, setUploading] = useState(false);
   const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [passwordForm, setPasswordForm] = useState({ oldPassword: '', newPassword: '', confirmPassword: '' });
@@ -216,6 +245,44 @@ export default function ProfileSettings({ user, profile, setProfile }) {
           {weightUnit === 'kg' ? 'KG' : 'LBS'}
         </button>
       </div>
+
+      {/* Blocked Users */}
+      {blocks.length > 0 && (
+        <div className="bg-card border border-border rounded-2xl p-4 flex flex-col gap-3">
+          <div>
+            <p className="font-heading font-semibold text-sm flex items-center gap-1.5"><ShieldOff size={14} /> Blocked Users</p>
+            <p className="text-xs text-muted-foreground mt-0.5">These users can't see your content or interact with you.</p>
+          </div>
+          <div className="flex flex-col gap-2">
+            {blocks.map((block) => {
+              const info = getBlockedUserInfo(block.blocked_id);
+              return (
+                <div key={block.id} className="flex items-center gap-3 py-1">
+                  <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-muted-foreground font-bold text-sm overflow-hidden shrink-0">
+                    {info.avatar_url
+                      ? <img src={info.avatar_url} alt="" className="w-full h-full object-cover" />
+                      : (info.handle?.[0] || info.display_name?.[0] || '?').toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">
+                      {info.handle ? `@${info.handle}` : info.display_name}
+                    </p>
+                    {info.handle && <p className="text-xs text-muted-foreground truncate">{info.email}</p>}
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleUnblock(block)}
+                    className="shrink-0 border-primary text-primary hover:bg-primary/10 text-xs"
+                  >
+                    Unblock
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Actions */}
       <div className="flex flex-col gap-3">
