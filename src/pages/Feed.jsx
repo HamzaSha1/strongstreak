@@ -79,7 +79,7 @@ export default function Feed() {
       return res.data.users || [];
     },
     enabled: !!user,
-    staleTime: 60_000,
+    staleTime: 0,
   });
 
   const { data: myProfile } = useQuery({
@@ -145,16 +145,17 @@ export default function Feed() {
     if (!email) return { email: '', full_name: 'User', avatar_url: null };
     const found = allUsers.find((u) => u.email === email);
     if (found) return found;
-    // fallback for current user if not yet loaded
+    // fallback for current user
     if (email === user?.email) {
       return {
         email,
         full_name: user.full_name || email.split('@')[0],
         display_name: myProfile?.display_name || user.full_name || email.split('@')[0],
+        handle: myProfile?.handle || null,
         avatar_url: myProfile?.avatar_url || null,
       };
     }
-    return { email, display_name: email.split('@')[0], full_name: email.split('@')[0], avatar_url: null };
+    return { email, display_name: null, full_name: null, handle: null, avatar_url: null };
   };
 
   return (
@@ -234,11 +235,11 @@ export default function Feed() {
                       const p = getProfileData(post.created_by);
                       return p?.avatar_url
                         ? <img src={p.avatar_url} alt="" className="w-full h-full object-cover" />
-                        : (p?.full_name?.[0] || post.created_by?.[0] || '?').toUpperCase();
+                        : (p?.handle?.[0] || p?.full_name?.[0] || post.created_by?.[0] || '?').toUpperCase();
                     })()}
                   </div>
                   <div>
-                    <p className="font-medium text-sm">{(() => { const p = getProfileData(post.created_by); return p?.handle ? '@' + p.handle : p?.display_name || p?.full_name || post.created_by?.split('@')[0] || 'User'; })()}</p>
+                    <p className="font-medium text-sm">{(() => { const p = getProfileData(post.created_by); return p?.handle ? '@' + p.handle : p?.display_name || p?.full_name || post.created_by?.split('@')[0]; })()}</p>
                     <div className="flex items-center gap-1 text-muted-foreground text-xs">
                       <Clock size={10} />
                       {formatDistanceToNow(new Date(post.created_date), { addSuffix: true })}
