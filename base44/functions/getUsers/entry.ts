@@ -12,7 +12,6 @@ Deno.serve(async (req) => {
   for (const p of profiles) profileMap[p.user_id] = p;
 
   const result = allUsers
-    .filter((u) => u.is_verified === true)
     .map((u) => ({
       user_id: u.id,
       email: u.email,
