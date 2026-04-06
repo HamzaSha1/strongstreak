@@ -33,6 +33,10 @@ export default function ReportModal({ reporterId, reportedUserId, contentType, c
   };
 
   const handleBlock = async () => {
+    if (!reportedUserId || reportedUserId === 'unknown') {
+      toast.error('Cannot block this user.');
+      return;
+    }
     setBlocking(true);
     // Create block record
     await base44.entities.Block.create({
