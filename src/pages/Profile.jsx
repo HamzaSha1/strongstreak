@@ -89,7 +89,7 @@ export default function Profile() {
 
       {/* Tab content */}
       {activeTab === 'posts' && (
-        <PostGrid posts={posts} isLoading={postsLoading} />
+        <PostGrid posts={posts} isLoading={postsLoading} userEmail={user?.email} />
       )}
       {activeTab === 'settings' && (
         <ProfileSettings user={user} profile={profile} setProfile={setProfile} />
