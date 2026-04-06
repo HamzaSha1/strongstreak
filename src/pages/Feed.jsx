@@ -73,13 +73,13 @@ export default function Feed() {
   });
 
   const { data: allUsers = [] } = useQuery({
-    queryKey: ['allUsers', user?.email],
+    queryKey: ['allUsers'],
     queryFn: async () => {
       const res = await base44.functions.invoke('getUsers', {});
       return res.data.users || [];
     },
     enabled: !!user,
-    staleTime: 30_000,
+    staleTime: 60_000,
   });
 
   const { data: myProfile } = useQuery({
@@ -142,13 +142,19 @@ export default function Feed() {
   const isLiked = (postId) => myLikes.some((l) => l.post_id === postId);
 
   const getProfileData = (email) => {
+    if (!email) return { email: '', full_name: 'User', avatar_url: null };
     const found = allUsers.find((u) => u.email === email);
     if (found) return found;
     // fallback for current user if not yet loaded
     if (email === user?.email) {
-      return { email, full_name: user.full_name || email?.split('@')[0], avatar_url: myProfile?.avatar_url || null };
+      return {
+        email,
+        full_name: user.full_name || email.split('@')[0],
+        display_name: myProfile?.display_name || user.full_name || email.split('@')[0],
+        avatar_url: myProfile?.avatar_url || null,
+      };
     }
-    return { email, full_name: email?.split('@')[0] || 'User', avatar_url: null };
+    return { email, display_name: email.split('@')[0], full_name: email.split('@')[0], avatar_url: null };
   };
 
   return (
@@ -232,7 +238,7 @@ export default function Feed() {
                     })()}
                   </div>
                   <div>
-                    <p className="font-medium text-sm">{(() => { const p = getProfileData(post.created_by); return p?.display_name || p?.full_name || post.created_by?.split('@')[0] || 'User'; })()}</p>
+                    <p className="font-medium text-sm">{(() => { const p = getProfileData(post.created_by); return p?.display_name || p?.full_name || post.created_by?.split('@')[0] || post.created_by || 'User'; })()}</p>
                     <div className="flex items-center gap-1 text-muted-foreground text-xs">
                       <Clock size={10} />
                       {formatDistanceToNow(new Date(post.created_date), { addSuffix: true })}
