@@ -87,7 +87,7 @@ export default function Feed() {
     queryFn: () => base44.entities.Profile.filter({ user_id: user.email }),
     enabled: !!user,
     select: (data) => data[0] || null,
-    staleTime: 30_000,
+    staleTime: 0,
   });
 
   const { data: myLikes = [] } = useQuery({
@@ -142,7 +142,7 @@ export default function Feed() {
   const isLiked = (postId) => myLikes.some((l) => l.post_id === postId);
 
   const getProfileData = (email) => {
-    if (!email) return { email: '', full_name: 'User', avatar_url: null };
+    if (!email) return { email: '', display_name: '?', full_name: '?', handle: null, avatar_url: null };
     const found = allUsers.find((u) => u.email === email);
     if (found) return found;
     // fallback for current user
@@ -222,24 +222,24 @@ export default function Feed() {
       ) : (
         <div className="flex flex-col gap-0">
           {posts
-            .filter((p) => p.visibility === 'public' && !blockedIds.has(p.created_by))
+            .filter((p) => p.visibility === 'public' && !blockedIds.has(p.user_id || p.created_by))
             .map((post) => (
               <div key={post.id} className="border-b border-border">
                 {/* User row */}
                 <button
-                  onClick={() => setSelectedProfile(getProfileData(post.created_by))}
+                  onClick={() => setSelectedProfile(getProfileData(post.user_id || post.created_by))}
                   className="flex items-center gap-3 px-4 py-3 w-full text-left active:opacity-70 transition-opacity"
                 >
                   <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center text-primary font-heading font-bold text-sm overflow-hidden shrink-0">
                     {(() => {
-                      const p = getProfileData(post.created_by);
+                      const p = getProfileData(post.user_id || post.created_by);
                       return p?.avatar_url
                         ? <img src={p.avatar_url} alt="" className="w-full h-full object-cover" />
-                        : (p?.handle?.[0] || p?.full_name?.[0] || post.created_by?.[0] || '?').toUpperCase();
+                        : (p?.handle?.[0] || p?.full_name?.[0] || (post.user_id || post.created_by)?.[0] || '?').toUpperCase();
                     })()}
                   </div>
                   <div>
-                    <p className="font-medium text-sm">{(() => { const p = getProfileData(post.created_by); return p?.handle ? '@' + p.handle : p?.display_name || p?.full_name || post.created_by?.split('@')[0]; })()}</p>
+                    <p className="font-medium text-sm">{(() => { const p = getProfileData(post.user_id || post.created_by); return p?.handle ? '@' + p.handle : p?.display_name || p?.full_name || (post.user_id || post.created_by)?.split('@')[0]; })()}</p>
                     <div className="flex items-center gap-1 text-muted-foreground text-xs">
                       <Clock size={10} />
                       {formatDistanceToNow(new Date(post.created_date), { addSuffix: true })}
