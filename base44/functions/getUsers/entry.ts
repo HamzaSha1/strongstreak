@@ -12,10 +12,11 @@ Deno.serve(async (req) => {
   for (const p of profiles) profileMap[p.user_id] = p;
 
   const result = allUsers
-    .filter((u) => u.email !== user.email && u.is_verified === true)
+    .filter((u) => u.is_verified === true)
     .map((u) => ({
       user_id: u.id,
-      email: u.email, // kept for follow logic (follower_id/following_id), not shown in UI
+      email: u.email,
+      full_name: u.full_name || u.email.split('@')[0],
       avatar_url: profileMap[u.email]?.avatar_url || null,
       display_name: profileMap[u.email]?.display_name || u.full_name || u.email.split('@')[0],
       is_private: profileMap[u.email]?.is_private || false,

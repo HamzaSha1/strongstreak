@@ -142,11 +142,13 @@ export default function Feed() {
   const isLiked = (postId) => myLikes.some((l) => l.post_id === postId);
 
   const getProfileData = (email) => {
+    const found = allUsers.find((u) => u.email === email);
+    if (found) return found;
+    // fallback for current user if not yet loaded
     if (email === user?.email) {
       return { email, full_name: user.full_name || email?.split('@')[0], avatar_url: myProfile?.avatar_url || null };
     }
-    const found = allUsers.find((u) => u.email === email);
-    return found || { email, full_name: email?.split('@')[0] || 'User', avatar_url: null };
+    return { email, full_name: email?.split('@')[0] || 'User', avatar_url: null };
   };
 
   return (
@@ -230,7 +232,7 @@ export default function Feed() {
                     })()}
                   </div>
                   <div>
-                    <p className="font-medium text-sm">{getProfileData(post.created_by)?.full_name || post.created_by?.split('@')[0] || 'User'}</p>
+                    <p className="font-medium text-sm">{(() => { const p = getProfileData(post.created_by); return p?.display_name || p?.full_name || post.created_by?.split('@')[0] || 'User'; })()}</p>
                     <div className="flex items-center gap-1 text-muted-foreground text-xs">
                       <Clock size={10} />
                       {formatDistanceToNow(new Date(post.created_date), { addSuffix: true })}
