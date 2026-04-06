@@ -8,6 +8,10 @@
     "display_name": {
       "type": "string"
     },
+    "handle": {
+      "type": "string",
+      "description": "Unique user handle (e.g. @johndoe)"
+    },
     "avatar_url": {
       "type": "string"
     },

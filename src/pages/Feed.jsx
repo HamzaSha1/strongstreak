@@ -238,7 +238,7 @@ export default function Feed() {
                     })()}
                   </div>
                   <div>
-                    <p className="font-medium text-sm">{(() => { const p = getProfileData(post.created_by); return p?.display_name || p?.full_name || post.created_by?.split('@')[0] || post.created_by || 'User'; })()}</p>
+                    <p className="font-medium text-sm">{(() => { const p = getProfileData(post.created_by); return p?.handle ? '@' + p.handle : p?.display_name || p?.full_name || post.created_by?.split('@')[0] || 'User'; })()}</p>
                     <div className="flex items-center gap-1 text-muted-foreground text-xs">
                       <Clock size={10} />
                       {formatDistanceToNow(new Date(post.created_date), { addSuffix: true })}

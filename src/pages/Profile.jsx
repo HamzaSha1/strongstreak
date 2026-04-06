@@ -57,6 +57,7 @@ export default function Profile() {
             }
           </div>
           <p className="font-heading font-bold text-lg">{user.full_name}</p>
+          {profile?.handle && <p className="text-sm text-primary font-medium">@{profile.handle}</p>}
           <p className="text-sm text-muted-foreground">{user.email}</p>
           <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
             <span><strong className="text-foreground">{posts.length}</strong> posts</span>

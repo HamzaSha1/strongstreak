@@ -169,6 +169,7 @@ export default function UserProfileSheet({ person, currentUser, following, onClo
               : person.display_name?.[0]?.toUpperCase() || '?'}
           </div>
           <p className="font-heading font-bold text-xl">{person.display_name}</p>
+          {person.handle && <p className="text-sm text-primary font-medium">@{person.handle}</p>}
 
           <button
             onClick={() => followMutation.mutate()}

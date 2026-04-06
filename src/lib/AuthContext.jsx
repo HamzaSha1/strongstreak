@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { appParams } from '@/lib/app-params';
 import { createAxiosClient } from '@base44/sdk/dist/utils/axios-client';
 import TermsModal from '@/components/moderation/TermsModal';
+import HandleSetupModal from '@/components/onboarding/HandleSetupModal';
 
 const AuthContext = createContext();
 
@@ -130,13 +131,31 @@ export const AuthProvider = ({ children }) => {
   };
 
   const [termsAccepted, setTermsAccepted] = useState(true);
+  const [handle, setHandle] = useState(null); // null = unknown, '' = no handle, string = has handle
+  const [handleLoading, setHandleLoading] = useState(false);
 
-  // After user loads, check if they accepted terms
+  // After user loads, check if they accepted terms and have a handle
   useEffect(() => {
     if (user) {
       setTermsAccepted(!!user.terms_accepted);
+      checkHandle();
     }
   }, [user]);
+
+  const checkHandle = async () => {
+    if (!user) return;
+    setHandleLoading(true);
+    try {
+      const profiles = await base44.entities.Profile.filter({ user_id: user.email });
+      const h = profiles[0]?.handle || '';
+      setHandle(h);
+    } catch {
+      setHandle('');
+    }
+    setHandleLoading(false);
+  };
+
+  const needsHandle = user && !handleLoading && handle !== null && handle === '';
 
   return (
     <AuthContext.Provider value={{ 
@@ -150,6 +169,12 @@ export const AuthProvider = ({ children }) => {
       navigateToLogin,
       checkAppState
     }}>
+      {needsHandle && (
+        <HandleSetupModal
+          user={user}
+          onComplete={(h) => setHandle(h)}
+        />
+      )}
       {children}
     </AuthContext.Provider>
   );

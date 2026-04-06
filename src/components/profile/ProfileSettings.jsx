@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { LogOut, Trash2, Camera, Eye, EyeOff, Lock, Shield, User } from 'lucide-react';
+import { LogOut, Trash2, Camera, Eye, EyeOff, Lock, Shield, User, AtSign, Check, X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
@@ -17,6 +17,36 @@ export default function ProfileSettings({ user, profile, setProfile }) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteInput, setDeleteInput] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
+  const [handleInput, setHandleInput] = useState(profile?.handle || '');
+  const [handleStatus, setHandleStatus] = useState('idle'); // idle | checking | available | taken | invalid | same
+  const [savingHandle, setSavingHandle] = useState(false);
+  const debounceRef = useRef(null);
+
+  const normalizeHandle = (val) => val.toLowerCase().replace(/[^a-z0-9_.]/g, '');
+
+  const handleHandleChange = (e) => {
+    const cleaned = normalizeHandle(e.target.value);
+    setHandleInput(cleaned);
+    setHandleStatus('idle');
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (cleaned === profile?.handle) { setHandleStatus('same'); return; }
+    if (cleaned.length < 3) { setHandleStatus(cleaned.length > 0 ? 'invalid' : 'idle'); return; }
+    setHandleStatus('checking');
+    debounceRef.current = setTimeout(async () => {
+      const res = await base44.functions.invoke('checkHandle', { handle: cleaned });
+      setHandleStatus(res.data.available ? 'available' : 'taken');
+    }, 500);
+  };
+
+  const saveHandle = async () => {
+    if (!['available'].includes(handleStatus)) return;
+    setSavingHandle(true);
+    await base44.entities.Profile.update(profile.id, { handle: handleInput });
+    setProfile({ ...profile, handle: handleInput });
+    setHandleStatus('same');
+    toast.success('Handle updated!');
+    setSavingHandle(false);
+  };
 
   const handleProfilePictureUpload = async (e) => {
     const file = e.target.files[0];
@@ -121,6 +151,37 @@ export default function ProfileSettings({ user, profile, setProfile }) {
             </button>
           </div>
         </div>
+      </div>
+
+      {/* Handle */}
+      <div className="bg-card border border-border rounded-2xl p-4 flex flex-col gap-3">
+        <div>
+          <p className="font-heading font-semibold text-sm flex items-center gap-1.5"><AtSign size={14} /> Your Handle</p>
+          <p className="text-xs text-muted-foreground mt-0.5">This is how you appear on posts and profiles.</p>
+        </div>
+        <div className="relative flex items-center">
+          <span className="absolute left-3 text-muted-foreground font-medium select-none">@</span>
+          <Input
+            value={handleInput}
+            onChange={handleHandleChange}
+            placeholder="yourhandle"
+            className="pl-8 pr-10"
+            maxLength={30}
+            autoCapitalize="none"
+            autoCorrect="off"
+          />
+          <div className="absolute right-3">
+            {handleStatus === 'checking' && <Loader2 size={16} className="animate-spin text-muted-foreground" />}
+            {handleStatus === 'available' && <Check size={16} className="text-green-500" />}
+            {handleStatus === 'taken' && <X size={16} className="text-destructive" />}
+          </div>
+        </div>
+        {handleStatus === 'taken' && <p className="text-xs text-destructive">@{handleInput} is already taken</p>}
+        {handleStatus === 'available' && <p className="text-xs text-green-500">@{handleInput} is available!</p>}
+        {handleStatus === 'invalid' && <p className="text-xs text-destructive">At least 3 characters required</p>}
+        <Button onClick={saveHandle} disabled={handleStatus !== 'available' || savingHandle} className="w-full" size="sm">
+          {savingHandle ? 'Saving...' : 'Save Handle'}
+        </Button>
       </div>
 
       {/* Password */}

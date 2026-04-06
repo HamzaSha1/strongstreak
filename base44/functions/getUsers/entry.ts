@@ -19,6 +19,7 @@ Deno.serve(async (req) => {
       full_name: u.full_name || u.email.split('@')[0],
       avatar_url: profileMap[u.email]?.avatar_url || null,
       display_name: profileMap[u.email]?.display_name || u.full_name || u.email.split('@')[0],
+      handle: profileMap[u.email]?.handle || null,
       is_private: profileMap[u.email]?.is_private || false,
     }));
 
