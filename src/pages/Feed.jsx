@@ -82,6 +82,14 @@ export default function Feed() {
     staleTime: 30_000,
   });
 
+  const { data: myProfile } = useQuery({
+    queryKey: ['myProfile', user?.email],
+    queryFn: () => base44.entities.Profile.filter({ user_id: user.email }),
+    enabled: !!user,
+    select: (data) => data[0] || null,
+    staleTime: 30_000,
+  });
+
   const { data: myLikes = [] } = useQuery({
     queryKey: ['myLikes', user?.email],
     queryFn: () => base44.entities.PostLike.filter({ user_id: user?.email }),
@@ -135,7 +143,7 @@ export default function Feed() {
 
   const getProfileData = (email) => {
     if (email === user?.email) {
-      return { email, full_name: user.full_name || email?.split('@')[0], avatar_url: null };
+      return { email, full_name: user.full_name || email?.split('@')[0], avatar_url: myProfile?.avatar_url || null };
     }
     const found = allUsers.find((u) => u.email === email);
     return found || { email, full_name: email?.split('@')[0] || 'User', avatar_url: null };
