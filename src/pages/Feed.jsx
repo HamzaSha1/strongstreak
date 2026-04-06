@@ -134,7 +134,9 @@ export default function Feed() {
   const isLiked = (postId) => myLikes.some((l) => l.post_id === postId);
 
   const getProfileData = (email) => {
-    return allUsers.find((u) => u.email === email);
+    const found = allUsers.find((u) => u.email === email);
+    // Fall back to a minimal object so the sheet always opens
+    return found || { email, full_name: email?.split('@')[0] || 'User', avatar_url: null };
   };
 
   return (
@@ -205,30 +207,26 @@ export default function Feed() {
             .map((post) => (
               <div key={post.id} className="border-b border-border">
                 {/* User row */}
-                <div className="flex items-center gap-3 px-4 py-3">
-                  <div 
-                    onClick={() => {
-                      const profile = getProfileData(post.created_by);
-                      if (profile) setSelectedProfile(profile);
-                    }}
-                    className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center text-primary font-heading font-bold text-sm cursor-pointer hover:opacity-80 transition-opacity"
-                  >
-                    {post.created_by?.[0]?.toUpperCase() || '?'}
+                <button
+                  onClick={() => setSelectedProfile(getProfileData(post.created_by))}
+                  className="flex items-center gap-3 px-4 py-3 w-full text-left active:opacity-70 transition-opacity"
+                >
+                  <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center text-primary font-heading font-bold text-sm overflow-hidden shrink-0">
+                    {(() => {
+                      const p = getProfileData(post.created_by);
+                      return p?.avatar_url
+                        ? <img src={p.avatar_url} alt="" className="w-full h-full object-cover" />
+                        : (p?.full_name?.[0] || post.created_by?.[0] || '?').toUpperCase();
+                    })()}
                   </div>
-                  <div 
-                    onClick={() => {
-                      const profile = getProfileData(post.created_by);
-                      if (profile) setSelectedProfile(profile);
-                    }}
-                    className="cursor-pointer hover:opacity-80 transition-opacity"
-                  >
-                    <p className="font-medium text-sm">{post.created_by?.split('@')[0] || 'User'}</p>
+                  <div>
+                    <p className="font-medium text-sm">{getProfileData(post.created_by)?.full_name || post.created_by?.split('@')[0] || 'User'}</p>
                     <div className="flex items-center gap-1 text-muted-foreground text-xs">
                       <Clock size={10} />
                       {formatDistanceToNow(new Date(post.created_date), { addSuffix: true })}
                     </div>
                   </div>
-                </div>
+                </button>
 
                 {/* Image */}
                 {post.image_url && (
