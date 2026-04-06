@@ -1,15 +1,16 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Search, Shield, ShieldOff, Trash2, UserCheck, UserX, Crown, User } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Search, Shield, ShieldOff, Trash2, Crown, ExternalLink } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
+import UserProfileSheet from '@/components/people/UserProfileSheet';
 
 export default function UserManagement({ currentUser }) {
   const [search, setSearch] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const [selectedProfile, setSelectedProfile] = useState(null);
   const queryClient = useQueryClient();
 
   const { data, isLoading, refetch } = useQuery({
@@ -45,6 +46,14 @@ export default function UserManagement({ currentUser }) {
 
   return (
     <div className="flex flex-col gap-4 p-4">
+      {selectedProfile && (
+        <UserProfileSheet
+          person={selectedProfile}
+          currentUser={currentUser}
+          following={[]}
+          onClose={() => setSelectedProfile(null)}
+        />
+      )}
       {/* Search */}
       <div className="relative">
         <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -93,7 +102,13 @@ export default function UserManagement({ currentUser }) {
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <p className="font-semibold text-sm truncate">{u.display_name}</p>
+                    <button
+                      onClick={() => setSelectedProfile({ email: u.email, full_name: u.display_name, display_name: u.display_name, avatar_url: u.avatar_url })}
+                      className="font-semibold text-sm truncate hover:text-primary transition-colors flex items-center gap-1"
+                    >
+                      {u.display_name}
+                      <ExternalLink size={11} className="text-muted-foreground" />
+                    </button>
                     <Badge variant={u.role === 'admin' ? 'default' : 'secondary'} className="text-[10px] px-1.5 py-0.5">
                       {u.role === 'admin' ? <><Crown size={10} className="mr-1" />Admin</> : 'User'}
                     </Badge>
@@ -101,6 +116,7 @@ export default function UserManagement({ currentUser }) {
                       <Badge variant="outline" className="text-[10px] px-1.5 py-0.5">You</Badge>
                     )}
                   </div>
+                  
                   <p className="text-xs text-muted-foreground truncate">{u.email}</p>
                   {u.created_date && (
                     <p className="text-[11px] text-muted-foreground/60">
