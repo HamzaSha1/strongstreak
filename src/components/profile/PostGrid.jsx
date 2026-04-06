@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import EditPostModal from '@/components/profile/EditPostModal';
+import PostDetailModal from '@/components/profile/PostDetailModal';
 import { useQueryClient } from '@tanstack/react-query';
 
 export default function PostGrid({ posts, isLoading, userEmail }) {
@@ -59,7 +59,7 @@ export default function PostGrid({ posts, isLoading, userEmail }) {
       </div>
 
       {selectedPost && (
-        <EditPostModal
+        <PostDetailModal
           post={selectedPost}
           onClose={() => setSelectedPost(null)}
           onUpdated={handleUpdated}
