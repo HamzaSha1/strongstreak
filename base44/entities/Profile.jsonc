@@ -35,6 +35,11 @@
         },
         {
           "data.is_private": false
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
         }
       ]
     },
