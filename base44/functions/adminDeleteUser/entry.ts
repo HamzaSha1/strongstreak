@@ -10,14 +10,13 @@ Deno.serve(async (req) => {
   const { userId } = await req.json();
   if (!userId) return Response.json({ error: 'Missing userId' }, { status: 400 });
 
-  // Look up the target user to get their email (used as user_id in most entities)
   const targetUser = await base44.asServiceRole.entities.User.get(userId);
   if (!targetUser) return Response.json({ error: 'User not found' }, { status: 404 });
 
   const email = targetUser.email;
   const db = base44.asServiceRole.entities;
 
-  // Delete all associated data in parallel
+  // Fetch all associated data
   const [
     profiles,
     posts,
@@ -54,33 +53,28 @@ Deno.serve(async (req) => {
     db.GroupMember.filter({ user_id: email }),
   ]);
 
-  const allRecords = [
-    ...profiles,
-    ...posts,
-    ...workoutLogs,
-    ...setLogs,
-    ...splitDays,
-    ...splitExercises,
-    ...weights,
-    ...postLikes,
-    ...followsAsFollower,
-    ...followsAsFollowing,
-    ...followRequestsAsRequester,
-    ...followRequestsAsTarget,
-    ...blocksAsBlocker,
-    ...blocksAsBlocked,
-    ...reports,
-    ...groupMembers,
-  ];
+  // Delete each group explicitly with the correct entity
+  await Promise.all([
+    ...profiles.map((r) => db.Profile.delete(r.id)),
+    ...posts.map((r) => db.Post.delete(r.id)),
+    ...workoutLogs.map((r) => db.WorkoutLog.delete(r.id)),
+    ...setLogs.map((r) => db.SetLog.delete(r.id)),
+    ...splitDays.map((r) => db.SplitDay.delete(r.id)),
+    ...splitExercises.map((r) => db.SplitExercise.delete(r.id)),
+    ...weights.map((r) => db.Weight.delete(r.id)),
+    ...postLikes.map((r) => db.PostLike.delete(r.id)),
+    ...followsAsFollower.map((r) => db.Follow.delete(r.id)),
+    ...followsAsFollowing.map((r) => db.Follow.delete(r.id)),
+    ...followRequestsAsRequester.map((r) => db.FollowRequest.delete(r.id)),
+    ...followRequestsAsTarget.map((r) => db.FollowRequest.delete(r.id)),
+    ...blocksAsBlocker.map((r) => db.Block.delete(r.id)),
+    ...blocksAsBlocked.map((r) => db.Block.delete(r.id)),
+    ...reports.map((r) => db.Report.delete(r.id)),
+    ...groupMembers.map((r) => db.GroupMember.delete(r.id)),
+  ]);
 
-  // Delete all records
-  await Promise.all(allRecords.map((r) => {
-    const entityName = r.entity_name;
-    return db[entityName].delete(r.id);
-  }));
-
-  // Finally delete the user account
+  // Finally delete the user
   await db.User.delete(userId);
 
-  return Response.json({ success: true, deleted_records: allRecords.length });
+  return Response.json({ success: true });
 });

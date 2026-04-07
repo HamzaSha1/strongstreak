@@ -34,8 +34,11 @@ export default function UserManagement({ currentUser }) {
     mutationFn: ({ userId }) => base44.functions.invoke('adminDeleteUser', { userId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['adminUsers'] });
-      toast.success('User deleted');
+      toast.success('User and all their data deleted');
       setConfirmDelete(null);
+    },
+    onError: (err) => {
+      toast.error('Failed to delete user: ' + (err?.response?.data?.error || err.message));
     },
   });
 
