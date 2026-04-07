@@ -53,24 +53,26 @@ Deno.serve(async (req) => {
     db.GroupMember.filter({ user_id: email }),
   ]);
 
-  // Delete each group explicitly with the correct entity
+  const safeDelete = (entity, id) => entity.delete(id).catch(() => {});
+
+  // Delete each group explicitly with the correct entity, ignoring 404s
   await Promise.all([
-    ...profiles.map((r) => db.Profile.delete(r.id)),
-    ...posts.map((r) => db.Post.delete(r.id)),
-    ...workoutLogs.map((r) => db.WorkoutLog.delete(r.id)),
-    ...setLogs.map((r) => db.SetLog.delete(r.id)),
-    ...splitDays.map((r) => db.SplitDay.delete(r.id)),
-    ...splitExercises.map((r) => db.SplitExercise.delete(r.id)),
-    ...weights.map((r) => db.Weight.delete(r.id)),
-    ...postLikes.map((r) => db.PostLike.delete(r.id)),
-    ...followsAsFollower.map((r) => db.Follow.delete(r.id)),
-    ...followsAsFollowing.map((r) => db.Follow.delete(r.id)),
-    ...followRequestsAsRequester.map((r) => db.FollowRequest.delete(r.id)),
-    ...followRequestsAsTarget.map((r) => db.FollowRequest.delete(r.id)),
-    ...blocksAsBlocker.map((r) => db.Block.delete(r.id)),
-    ...blocksAsBlocked.map((r) => db.Block.delete(r.id)),
-    ...reports.map((r) => db.Report.delete(r.id)),
-    ...groupMembers.map((r) => db.GroupMember.delete(r.id)),
+    ...profiles.map((r) => safeDelete(db.Profile, r.id)),
+    ...posts.map((r) => safeDelete(db.Post, r.id)),
+    ...workoutLogs.map((r) => safeDelete(db.WorkoutLog, r.id)),
+    ...setLogs.map((r) => safeDelete(db.SetLog, r.id)),
+    ...splitDays.map((r) => safeDelete(db.SplitDay, r.id)),
+    ...splitExercises.map((r) => safeDelete(db.SplitExercise, r.id)),
+    ...weights.map((r) => safeDelete(db.Weight, r.id)),
+    ...postLikes.map((r) => safeDelete(db.PostLike, r.id)),
+    ...followsAsFollower.map((r) => safeDelete(db.Follow, r.id)),
+    ...followsAsFollowing.map((r) => safeDelete(db.Follow, r.id)),
+    ...followRequestsAsRequester.map((r) => safeDelete(db.FollowRequest, r.id)),
+    ...followRequestsAsTarget.map((r) => safeDelete(db.FollowRequest, r.id)),
+    ...blocksAsBlocker.map((r) => safeDelete(db.Block, r.id)),
+    ...blocksAsBlocked.map((r) => safeDelete(db.Block, r.id)),
+    ...reports.map((r) => safeDelete(db.Report, r.id)),
+    ...groupMembers.map((r) => safeDelete(db.GroupMember, r.id)),
   ]);
 
   // Finally delete the user
