@@ -32,8 +32,10 @@ Deno.serve(async (req) => {
     followRequestsAsTarget,
     blocksAsBlocker,
     blocksAsBlocked,
-    reports,
+    reportsBy,
+    reportsAbout,
     groupMembers,
+    groups,
   ] = await Promise.all([
     db.Profile.filter({ user_id: email }),
     db.Post.filter({ user_id: email }),
@@ -50,7 +52,9 @@ Deno.serve(async (req) => {
     db.Block.filter({ blocker_id: email }),
     db.Block.filter({ blocked_id: email }),
     db.Report.filter({ reporter_id: email }),
+    db.Report.filter({ reported_user_id: email }),
     db.GroupMember.filter({ user_id: email }),
+    db.Group.filter({ created_by: email }),
   ]);
 
   const safeDelete = (entity, id) => entity.delete(id).catch(() => {});
@@ -71,8 +75,10 @@ Deno.serve(async (req) => {
     ...followRequestsAsTarget.map((r) => safeDelete(db.FollowRequest, r.id)),
     ...blocksAsBlocker.map((r) => safeDelete(db.Block, r.id)),
     ...blocksAsBlocked.map((r) => safeDelete(db.Block, r.id)),
-    ...reports.map((r) => safeDelete(db.Report, r.id)),
+    ...reportsBy.map((r) => safeDelete(db.Report, r.id)),
+    ...reportsAbout.map((r) => safeDelete(db.Report, r.id)),
     ...groupMembers.map((r) => safeDelete(db.GroupMember, r.id)),
+    ...groups.map((r) => safeDelete(db.Group, r.id)),
   ]);
 
   // Finally delete the user
