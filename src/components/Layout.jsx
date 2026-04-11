@@ -54,7 +54,7 @@ export default function Layout() {
         </main>
 
         {/* Bottom Nav */}
-        <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[512px] z-50 bg-card border-t border-border rounded-t-2xl" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+        <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[512px] z-50 bg-card border-t border-border rounded-t-2xl" style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 8px)' }}>
           <div className="flex items-center justify-around px-2 py-2">
             {NAV_ITEMS.map(({ path, label, icon: Icon }) => {
               const active = location.pathname === path;
