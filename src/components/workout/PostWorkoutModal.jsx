@@ -11,6 +11,7 @@ export default function PostWorkoutModal({ workoutLog, user, onClose, summaryIma
   const [caption, setCaption] = useState('');
   const [visibility, setVisibility] = useState('public');
   const [uploading, setUploading] = useState(false);
+  const [moderating, setModerating] = useState(false);
   const fileRef = useRef();
 
   const handleFile = async (e) => {
@@ -24,13 +25,16 @@ export default function PostWorkoutModal({ workoutLog, user, onClose, summaryIma
   };
 
   const handlePost = async () => {
-    // AI moderation check on caption
-    if (caption.trim()) {
-      const res = await base44.functions.invoke('moderateContent', { text: caption });
-      if (res.data?.safe === false) {
-        toast.error(`Post blocked: ${res.data.reason || 'Content violates community guidelines.'}`);
-        return;
-      }
+    setModerating(true);
+    // AI moderation check on caption and/or image
+    const res = await base44.functions.invoke('moderateContent', {
+      text: caption || '',
+      image_url: imageUrl || null,
+    });
+    setModerating(false);
+    if (res.data?.safe === false) {
+      toast.error(`Post blocked: ${res.data.reason || 'Content violates community guidelines.'}`);
+      return;
     }
 
     await base44.entities.Post.create({
@@ -106,9 +110,9 @@ export default function PostWorkoutModal({ workoutLog, user, onClose, summaryIma
           <Button
             className="flex-1 bg-primary text-primary-foreground"
             onClick={handlePost}
-            disabled={uploading}
+            disabled={uploading || moderating}
           >
-            Post
+            {moderating ? 'Checking...' : 'Post'}
           </Button>
         </div>
       </div>

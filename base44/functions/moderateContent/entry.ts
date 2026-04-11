@@ -8,22 +8,31 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { text } = await req.json();
+    const { text, image_url } = await req.json();
 
-    if (!text || text.trim().length === 0) {
+    const hasText = text && text.trim().length > 0;
+    const hasImage = !!image_url;
+
+    if (!hasText && !hasImage) {
       return Response.json({ safe: true });
     }
 
-    const result = await base44.asServiceRole.integrations.Core.InvokeLLM({
-      prompt: `You are a content moderation assistant. Analyze the following user-generated text and determine if it contains objectionable content such as: hate speech, harassment, explicit/sexual content, violence, spam, or illegal activity.
+    const prompt = `You are a strict content moderation assistant for a fitness social app. Analyze the following user-generated content and determine if it is objectionable.
 
-Text to analyze: "${text}"
+Objectionable content includes: hate speech, harassment, sexual/explicit content, nudity, violence, threats, self-harm promotion, spam, discrimination, bullying, or anything illegal.
+
+${hasText ? `Caption text: "${text}"` : ''}
+${hasImage ? `An image is also attached — analyze it for objectionable visual content.` : ''}
 
 Respond with a JSON object only:
 {
-  "safe": true/false,
+  "safe": true or false,
   "reason": "brief reason if not safe, otherwise null"
-}`,
+}`;
+
+    const result = await base44.asServiceRole.integrations.Core.InvokeLLM({
+      prompt,
+      file_urls: hasImage ? [image_url] : null,
       response_json_schema: {
         type: "object",
         properties: {
