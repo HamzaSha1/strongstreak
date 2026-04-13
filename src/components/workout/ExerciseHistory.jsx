@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { X, TrendingUp, History } from 'lucide-react';
 import { useState } from 'react';
 import { format } from 'date-fns';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts';
 
 function groupBySessions(logs) {
   const seen = new Map();
@@ -36,13 +36,22 @@ export default function ExerciseHistory({ exerciseName, userId, weightUnit = 'kg
 
   const sessions = groupBySessions(logs);
 
-  // Chart data: max weight per session
+  // Chart data: max weight per session (for trend chart)
   const chartData = sessions.map((s) => ({
     date: s.date ? format(new Date(s.date), 'MMM d') : '?',
     weight: Math.max(...s.sets.map((x) => toDisplay(x.weight_kg) || 0)),
     reps: Math.round(s.sets.reduce((acc, x) => acc + (x.reps || 0), 0) / s.sets.length),
-    volume: Math.round(s.sets.reduce((acc, x) => acc + (toDisplay(x.weight_kg) || 0) * (x.reps || 0), 0)),
   }));
+
+  // Last session set-by-set chart data
+  const lastSession = sessions.length > 0 ? sessions[sessions.length - 1] : null;
+  const lastSessionChartData = lastSession
+    ? lastSession.sets.map((s) => ({
+        set: `Set ${s.set_number}`,
+        weight: toDisplay(s.weight_kg) || 0,
+        reps: s.reps || 0,
+      }))
+    : [];
 
   return (
     <>
@@ -85,13 +94,57 @@ export default function ExerciseHistory({ exerciseName, userId, weightUnit = 'kg
                 <p className="text-sm text-muted-foreground italic text-center py-10">No history yet for this exercise.</p>
               ) : (
                 <>
-                  {/* Weight progression chart */}
+                  {/* Last Session — set-by-set chart */}
+                  {lastSession && lastSessionChartData.length > 0 && (
+                    <div>
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                        <TrendingUp size={12} /> Last Session — Set by Set
+                      </p>
+                      <p className="text-[10px] text-muted-foreground mb-3">
+                        {lastSession.date ? format(new Date(lastSession.date), 'MMM d, yyyy') : ''}
+                      </p>
+                      <ResponsiveContainer width="100%" height={180}>
+                        <LineChart data={lastSessionChartData} margin={{ top: 4, right: 8, bottom: 0, left: -16 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                          <XAxis dataKey="set" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} />
+                          <YAxis yAxisId="weight" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} />
+                          <YAxis yAxisId="reps" orientation="right" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} />
+                          <Tooltip
+                            contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12, fontSize: 12 }}
+                          />
+                          <Legend wrapperStyle={{ fontSize: 10 }} />
+                          <Line
+                            yAxisId="weight"
+                            type="monotone"
+                            dataKey="weight"
+                            name={`Weight (${weightUnit})`}
+                            stroke="hsl(var(--primary))"
+                            strokeWidth={2.5}
+                            dot={{ fill: 'hsl(var(--primary))', r: 4 }}
+                            activeDot={{ r: 6 }}
+                          />
+                          <Line
+                            yAxisId="reps"
+                            type="monotone"
+                            dataKey="reps"
+                            name="Reps"
+                            stroke="hsl(210 40% 65%)"
+                            strokeWidth={2}
+                            strokeDasharray="4 3"
+                            dot={{ fill: 'hsl(210 40% 65%)', r: 3 }}
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  )}
+
+                  {/* Weight progression trend across sessions */}
                   {chartData.length > 1 && (
                     <div>
                       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                        <TrendingUp size={12} /> Max Weight per Session ({weightUnit})
+                        <TrendingUp size={12} /> Max Weight Trend ({weightUnit})
                       </p>
-                      <ResponsiveContainer width="100%" height={160}>
+                      <ResponsiveContainer width="100%" height={140}>
                         <LineChart data={chartData} margin={{ top: 4, right: 8, bottom: 0, left: -16 }}>
                           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                           <XAxis dataKey="date" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} />

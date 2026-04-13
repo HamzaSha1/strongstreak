@@ -31,8 +31,8 @@ export default function RIRPicker({ initialValue, onConfirm, onSkip }) {
       <div className="bg-card border border-border rounded-3xl w-full max-w-sm p-6 flex flex-col gap-5">
         {/* Title */}
         <div className="text-center">
-          <p className="font-heading font-bold text-lg">Reps in Reserve</p>
-          <p className="text-xs text-muted-foreground mt-0.5">How many more reps could you have done?</p>
+          <p className="font-heading font-bold text-lg">Effort Level (RIR)</p>
+          <p className="text-xs text-muted-foreground mt-0.5">0 = Very Easy · 10 = Max Effort (0 reps left)</p>
         </div>
 
         {/* Horizontal scroll picker */}
@@ -53,8 +53,8 @@ export default function RIRPicker({ initialValue, onConfirm, onSkip }) {
               )}
             >
               {val}
-              {val === 0 && <span className="text-[9px] font-normal leading-none mt-0.5 opacity-70">max</span>}
-              {val === 10 && <span className="text-[9px] font-normal leading-none mt-0.5 opacity-70">easy</span>}
+              {val === 0 && <span className="text-[9px] font-normal leading-none mt-0.5 opacity-70">easy</span>}
+              {val === 10 && <span className="text-[9px] font-normal leading-none mt-0.5 opacity-70">max</span>}
             </button>
           ))}
         </div>
@@ -63,13 +63,15 @@ export default function RIRPicker({ initialValue, onConfirm, onSkip }) {
         <div className="text-center text-sm text-muted-foreground min-h-[20px]">
           {selected != null
             ? selected === 0
-              ? 'Went to failure 💪'
-              : selected <= 2
-              ? `${selected} rep${selected === 1 ? '' : 's'} left — very hard`
-              : selected <= 4
-              ? `${selected} reps left — challenging`
-              : `${selected} reps left — still had energy`
-            : 'Select how many reps you had left'}
+              ? 'Very Easy — lots left in the tank'
+              : selected <= 3
+              ? `${selected}/10 — moderate effort`
+              : selected <= 6
+              ? `${selected}/10 — challenging`
+              : selected <= 9
+              ? `${selected}/10 — very hard`
+              : 'Max Effort — 0 reps in reserve 💪'
+            : 'Select your effort level (0 = Easy, 10 = Max)'}
         </div>
 
         {/* Actions */}
