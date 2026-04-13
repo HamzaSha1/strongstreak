@@ -107,16 +107,9 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
             </>
           ) : (
             <>
-              {/* Prev set reference */}
-              <div className="w-14 shrink-0 h-10 flex flex-col items-center justify-center bg-muted/40 border border-border/50 rounded-xl text-[9px] text-muted-foreground leading-tight">
-                {prevSets[normalIdx] ? (
-                  <>
-                    <span className="font-semibold text-foreground/70">{prevSets[normalIdx].reps}r</span>
-                    <span className="text-primary/80 font-semibold">{toDisplay(prevSets[normalIdx].weight_kg)}{weightUnit}</span>
-                  </>
-                ) : (
-                  <span>{ex.target_reps || '—'}</span>
-                )}
+              {/* Rep range badge */}
+              <div className="w-14 shrink-0 h-10 flex items-center justify-center bg-muted/60 border border-border rounded-xl text-xs font-semibold text-muted-foreground">
+                {ex.target_reps || '—'}
               </div>
 
               {/* Reps input */}
@@ -128,7 +121,7 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
                 onChange={(e) => onUpdateSet(ex.id, actualIdx, { reps: e.target.value })}
                 onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
                 disabled={s.completed}
-                className="flex-1 h-10 text-center bg-background border border-border rounded-xl text-sm font-bold outline-none focus:border-primary transition-colors disabled:opacity-50 min-w-0"
+                className="flex-1 h-10 text-center bg-background border border-border rounded-xl text-sm font-bold outline-none focus:border-primary transition-colors disabled:opacity-50 min-w-0 placeholder:text-muted-foreground/40 placeholder:font-normal"
               />
 
               {/* Weight input */}
@@ -143,7 +136,7 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
                 }}
                 onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
                 disabled={s.completed}
-                className="flex-1 h-10 text-center bg-background border border-border rounded-xl text-sm font-bold outline-none focus:border-primary transition-colors disabled:opacity-50 min-w-0"
+                className="flex-1 h-10 text-center bg-background border border-border rounded-xl text-sm font-bold outline-none focus:border-primary transition-colors disabled:opacity-50 min-w-0 placeholder:text-muted-foreground/40 placeholder:font-normal"
               />
 
               {/* RIR badge — tap to open picker */}
@@ -154,10 +147,14 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
                   'w-14 h-10 rounded-xl border text-sm font-bold shrink-0 flex items-center justify-center transition-colors',
                   s.rpe !== '' && s.rpe != null
                     ? 'bg-primary/10 text-primary border-primary/40'
-                    : 'border-border text-muted-foreground hover:border-primary/50 disabled:opacity-50'
+                    : 'border-border text-muted-foreground/40 hover:border-primary/50 disabled:opacity-50'
                 )}
               >
-                {s.rpe !== '' && s.rpe != null ? s.rpe : 'RIR'}
+                {s.rpe !== '' && s.rpe != null
+                  ? s.rpe
+                  : prevSets[normalIdx]?.rpe != null && prevSets[normalIdx]?.rpe !== ''
+                  ? <span className="text-muted-foreground/40 font-normal">{prevSets[normalIdx].rpe}</span>
+                  : 'RIR'}
               </button>
 
 
