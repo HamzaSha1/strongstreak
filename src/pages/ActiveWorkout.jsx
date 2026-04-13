@@ -46,6 +46,7 @@ function ExerciseNotes({ ex, onNotesChange }) {
 }
 
 function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onCompleteSet, onAddSet, onNotesChange, onRepRangeChange, onRepModeChange, divider, userId }) {
+  // prevSets is available in renderSets via closure
   const { unit: weightUnit, toggle: toggleUnit, toDisplay, toKg } = useWeightUnit();
   const isCardio = ex.exercise_type === 'cardio';
   const cardioUnit = CARDIO_UNITS[ex.cardio_metric] || 'km';
@@ -106,9 +107,16 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
             </>
           ) : (
             <>
-              {/* Rep range badge */}
-              <div className="w-14 shrink-0 h-10 flex items-center justify-center bg-muted/60 border border-border rounded-xl text-xs font-semibold text-muted-foreground">
-                {ex.target_reps || '—'}
+              {/* Prev set reference */}
+              <div className="w-14 shrink-0 h-10 flex flex-col items-center justify-center bg-muted/40 border border-border/50 rounded-xl text-[9px] text-muted-foreground leading-tight">
+                {prevSets[normalIdx] ? (
+                  <>
+                    <span className="font-semibold text-foreground/70">{prevSets[normalIdx].reps}r</span>
+                    <span className="text-primary/80 font-semibold">{toDisplay(prevSets[normalIdx].weight_kg)}{weightUnit}</span>
+                  </>
+                ) : (
+                  <span>{ex.target_reps || '—'}</span>
+                )}
               </div>
 
               {/* Reps input */}
@@ -236,25 +244,7 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
         <div className="border-t border-border px-4 pb-4 pt-3">
           <ExerciseNotes ex={ex} onUpdateSet={onUpdateSet} onNotesChange={onNotesChange} />
           <ExerciseHistory exerciseName={ex.name} userId={userId} weightUnit={weightUnit} toDisplay={toDisplay} />
-          {/* Last session — always visible, most important reference */}
-          {prevSets.length > 0 ? (
-            <div className="bg-primary/10 border border-primary/20 rounded-xl p-3 mb-3">
-              <p className="text-[10px] font-semibold text-primary uppercase tracking-wider mb-2">Last time — same day</p>
-              <div className="flex flex-wrap gap-2">
-                {prevSets.map((s, i) => (
-                  <div key={i} className="flex flex-col items-center bg-muted rounded-xl px-3 py-1.5 min-w-[52px]">
-                    <span className="text-[10px] text-muted-foreground">Set {s.set_number}</span>
-                    <span className="text-sm font-bold text-foreground">{s.reps}<span className="text-muted-foreground font-normal text-xs"> reps</span></span>
-                    <span className="text-xs font-semibold text-primary">{toDisplay(s.weight_kg)}{weightUnit}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div className="bg-muted/30 rounded-xl px-3 py-2 mb-3">
-              <p className="text-xs text-muted-foreground italic">No previous data for this exercise on this day</p>
-            </div>
-          )}
+
           {/* Reps / Time mode toggle + quick presets */}
           {!isCardio && (
             <div className="mb-3">
