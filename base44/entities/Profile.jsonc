@@ -22,6 +22,10 @@
       "type": "boolean",
       "default": false,
       "description": "Whether the profile is private or public"
+    },
+    "bg_color": {
+      "type": "string",
+      "description": "Custom background color hex code (e.g. #1a1a1a)"
     }
   },
   "required": [

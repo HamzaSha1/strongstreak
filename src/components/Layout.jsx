@@ -2,6 +2,7 @@ import { Link, Outlet, useLocation } from 'react-router-dom';
 import { Dumbbell, Rss, Users, History, UserSearch, TrendingUp, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState, useEffect, useRef } from 'react';
+import { base44 } from '@/api/base44Client';
 
 const NAV_ITEMS = [
   { path: '/', label: 'Workouts', icon: Dumbbell },
@@ -18,6 +19,25 @@ export default function Layout() {
   const [scrollPositions, setScrollPositions] = useState({});
   const [prevPath, setPrevPath] = useState(location.pathname);
   const mainRef = useRef(null);
+  const [bgColor, setBgColor] = useState(null);
+
+  useEffect(() => {
+    let unsubscribe;
+    base44.auth.me().then(async (user) => {
+      if (!user) return;
+      const profiles = await base44.entities.Profile.filter({ user_id: user.email });
+      const profileId = profiles[0]?.id;
+      setBgColor(profiles[0]?.bg_color || null);
+      if (profileId) {
+        unsubscribe = base44.entities.Profile.subscribe((event) => {
+          if (event.id === profileId) {
+            setBgColor(event.data?.bg_color || null);
+          }
+        });
+      }
+    }).catch(() => {});
+    return () => unsubscribe?.();
+  }, []);
 
   const handleMainScroll = () => {
     if (mainRef.current) {
@@ -47,7 +67,7 @@ export default function Layout() {
   }, [location.pathname, scrollPositions]);
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center">
+    <div className="min-h-screen flex flex-col items-center" style={{ backgroundColor: bgColor || undefined }}>
       <div className="w-full max-w-[512px] flex flex-col min-h-screen relative" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <main ref={mainRef} className="flex-1 pb-24 overflow-y-auto" onScroll={handleMainScroll}>
           <Outlet />

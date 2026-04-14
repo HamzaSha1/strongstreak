@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { LogOut, Trash2, Camera, Eye, EyeOff, Lock, Shield, User, AtSign, Check, X, Loader2, ShieldOff } from 'lucide-react';
+import { LogOut, Trash2, Camera, Eye, EyeOff, Lock, Shield, User, AtSign, Check, X, Loader2, ShieldOff, Palette } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
@@ -234,6 +234,41 @@ export default function ProfileSettings({ user, profile, setProfile }) {
           </div>
         </div>
       )}
+
+      {/* Background color */}
+      <div className="bg-card border border-border rounded-2xl p-4 flex items-center justify-between">
+        <div>
+          <p className="font-semibold text-sm flex items-center gap-1.5"><Palette size={14} /> App Background</p>
+          <p className="text-xs text-muted-foreground">Personalize your app color</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <input
+            type="color"
+            value={profile.bg_color || '#0e1117'}
+            onChange={async (e) => {
+              const color = e.target.value;
+              const updated = { ...profile, bg_color: color };
+              setProfile(updated);
+              if (profile.id) {
+                await base44.entities.Profile.update(profile.id, { bg_color: color });
+              }
+            }}
+            className="w-10 h-10 rounded-xl border border-border cursor-pointer bg-transparent p-0.5"
+          />
+          {profile.bg_color && (
+            <button
+              onClick={async () => {
+                const updated = { ...profile, bg_color: null };
+                setProfile(updated);
+                if (profile.id) await base44.entities.Profile.update(profile.id, { bg_color: null });
+              }}
+              className="text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded-lg border border-border"
+            >
+              Reset
+            </button>
+          )}
+        </div>
+      </div>
 
       {/* Weight unit */}
       <div className="bg-card border border-border rounded-2xl p-4 flex items-center justify-between">
