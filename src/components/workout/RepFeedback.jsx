@@ -1,4 +1,3 @@
-import { useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 
 /**
@@ -17,12 +16,6 @@ export function parseRepRange(target) {
   return null;
 }
 
-/**
- * Returns feedback config based on reps vs range.
- * setNumber: 1-based index of the set just completed
- * completedSetsCount: how many sets done so far (including this one)
- * totalSets: total sets planned
- */
 export function getRepFeedback(reps, range, setNumber, totalSets) {
   if (!range || !reps) return null;
   const r = Number(reps);
@@ -80,10 +73,6 @@ export function getRepFeedback(reps, range, setNumber, totalSets) {
   return null;
 }
 
-/**
- * Analyse all completed sets for an exercise and return a weight suggestion.
- * Returns null | { direction: 'increase' | 'decrease', message: string }
- */
 export function getWeightSuggestion(exName, targetReps, exSets) {
   const range = parseRepRange(targetReps);
   if (!range) return null;
@@ -94,12 +83,11 @@ export function getWeightSuggestion(exName, targetReps, exSets) {
   const repsArr = completed.map((s) => Number(s.reps));
   const avgReps = repsArr.reduce((a, b) => a + b, 0) / repsArr.length;
 
-  // RIR: use average of sets that have an RIR value
   const rirArr = completed.map((s) => s.rpe !== '' && s.rpe != null ? Number(s.rpe) : null).filter((v) => v !== null);
   const avgRir = rirArr.length ? rirArr.reduce((a, b) => a + b, 0) / rirArr.length : null;
 
   const hitTop = avgReps >= range.max;
-  const lowRir = avgRir !== null && avgRir <= 2; // very low RIR = close to failure
+  const lowRir = avgRir !== null && avgRir <= 2;
   const failedRange = avgReps < range.min;
 
   if (failedRange) {
@@ -118,68 +106,16 @@ export function getWeightSuggestion(exName, targetReps, exSets) {
     };
   }
 
-  if (hitTop && avgRir === null) {
-    // No RIR data — suggest increase only if clearly above range
-    if (avgReps > range.max) {
-      return {
-        direction: 'increase',
-        exName,
-        message: `Avg ${Math.round(avgReps)} reps exceeds range (${range.min}–${range.max}) — try going heavier.`,
-      };
-    }
+  if (hitTop && avgRir === null && avgReps > range.max) {
+    return {
+      direction: 'increase',
+      exName,
+      message: `Avg ${Math.round(avgReps)} reps exceeds range (${range.min}–${range.max}) — try going heavier.`,
+    };
   }
 
   return null;
 }
 
-// ─── Per-set toast (fires during workout) ────────────────────────────────────
-export default function RepFeedback({ feedback, onDismiss }) {
-  // Keep a local copy so we can fade out before unmounting
-  const [displayed, setDisplayed] = useState(null);
-  const [visible, setVisible] = useState(false);
-  const dismissTimer = useRef(null);
-
-  useEffect(() => {
-    if (!feedback) return;
-    // Cancel any pending dismiss
-    if (dismissTimer.current) clearTimeout(dismissTimer.current);
-    setDisplayed(feedback);
-    setVisible(true);
-
-    dismissTimer.current = setTimeout(() => {
-      setVisible(false);
-      // Wait for CSS transition, then clear
-      setTimeout(() => {
-        setDisplayed(null);
-        onDismiss();
-      }, 350);
-    }, 3800);
-
-    return () => clearTimeout(dismissTimer.current);
-  }, [feedback]);
-
-  if (!displayed) return null;
-
-  return (
-    <div
-      className={cn(
-        'fixed bottom-24 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-[480px] z-50',
-        'border rounded-2xl px-4 py-3 shadow-lg flex items-start gap-3 cursor-pointer',
-        'transition-all duration-300',
-        displayed.color,
-        visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-      )}
-      onClick={() => {
-        if (dismissTimer.current) clearTimeout(dismissTimer.current);
-        setVisible(false);
-        setTimeout(() => { setDisplayed(null); onDismiss(); }, 350);
-      }}
-    >
-      <span className="text-2xl flex-shrink-0">{displayed.emoji}</span>
-      <div className="flex-1 min-w-0">
-        <p className="font-heading font-bold text-sm">{displayed.title}</p>
-        <p className="text-xs opacity-90 mt-0.5 leading-relaxed">{displayed.message}</p>
-      </div>
-    </div>
-  );
-}
+// RepFeedback UI is now handled inside RestTimer — this component renders nothing.
+export default function RepFeedback() { return null; }
