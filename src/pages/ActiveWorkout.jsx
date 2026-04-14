@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import html2canvas from 'html2canvas';
 import { useParams, useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
@@ -12,7 +12,8 @@ import { toast } from 'sonner';
 import RestTimer from '@/components/workout/RestTimer';
 import PostWorkoutModal from '@/components/workout/PostWorkoutModal';
 import WorkoutExerciseEditor from '@/components/workout/WorkoutExerciseEditor.jsx';
-import RepFeedback, { parseRepRange, getRepFeedback } from '@/components/workout/RepFeedback';
+import RepFeedback, { parseRepRange, getRepFeedback, getWeightSuggestion } from '@/components/workout/RepFeedback';
+import PRCelebration from '@/components/workout/PRCelebration';
 import ExerciseHistory from '@/components/workout/ExerciseHistory';
 import RIRPicker from '@/components/workout/RIRPicker';
 import WorkoutSummaryScreen from '@/components/workout/WorkoutSummaryScreen';
@@ -326,6 +327,7 @@ export default function ActiveWorkout() {
   const [showEditor, setShowEditor] = useState(false);
   const [localExercises, setLocalExercises] = useState(null); // null = use server exercises
   const [repFeedback, setRepFeedback] = useState(null);
+  const [prCelebration, setPrCelebration] = useState(null);
   const [isReordering, setIsReordering] = useState(false);
   const [summaryImageUrl, setSummaryImageUrl] = useState(null);
   const [showImportDay, setShowImportDay] = useState(false);
@@ -372,6 +374,35 @@ export default function ActiveWorkout() {
     enabled: !!user && !!dayId,
     staleTime: 0,
   });
+
+  // All-time best sets per exercise (for PR detection)
+  const { data: allTimeLogs = [] } = useQuery({
+    queryKey: ['allTimeLogs', user?.email],
+    queryFn: () => base44.entities.SetLog.filter({ user_id: user.email, completed: true }, '-weight_kg', 500),
+    enabled: !!user,
+    staleTime: 60000,
+  });
+
+  // Build a map: exerciseName → { maxWeight, maxRepsAtMaxWeight }
+  const allTimeBests = useMemo(() => {
+    const bests = {};
+    allTimeLogs.forEach((log) => {
+      if (!log.exercise_name) return;
+      const key = log.exercise_name.toLowerCase();
+      const w = Number(log.weight_kg) || 0;
+      const r = Number(log.reps) || 0;
+      if (!bests[key]) {
+        bests[key] = { maxWeight: w, maxRepsAtMaxWeight: r };
+      } else {
+        if (w > bests[key].maxWeight) {
+          bests[key] = { maxWeight: w, maxRepsAtMaxWeight: r };
+        } else if (w === bests[key].maxWeight && r > bests[key].maxRepsAtMaxWeight) {
+          bests[key].maxRepsAtMaxWeight = r;
+        }
+      }
+    });
+    return bests;
+  }, [allTimeLogs]);
 
   // The active exercise list: prefer local edits, fall back to server data
   const activeExercises = localExercises ?? exercises;
@@ -480,6 +511,29 @@ export default function ActiveWorkout() {
       const totalNormalSets = (sets[ex.id] || []).filter((s) => s.set_type !== 'dropset').length;
       const feedback = getRepFeedback(set.reps, range, completedNormalSets, totalNormalSets);
       if (feedback) setRepFeedback(feedback);
+    }
+
+    // PR detection (strength only)
+    if (ex.exercise_type !== 'cardio' && set.reps && set.weight_kg) {
+      const key = ex.name.toLowerCase();
+      const best = allTimeBests[key];
+      const w = Number(set.weight_kg);
+      const r = Number(set.reps);
+      let isPR = false;
+      let prMsg = '';
+      if (!best) {
+        isPR = true;
+        prMsg = `${ex.name}: ${w}kg × ${r} reps — first time tracked!`;
+      } else if (w > best.maxWeight) {
+        isPR = true;
+        prMsg = `${ex.name}: new max weight ${w}kg (prev: ${best.maxWeight}kg)`;
+      } else if (w === best.maxWeight && r > best.maxRepsAtMaxWeight) {
+        isPR = true;
+        prMsg = `${ex.name}: ${r} reps at ${w}kg (prev best: ${best.maxRepsAtMaxWeight} reps)`;
+      }
+      if (isPR) {
+        setPrCelebration({ message: prMsg });
+      }
     }
 
     // Use rpeOverride if provided (avoids stale state issue), else fall back to set.rpe
@@ -769,6 +823,9 @@ export default function ActiveWorkout() {
       {/* Rep range feedback */}
       <RepFeedback feedback={repFeedback} onDismiss={() => setRepFeedback(null)} />
 
+      {/* PR celebration */}
+      <PRCelebration pr={prCelebration} onDismiss={() => setPrCelebration(null)} />
+
       {/* Rest timer */}
       {restTimer && (
         <RestTimer
@@ -791,6 +848,9 @@ export default function ActiveWorkout() {
           exercises={activeExercises}
           streak={currentStreak}
           durationMinutes={Math.round(elapsed / 60)}
+          weightSuggestions={activeExercises
+            .map((ex) => getWeightSuggestion(ex.name, ex.target_reps, sets[ex.id] || []))
+            .filter(Boolean)}
           onContinue={async () => {
             // Capture summary as image for sharing
             if (summaryRef.current) {

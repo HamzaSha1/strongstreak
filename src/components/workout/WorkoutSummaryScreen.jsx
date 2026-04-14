@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, Flame, Zap, Target, TrendingUp } from 'lucide-react';
+import { Trophy, Flame, Zap, Target, TrendingUp, ArrowUp, ArrowDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 function computeAchievements(sets, exercises) {
   const achievements = [];
@@ -33,15 +34,17 @@ function computeAchievements(sets, exercises) {
   return achievements.slice(0, 3);
 }
 
-export default function WorkoutSummaryScreen({ sets, exercises, streak, durationMinutes, onContinue, summaryRef }) {
+export default function WorkoutSummaryScreen({ sets, exercises, streak, durationMinutes, onContinue, summaryRef, weightSuggestions = [] }) {
   const [showStreak, setShowStreak] = useState(false);
   const [showAchievements, setShowAchievements] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const achievements = computeAchievements(sets, exercises);
 
   useEffect(() => {
     const t1 = setTimeout(() => setShowStreak(true), 800);
     const t2 = setTimeout(() => setShowAchievements(true), 1600);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
+    const t3 = setTimeout(() => setShowSuggestions(true), 2200);
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
   }, []);
 
   return (
@@ -145,11 +148,48 @@ export default function WorkoutSummaryScreen({ sets, exercises, streak, duration
         )}
       </AnimatePresence>
 
+      {/* Weight suggestions */}
+      <AnimatePresence>
+        {showSuggestions && weightSuggestions.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            className="w-full max-w-sm flex flex-col gap-2 mb-4"
+          >
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">Next Session Tips</p>
+            {weightSuggestions.map((s, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, x: -16 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.1 }}
+                className={cn(
+                  'flex items-center gap-3 rounded-2xl px-4 py-3 border',
+                  s.direction === 'increase'
+                    ? 'bg-green-500/10 border-green-500/30 text-green-400'
+                    : 'bg-blue-500/10 border-blue-500/30 text-blue-400'
+                )}
+              >
+                {s.direction === 'increase'
+                  ? <ArrowUp size={16} className="shrink-0" />
+                  : <ArrowDown size={16} className="shrink-0" />
+                }
+                <div className="flex-1 min-w-0">
+                  <p className="font-heading font-semibold text-xs">{s.exName}</p>
+                  <p className="text-xs opacity-80 mt-0.5 leading-snug">{s.message}</p>
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* CTA */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 2.2 }}
+        transition={{ delay: 2.4 }}
         className="w-full max-w-sm"
       >
         <Button
