@@ -58,10 +58,10 @@ export default function ExerciseHistory({ exerciseName, userId, weightUnit = 'kg
       {/* Trigger button */}
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors px-2 py-1 rounded-lg hover:bg-primary/10 mb-2"
+        className="flex items-center gap-1.5 text-xs font-semibold text-primary border border-primary/30 bg-primary/5 hover:bg-primary/15 transition-colors px-3 py-1.5 rounded-xl mb-2"
       >
         <History size={12} />
-        View progression
+        View Progression
       </button>
 
       {/* Bottom sheet */}
