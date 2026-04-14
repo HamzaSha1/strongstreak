@@ -147,13 +147,15 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
                   'w-14 h-10 rounded-xl border text-sm font-bold shrink-0 flex items-center justify-center transition-colors',
                   s.rpe !== '' && s.rpe != null
                     ? 'bg-primary/10 text-primary border-primary/40'
+                    : prevSets[normalIdx]?.rpe != null && prevSets[normalIdx]?.rpe !== ''
+                    ? 'border-border text-muted-foreground/40 hover:border-primary/50 disabled:opacity-50'
                     : 'border-border text-muted-foreground/40 hover:border-primary/50 disabled:opacity-50'
                 )}
               >
                 {s.rpe !== '' && s.rpe != null
                   ? s.rpe
                   : prevSets[normalIdx]?.rpe != null && prevSets[normalIdx]?.rpe !== ''
-                  ? <span className="text-muted-foreground/40 font-normal">{prevSets[normalIdx].rpe}</span>
+                  ? prevSets[normalIdx].rpe
                   : 'RIR'}
               </button>
 
