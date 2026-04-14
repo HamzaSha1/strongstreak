@@ -82,7 +82,7 @@ export default function RestTimer({ seconds, total, onDone, onSkip, isMinimized,
               className={cn(
                 'w-full rounded-2xl px-5 py-4 flex flex-col items-center gap-2 border cursor-pointer',
                 isPR
-                  ? 'bg-zinc-900 border-yellow-500/50 shadow-[0_0_12px_hsl(45_93%_47%/0.4)]'
+                  ? 'bg-card border-yellow-500/50 shadow-[0_0_12px_hsl(45_93%_47%/0.4)]'
                   : notification.color
               )}
             >
@@ -96,7 +96,7 @@ export default function RestTimer({ seconds, total, onDone, onSkip, isMinimized,
               <p className={cn('font-heading font-bold text-base', isPR ? 'text-yellow-400' : '')}>
                 {isPR ? '🏆 New Personal Record!' : notification.title}
               </p>
-              <p className={cn('text-xs text-center leading-relaxed', isPR ? 'text-zinc-300' : 'opacity-90')}>
+              <p className={cn('text-xs text-center leading-relaxed', isPR ? 'text-muted-foreground' : 'opacity-90')}>
                 {notification.message}
               </p>
               <p className="text-[10px] opacity-50 mt-1">Tap to dismiss · timer running</p>

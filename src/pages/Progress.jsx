@@ -129,7 +129,7 @@ export default function Progress() {
               <img src={formData.photo_url} alt="Progress" className="w-full h-40 object-cover" />
               <button
                 onClick={() => setFormData((prev) => ({ ...prev, photo_url: '' }))}
-                className="absolute top-2 right-2 w-7 h-7 bg-black/50 rounded-full flex items-center justify-center text-white"
+                className="absolute top-2 right-2 w-7 h-7 bg-foreground/50 rounded-full flex items-center justify-center text-background"
               >
                 <X size={14} />
               </button>

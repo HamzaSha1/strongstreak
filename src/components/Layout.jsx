@@ -10,10 +10,10 @@ function getContrastColor(hex) {
   const r = parseInt(clean.substring(0, 2), 16);
   const g = parseInt(clean.substring(2, 4), 16);
   const b = parseInt(clean.substring(4, 6), 16);
-  // Perceived brightness formula
   const brightness = (r * 299 + g * 587 + b * 114) / 1000;
   return brightness > 128 ? 'black' : 'white';
 }
+
 
 const NAV_ITEMS = [
   { path: '/', label: 'Workouts', icon: Dumbbell },
@@ -78,46 +78,63 @@ export default function Layout() {
   }, [location.pathname, scrollPositions]);
 
   const contrastColor = bgColor ? getContrastColor(bgColor) : null;
-  const dynamicStyle = bgColor ? {
-    backgroundColor: bgColor,
-    '--foreground': contrastColor === 'white' ? '0 0% 98%' : '222 18% 7%',
-    '--muted-foreground': contrastColor === 'white' ? '0 0% 65%' : '222 18% 40%',
-  } : {};
+  const isDark = contrastColor === 'white';
+
+  // Build HSL-compatible variable overrides injected into :root when bg_color is active
+  const dynamicCssVars = bgColor ? `
+    :root {
+      --foreground: ${isDark ? '0 0% 98%' : '222 18% 7%'};
+      --muted-foreground: ${isDark ? '0 0% 60%' : '222 18% 40%'};
+      --card-foreground: ${isDark ? '0 0% 95%' : '222 18% 7%'};
+      --popover-foreground: ${isDark ? '0 0% 95%' : '222 18% 7%'};
+      --secondary-foreground: ${isDark ? '0 0% 90%' : '222 18% 16%'};
+      --card: ${isDark ? '0 0% 100% / 0.07' : '222 18% 7% / 0.06'};
+      --muted: ${isDark ? '0 0% 100% / 0.07' : '222 18% 7% / 0.05'};
+      --secondary: ${isDark ? '0 0% 100% / 0.10' : '222 18% 7% / 0.08'};
+      --border: ${isDark ? '0 0% 100% / 0.14' : '222 18% 7% / 0.12'};
+      --input: ${isDark ? '0 0% 100% / 0.08' : '222 18% 7% / 0.07'};
+    }
+  ` : '';
+
+  const dynamicStyle = bgColor ? { backgroundColor: bgColor } : {};
 
   return (
-    <div className="min-h-screen flex flex-col items-center" style={dynamicStyle}>
-      <div className="w-full max-w-[512px] flex flex-col min-h-screen relative" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-        <main ref={mainRef} className="flex-1 pb-24 overflow-y-auto" onScroll={handleMainScroll}>
-          <Outlet />
-        </main>
+    <>
+      {dynamicCssVars && <style>{dynamicCssVars}</style>}
+      <div className="min-h-screen flex flex-col items-center" style={dynamicStyle}>
+        <div className="w-full max-w-[512px] flex flex-col min-h-screen relative" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+          <main ref={mainRef} className="flex-1 pb-24 overflow-y-auto" onScroll={handleMainScroll}>
+            <Outlet />
+          </main>
 
-        {/* Bottom Nav */}
-        <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[512px] z-50 bg-card border-t border-border rounded-t-2xl" style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 8px)' }}>
-          <div className="flex items-center justify-around px-2 py-2">
-            {NAV_ITEMS.map(({ path, label, icon: Icon }) => {
-              const active = location.pathname === path;
-              return (
-                <Link
-                   key={path}
-                   to={path}
-                   className={cn(
-                     'flex flex-col items-center gap-0.5 px-4 py-2 rounded-xl transition-colors -m-2 p-2',
-                     active
-                       ? 'text-primary'
-                       : 'text-muted-foreground hover:text-foreground'
-                   )}
-                 >
-                  <Icon
-                    size={22}
-                    className={cn(active && 'drop-shadow-[0_0_6px_hsl(35_96%_58%/0.8)]')}
-                  />
-                  <span className="text-[11px] font-medium font-body">{label}</span>
-                </Link>
-              );
-            })}
-          </div>
-        </nav>
+          {/* Bottom Nav */}
+          <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[512px] z-50 bg-card border-t border-border rounded-t-2xl" style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 8px)' }}>
+            <div className="flex items-center justify-around px-2 py-2">
+              {NAV_ITEMS.map(({ path, label, icon: Icon }) => {
+                const active = location.pathname === path;
+                return (
+                  <Link
+                     key={path}
+                     to={path}
+                     className={cn(
+                       'flex flex-col items-center gap-0.5 px-4 py-2 rounded-xl transition-colors -m-2 p-2',
+                       active
+                         ? 'text-primary'
+                         : 'text-muted-foreground hover:text-foreground'
+                     )}
+                   >
+                    <Icon
+                      size={22}
+                      className={cn(active && 'drop-shadow-[0_0_6px_hsl(35_96%_58%/0.8)]')}
+                    />
+                    <span className="text-[11px] font-medium font-body">{label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          </nav>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

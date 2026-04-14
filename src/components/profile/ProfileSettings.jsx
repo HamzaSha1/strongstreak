@@ -337,7 +337,7 @@ export default function ProfileSettings({ user, profile, setProfile }) {
 
       {/* Delete confirmation modal */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black/50 flex items-end z-[60]">
+        <div className="fixed inset-0 bg-foreground/40 flex items-end z-[60]">
           <div className="w-full bg-card rounded-t-3xl p-6 border-t border-border mb-20">
             <h2 className="text-lg font-heading font-bold mb-2">Delete Account?</h2>
             <p className="text-sm text-muted-foreground mb-4">This is permanent and cannot be undone. Type "DELETE MY ACCOUNT" to confirm.</p>
