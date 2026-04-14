@@ -4,6 +4,17 @@ import { cn } from '@/lib/utils';
 import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 
+function getContrastColor(hex) {
+  if (!hex) return null;
+  const clean = hex.replace('#', '');
+  const r = parseInt(clean.substring(0, 2), 16);
+  const g = parseInt(clean.substring(2, 4), 16);
+  const b = parseInt(clean.substring(4, 6), 16);
+  // Perceived brightness formula
+  const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+  return brightness > 128 ? 'black' : 'white';
+}
+
 const NAV_ITEMS = [
   { path: '/', label: 'Workouts', icon: Dumbbell },
   { path: '/feed', label: 'Feed', icon: Rss },
@@ -66,8 +77,15 @@ export default function Layout() {
     setPrevPath(currentPath);
   }, [location.pathname, scrollPositions]);
 
+  const contrastColor = bgColor ? getContrastColor(bgColor) : null;
+  const dynamicStyle = bgColor ? {
+    backgroundColor: bgColor,
+    '--foreground': contrastColor === 'white' ? '0 0% 98%' : '222 18% 7%',
+    '--muted-foreground': contrastColor === 'white' ? '0 0% 65%' : '222 18% 40%',
+  } : {};
+
   return (
-    <div className="min-h-screen flex flex-col items-center" style={{ backgroundColor: bgColor || undefined }}>
+    <div className="min-h-screen flex flex-col items-center" style={dynamicStyle}>
       <div className="w-full max-w-[512px] flex flex-col min-h-screen relative" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <main ref={mainRef} className="flex-1 pb-24 overflow-y-auto" onScroll={handleMainScroll}>
           <Outlet />
