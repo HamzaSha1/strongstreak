@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Check, Plus, Trash2, ImagePlus, ScanLine } from 'lucide-react';
+import { ArrowLeft, Check, Plus, Trash2, ImagePlus, ScanLine, Share2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -220,6 +220,39 @@ export default function SplitBuilder() {
     toast.success('Split imported from screenshot!');
   };
 
+  const handleShareSplit = () => {
+    const exportData = {
+      split_name: activeSplit.name,
+      days: activeSplit.days.map((d, i) => ({
+        day_of_week: d.day,
+        session_type: d.session_type || 'Rest',
+        order_index: d.order_index ?? i,
+        exercises: (d.exercises || []).map((ex, ei) => ({
+          name: ex.name,
+          exercise_type: ex.exercise_type || 'strength',
+          target_sets: ex.target_sets,
+          target_reps: ex.target_reps,
+          rpe: ex.rpe,
+          rest_seconds: ex.rest_seconds,
+          cardio_metric: ex.cardio_metric,
+          image_url: ex.image_url,
+          order_index: ex.order_index ?? ei,
+          notes: ex.notes || '',
+          superset_group: ex.superset_group || '',
+          dropset_count: ex.dropset_count || 0,
+        })),
+      })),
+    };
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${activeSplit.name.replace(/\s+/g, '_')}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success(`"${activeSplit.name}" exported!`);
+  };
+
   const trainingDays = activeSplit.days.filter((d) => d.session_type && d.session_type !== 'Rest').length;
   const restDays = activeSplit.days.filter((d) => d.session_type === 'Rest' || !d.session_type).length;
 
@@ -250,6 +283,13 @@ export default function SplitBuilder() {
               placeholder="Name this split"
             />
           </div>
+          <button
+            onClick={handleShareSplit}
+            className="flex items-center gap-1.5 bg-secondary text-secondary-foreground px-3 py-1.5 rounded-xl text-sm font-medium"
+          >
+            <Share2 size={15} />
+            Share
+          </button>
           <button
             onClick={() => setShowImport(true)}
             className="flex items-center gap-1.5 bg-secondary text-secondary-foreground px-3 py-1.5 rounded-xl text-sm font-medium"

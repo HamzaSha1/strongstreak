@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Flame, Plus, Edit, Play, BedDouble, Dumbbell } from 'lucide-react';
+import { Flame, Plus, Edit, Play, BedDouble, Dumbbell, Upload } from 'lucide-react';
+import ImportSplitJsonModal from '@/components/splitbuilder/ImportSplitJsonModal';
 import { Button } from '@/components/ui/button.jsx';
 import { Badge } from '@/components/ui/badge.jsx';
 import { Link, useNavigate } from 'react-router-dom';
@@ -29,6 +30,7 @@ export default function Workouts() {
   const [activeTab, setActiveTab] = useState(0);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleteInput, setDeleteInput] = useState('');
+  const [showImportSplit, setShowImportSplit] = useState(false);
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
@@ -158,6 +160,13 @@ export default function Workouts() {
         </div>
       </div>
 
+      {showImportSplit && (
+        <ImportSplitJsonModal
+          user={user}
+          onClose={() => setShowImportSplit(false)}
+        />
+      )}
+
       {/* Quick actions */}
       <div className="flex gap-2 mb-4">
         <Link to="/split-builder" className="flex-1">
@@ -166,9 +175,9 @@ export default function Workouts() {
             {splitDays.length ? 'Edit Splits' : 'Build Split'}
           </Button>
         </Link>
-        <Button variant="outline" className="flex-1 border-border gap-2 text-sm text-muted-foreground">
-          <BedDouble size={15} />
-          Log Rest Day
+        <Button variant="outline" className="flex-1 border-border gap-2 text-sm text-muted-foreground" onClick={() => setShowImportSplit(true)}>
+          <Upload size={15} />
+          Import Split
         </Button>
       </div>
 
