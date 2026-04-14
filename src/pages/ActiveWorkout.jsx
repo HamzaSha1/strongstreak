@@ -154,9 +154,9 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
               >
                 {s.rpe !== '' && s.rpe != null
                   ? s.rpe
-                  : prevSets[normalIdx]?.rpe != null && prevSets[normalIdx]?.rpe !== ''
+                  : prevSets[normalIdx]?.rpe != null
                   ? prevSets[normalIdx].rpe
-                  : 'RIR'}
+                  : '—'}
               </button>
 
 
