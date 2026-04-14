@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Check, Plus, Trash2, ImagePlus } from 'lucide-react';
+import { ArrowLeft, Check, Plus, Trash2, ImagePlus, ScanLine } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -10,6 +10,7 @@ import { useExerciseLibrary } from '@/hooks/useExerciseLibrary';
 import DayCard from '@/components/splitbuilder/DayCard';
 import { cn } from '@/lib/utils';
 import ImportSplitModal from '@/components/splitbuilder/ImportSplitModal';
+import ImportWorkoutModal from '@/components/import/ImportWorkoutModal';
 
 const initialDays = () =>
   DAYS.map((d, i) => ({
@@ -31,6 +32,7 @@ export default function SplitBuilder() {
     () => new URLSearchParams(window.location.search).get('newSplit') === '1'
   );
   const [showImport, setShowImport] = useState(false);
+  const [showAIImport, setShowAIImport] = useState(false);
   const { ensureExercise } = useExerciseLibrary();
 
   useEffect(() => {
@@ -189,6 +191,35 @@ export default function SplitBuilder() {
     toast.success(`"${name}" imported successfully!`);
   };
 
+  const handleAIImportSplit = (parsed) => {
+    const VALID_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    const VALID_SESSIONS = ['Push', 'Pull', 'Legs', 'Upper', 'Lower', 'Full Body', 'Cardio', 'Rest', 'Custom'];
+    const days = initialDays().map((blank) => {
+      const match = (parsed.days || []).find(
+        (d) => VALID_DAYS.some((vd) => d.day_name?.toLowerCase().includes(vd.toLowerCase()) && vd === blank.day)
+      );
+      if (!match) return blank;
+      return {
+        ...blank,
+        session_type: VALID_SESSIONS.includes(match.session_type) ? match.session_type : 'Custom',
+        exercises: (match.exercises || []).map((ex, i) => ({
+          id: `ai-${Date.now()}-${i}`,
+          name: ex.exercise_name,
+          exercise_type: 'strength',
+          target_sets: ex.target_sets || 3,
+          target_reps: ex.target_reps || '8-12',
+          rpe: ex.rpe || null,
+          rest_seconds: 90,
+          order_index: i,
+        })),
+      };
+    });
+    const newSplit = { name: parsed.split_name || 'AI Import', days };
+    setSplits((prev) => [...prev, newSplit]);
+    setActiveTab(splits.length);
+    toast.success('Split imported from screenshot!');
+  };
+
   const trainingDays = activeSplit.days.filter((d) => d.session_type && d.session_type !== 'Rest').length;
   const restDays = activeSplit.days.filter((d) => d.session_type === 'Rest' || !d.session_type).length;
 
@@ -196,6 +227,13 @@ export default function SplitBuilder() {
     <div className="pb-36 min-h-screen bg-background" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
       {showImport && (
         <ImportSplitModal onImport={handleImport} onClose={() => setShowImport(false)} />
+      )}
+      {showAIImport && (
+        <ImportWorkoutModal
+          mode="split"
+          onImportSplit={handleAIImportSplit}
+          onClose={() => setShowAIImport(false)}
+        />
       )}
 
       {/* Header */}
@@ -218,6 +256,13 @@ export default function SplitBuilder() {
           >
             <ImagePlus size={15} />
             Import
+          </button>
+          <button
+            onClick={() => setShowAIImport(true)}
+            className="flex items-center gap-1.5 bg-primary/10 text-primary border border-primary/30 px-3 py-1.5 rounded-xl text-sm font-medium"
+          >
+            <ScanLine size={15} />
+            AI Scan
           </button>
           <button
             onClick={() => saveMutation.mutate()}

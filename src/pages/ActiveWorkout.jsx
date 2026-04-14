@@ -3,7 +3,8 @@ import html2canvas from 'html2canvas';
 import { useParams, useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, ChevronDown, ChevronUp, Plus, Check, Flag, Pencil, GripVertical } from 'lucide-react';
+import { ArrowLeft, ChevronDown, ChevronUp, Plus, Check, Flag, Pencil, GripVertical, ScanLine } from 'lucide-react';
+import ImportWorkoutModal from '@/components/import/ImportWorkoutModal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -327,6 +328,7 @@ export default function ActiveWorkout() {
   const [repFeedback, setRepFeedback] = useState(null);
   const [isReordering, setIsReordering] = useState(false);
   const [summaryImageUrl, setSummaryImageUrl] = useState(null);
+  const [showImportDay, setShowImportDay] = useState(false);
   const summaryRef = useRef(null);
   const startTime = useRef(new Date());
   const timerRef = useRef(null);
@@ -579,6 +581,49 @@ export default function ActiveWorkout() {
     },
   });
 
+  const handleImportDay = (parsed) => {
+    // Add imported exercises as new local exercises with their set data pre-filled
+    const imported = (parsed.exercises || []).map((ex, i) => ({
+      id: `ai-import-${Date.now()}-${i}`,
+      name: ex.exercise_name,
+      exercise_type: 'strength',
+      target_sets: ex.target_sets || (ex.sets?.length) || 3,
+      target_reps: ex.target_reps || String(ex.sets?.[0]?.reps || '8-12'),
+      rest_seconds: 90,
+      order_index: (activeExercises.length) + i,
+      notes: '',
+    }));
+    const importedSets = {};
+    imported.forEach((ex, i) => {
+      const parsedEx = parsed.exercises[i];
+      if (parsedEx.sets && parsedEx.sets.length > 0) {
+        importedSets[ex.id] = parsedEx.sets.map((s, si) => ({
+          set_number: si + 1,
+          reps: s.reps != null ? String(s.reps) : '',
+          weight_kg: s.weight_kg != null ? s.weight_kg : '',
+          weight_display: s.weight_kg != null ? String(s.weight_kg) : '',
+          rpe: s.rir != null ? String(s.rir) : '',
+          set_type: 'normal',
+          completed: false,
+        }));
+      } else {
+        importedSets[ex.id] = Array.from({ length: ex.target_sets }, (_, si) => ({
+          set_number: si + 1, reps: '', weight_kg: '', weight_display: '', rpe: '', set_type: 'normal', completed: false,
+        }));
+      }
+    });
+    const next = [...activeExercises, ...imported];
+    setLocalExercises(next);
+    setExerciseOrder(next.map((e) => e.id));
+    setSets((prev) => ({ ...prev, ...importedSets }));
+    setExpanded((prev) => {
+      const exp = { ...prev };
+      imported.forEach((ex) => { exp[ex.id] = true; });
+      return exp;
+    });
+    toast.success(`Imported ${imported.length} exercise${imported.length !== 1 ? 's' : ''} from screenshot`);
+  };
+
   const formatTime = (s) => {
     const m = Math.floor(s / 60);
     const sec = s % 60;
@@ -598,6 +643,13 @@ export default function ActiveWorkout() {
             <p className="text-primary font-mono text-lg font-bold">{formatTime(elapsed)}</p>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowImportDay(true)}
+              className="text-xs flex items-center gap-1 px-2 py-1 rounded-lg border border-primary/30 bg-primary/5 text-primary"
+            >
+              <ScanLine size={12} />
+              Scan
+            </button>
             <button
               onClick={() => setShowEditor(true)}
               className="text-xs flex items-center gap-1 px-2 py-1 rounded-lg border border-border text-muted-foreground"
@@ -688,6 +740,15 @@ export default function ActiveWorkout() {
           )}
         </Droppable>
       </DragDropContext>
+
+      {/* AI Import Day modal */}
+      {showImportDay && (
+        <ImportWorkoutModal
+          mode="day"
+          onImportDay={handleImportDay}
+          onClose={() => setShowImportDay(false)}
+        />
+      )}
 
       {/* Exercise editor panel */}
       {showEditor && (
