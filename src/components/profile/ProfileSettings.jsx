@@ -239,7 +239,7 @@ export default function ProfileSettings({ user, profile, setProfile }) {
       {/* Background color */}
       <div className="bg-card border border-border rounded-2xl p-4 flex items-center justify-between">
         <div>
-          <p className="font-semibold text-sm flex items-center gap-1.5"><Palette size={14} /> App Background</p>
+          <p className="font-semibold text-sm flex items-center gap-1.5"><Palette size={14} /> App Background <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-primary/20 text-primary border border-primary/30 leading-none">BETA</span></p>
           <p className="text-xs text-muted-foreground">Personalize your app color</p>
         </div>
         <div className="flex items-center gap-2">
