@@ -192,7 +192,7 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
   const handleRirConfirm = (rirValue) => {
     const { exId, setIdx } = rirPickerFor;
     onUpdateSet(exId, setIdx, { rpe: rirValue != null ? String(rirValue) : '', rpeEdited: true });
-    onCompleteSet(ex, setIdx);
+    onCompleteSet(ex, setIdx, rirValue != null ? String(rirValue) : undefined);
     setRirPickerFor(null);
   };
 
@@ -465,7 +465,7 @@ export default function ActiveWorkout() {
     }));
   };
 
-  const completeSet = async (ex, setIdx) => {
+  const completeSet = async (ex, setIdx, rpeOverride) => {
     const set = sets[ex.id][setIdx];
     // Optimistic update
     updateSet(ex.id, setIdx, { completed: true });
@@ -479,6 +479,9 @@ export default function ActiveWorkout() {
       if (feedback) setRepFeedback(feedback);
     }
 
+    // Use rpeOverride if provided (avoids stale state issue), else fall back to set.rpe
+    const rpeValue = rpeOverride !== undefined ? rpeOverride : set.rpe;
+
     if (workoutLog) {
       await base44.entities.SetLog.create({
         workout_log_id: workoutLog.id,
@@ -488,7 +491,7 @@ export default function ActiveWorkout() {
         set_number: set.set_number,
         reps: Number(set.reps),
         weight_kg: Number(set.weight_kg),
-        rpe: set.rpe !== '' && set.rpe != null ? Number(set.rpe) : undefined,
+        rpe: rpeValue !== '' && rpeValue != null ? Number(rpeValue) : undefined,
         set_type: set.set_type,
         completed: true,
       });
