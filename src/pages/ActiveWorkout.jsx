@@ -450,8 +450,9 @@ export default function ActiveWorkout() {
   const getPrevSets = (exName) => {
     const prev = prevLogs.filter((s) => s.exercise_name === exName);
     if (!prev.length) return [];
-    // Pick the most recent session for this exercise
-    const lastLogId = prev[0].workout_log_id;
+    // Sort by created_date descending to find the most recent session for this exercise
+    const sorted = [...prev].sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
+    const lastLogId = sorted[0].workout_log_id;
     return prev.filter((s) => s.workout_log_id === lastLogId).sort((a, b) => a.set_number - b.set_number);
   };
 
