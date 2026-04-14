@@ -18,6 +18,7 @@ import RIRPicker from '@/components/workout/RIRPicker';
 import WorkoutSummaryScreen from '@/components/workout/WorkoutSummaryScreen';
 import { useWeightUnit } from '@/hooks/useWeightUnit';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+import { startOfDay, differenceInCalendarDays, subDays, format } from 'date-fns';
 
 const CARDIO_UNITS = { distance: 'km', time: 'min', calories: 'kcal' };
 
@@ -612,13 +613,97 @@ export default function ActiveWorkout() {
           duration_minutes: Math.round(elapsed / 60),
         });
       }
+
       if (user) {
         const members = await base44.entities.GroupMember.filter({ user_id: user.email });
-        const newStreak = (members[0]?.streak || 0) + 1;
-        if (members[0]) {
-          await base44.entities.GroupMember.update(members[0].id, { streak: newStreak });
+        const member = members[0];
+        const prevStreak = member?.streak || 0;
+
+        // Fetch all past completed workout logs for this user (excluding current session)
+        const allLogs = await base44.entities.WorkoutLog.filter(
+          { user_id: user.email },
+          '-created_date',
+          100
+        );
+        const today = startOfDay(new Date());
+
+        // Check if a completed workout already exists today (other than this session)
+        const alreadyLoggedToday = allLogs.some((l) => {
+          if (l.id === workoutLog?.id || l.is_rest_day) return false;
+          return differenceInCalendarDays(today, startOfDay(new Date(l.created_date))) === 0 && l.finished_at;
+        });
+
+        if (alreadyLoggedToday) {
+          // Don't increment — already counted today
+          setCurrentStreak(prevStreak);
+          if (member) await base44.entities.GroupMember.update(member.id, { streak: prevStreak });
+          return;
         }
+
+        // Find the most recent completed workout log before today
+        const pastLogs = allLogs
+          .filter((l) => l.id !== workoutLog?.id && l.finished_at && !l.is_rest_day)
+          .sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
+
+        const lastLog = pastLogs[0];
+
+        if (!lastLog) {
+          // First ever workout
+          const newStreak = 1;
+          setCurrentStreak(newStreak);
+          if (member) await base44.entities.GroupMember.update(member.id, { streak: newStreak });
+          return;
+        }
+
+        const lastDay = startOfDay(new Date(lastLog.created_date));
+        const daysSinceLast = differenceInCalendarDays(today, lastDay);
+
+        if (daysSinceLast === 0) {
+          // Already handled above, but just in case
+          setCurrentStreak(prevStreak);
+          if (member) await base44.entities.GroupMember.update(member.id, { streak: prevStreak });
+          return;
+        }
+
+        if (daysSinceLast === 1) {
+          // Consecutive day — simple increment
+          const newStreak = prevStreak + 1;
+          setCurrentStreak(newStreak);
+          if (member) await base44.entities.GroupMember.update(member.id, { streak: newStreak });
+          return;
+        }
+
+        // Gap > 1 day — check if missed days were all Rest days in the split
+        // Fetch all SplitDays for this user to look up session types by day-of-week
+        const allSplitDays = await base44.entities.SplitDay.filter({ user_id: user.email });
+        const loggedDays = new Set(
+          allLogs
+            .filter((l) => l.finished_at && !l.is_rest_day)
+            .map((l) => startOfDay(new Date(l.created_date)).getTime())
+        );
+
+        // Check each gap day (from day after lastDay up to yesterday)
+        let streakBroken = false;
+        for (let d = 1; d < daysSinceLast; d++) {
+          const gapDate = startOfDay(subDays(today, daysSinceLast - d));
+          // Skip if user actually logged something that day
+          if (loggedDays.has(gapDate.getTime())) continue;
+
+          // Map gap date to day-of-week name (e.g. "Monday")
+          const dayName = format(gapDate, 'EEEE');
+          const splitDay = allSplitDays.find((sd) => sd.day_of_week === dayName);
+
+          if (!splitDay || splitDay.session_type !== 'Rest') {
+            // Missed a scheduled workout day — streak resets
+            streakBroken = true;
+            break;
+          }
+          // It was a rest day — continue is implicit, streak survives
+        }
+
+        const newStreak = streakBroken ? 1 : prevStreak + daysSinceLast;
         setCurrentStreak(newStreak);
+        if (member) await base44.entities.GroupMember.update(member.id, { streak: newStreak });
       }
     },
     onSuccess: () => {
