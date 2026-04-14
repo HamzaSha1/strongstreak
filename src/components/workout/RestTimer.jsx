@@ -1,15 +1,24 @@
 import { useState, useEffect } from 'react';
 import { SkipForward, ChevronDown, ChevronUp, Edit2, Check } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import SnakeGame from './SnakeGame';
 
 const RADIUS = 45;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
-export default function RestTimer({ seconds, total, onDone, onSkip, isMinimized, onToggleMinimize, gameState, onGameStateChange }) {
+export default function RestTimer({ seconds, total, onDone, onSkip, isMinimized, onToggleMinimize, gameState, onGameStateChange, feedback }) {
   const [remaining, setRemaining] = useState(seconds);
   const [showGame, setShowGame] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(seconds);
+  const [showFeedback, setShowFeedback] = useState(!!feedback);
+
+  useEffect(() => {
+    if (!feedback) return;
+    setShowFeedback(true);
+    const t = setTimeout(() => setShowFeedback(false), 5000);
+    return () => clearTimeout(t);
+  }, [feedback]);
 
   useEffect(() => {
     if (remaining <= 0) { onDone(); return; }
@@ -68,7 +77,20 @@ export default function RestTimer({ seconds, total, onDone, onSkip, isMinimized,
             <ChevronDown size={18} />
           </button>
         </div>
-        {isEditing ? (
+        {showFeedback && feedback ? (
+          <div
+            className={cn(
+              'w-full rounded-2xl px-5 py-4 flex flex-col items-center gap-2 border transition-opacity duration-500',
+              feedback.color
+            )}
+            onClick={() => setShowFeedback(false)}
+          >
+            <span className="text-3xl">{feedback.emoji}</span>
+            <p className="font-heading font-bold text-base">{feedback.title}</p>
+            <p className="text-xs opacity-90 text-center leading-relaxed">{feedback.message}</p>
+            <p className="text-[10px] opacity-50 mt-1">Tap to dismiss · timer running</p>
+          </div>
+        ) : isEditing ? (
           <div className="flex items-center gap-2">
             <input
               type="number"
@@ -111,7 +133,7 @@ export default function RestTimer({ seconds, total, onDone, onSkip, isMinimized,
             </div>
           </div>
         )}
-        <p className="text-xs text-muted-foreground text-center">Tap to play Snake while waiting</p>
+        {!showFeedback && <p className="text-xs text-muted-foreground text-center">Tap to play Snake while waiting</p>}
         <div className="flex items-center gap-3">
           <button
             onClick={() => {

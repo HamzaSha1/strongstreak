@@ -820,9 +820,6 @@ export default function ActiveWorkout() {
         />
       )}
 
-      {/* Rep range feedback */}
-      <RepFeedback feedback={repFeedback} onDismiss={() => setRepFeedback(null)} />
-
       {/* PR celebration */}
       <PRCelebration pr={prCelebration} onDismiss={() => setPrCelebration(null)} />
 
@@ -831,12 +828,13 @@ export default function ActiveWorkout() {
         <RestTimer
           seconds={restTimer.seconds}
           total={restTimer.total}
-          onDone={() => setRestTimer(null)}
-          onSkip={() => setRestTimer(null)}
+          onDone={() => { setRestTimer(null); setRepFeedback(null); }}
+          onSkip={() => { setRestTimer(null); setRepFeedback(null); }}
           isMinimized={timerMinimized}
           onToggleMinimize={() => setTimerMinimized(!timerMinimized)}
           gameState={persistedGameState}
           onGameStateChange={setPersistedGameState}
+          feedback={repFeedback}
         />
       )}
 
