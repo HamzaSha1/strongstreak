@@ -105,7 +105,7 @@ export default function PostWorkoutModal({ workoutLog, user, onClose, summaryIma
 
         <div className="flex gap-2">
           <Button variant="outline" className="flex-1 border-border" onClick={onClose}>
-            Skip
+            Done
           </Button>
           <Button
             className="flex-1 bg-primary text-primary-foreground"
