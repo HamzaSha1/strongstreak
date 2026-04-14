@@ -12,8 +12,7 @@ import { toast } from 'sonner';
 import RestTimer from '@/components/workout/RestTimer';
 import PostWorkoutModal from '@/components/workout/PostWorkoutModal';
 import WorkoutExerciseEditor from '@/components/workout/WorkoutExerciseEditor.jsx';
-import RepFeedback, { parseRepRange, getRepFeedback, getWeightSuggestion } from '@/components/workout/RepFeedback';
-import PRCelebration from '@/components/workout/PRCelebration';
+import { parseRepRange, getRepFeedback, getWeightSuggestion } from '@/components/workout/RepFeedback';
 import ExerciseHistory from '@/components/workout/ExerciseHistory';
 import RIRPicker from '@/components/workout/RIRPicker';
 import WorkoutSummaryScreen from '@/components/workout/WorkoutSummaryScreen';
@@ -49,19 +48,15 @@ function ExerciseNotes({ ex, onNotesChange }) {
 }
 
 function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onCompleteSet, onAddSet, onNotesChange, onRepRangeChange, onRepModeChange, divider, userId }) {
-  // prevSets is available in renderSets via closure
   const { unit: weightUnit, toggle: toggleUnit, toDisplay, toKg } = useWeightUnit();
   const isCardio = ex.exercise_type === 'cardio';
   const cardioUnit = CARDIO_UNITS[ex.cardio_metric] || 'km';
-  // RIR picker state: { exId, setIdx } when open
   const [rirPickerFor, setRirPickerFor] = useState(null);
 
-  // Group sets: normal first, then dropsets side-by-side
   const renderSets = () => {
     const rows = [];
     const normalSets = exSets;
 
-    // Column headers
     rows.push(
       <div key="headers" className="flex items-center px-1 mb-1">
         <span className="w-6 shrink-0" />
@@ -79,7 +74,6 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
       </div>
     );
 
-    // Render normal sets
     normalSets.forEach((s, normalIdx) => {
       const actualIdx = exSets.indexOf(s);
       rows.push(
@@ -90,7 +84,6 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
             s.completed ? 'bg-primary/10' : 'bg-muted/40'
           )}
         >
-          {/* Set number */}
           <span className={cn('text-xs font-semibold w-5 shrink-0 text-center', s.completed ? 'text-primary' : 'text-muted-foreground')}>
             {s.set_number}
           </span>
@@ -110,12 +103,10 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
             </>
           ) : (
             <>
-              {/* Rep range badge */}
               <div className="w-14 shrink-0 h-10 flex items-center justify-center bg-muted/60 border border-border rounded-xl text-xs font-semibold text-muted-foreground">
                 {ex.target_reps || '—'}
               </div>
 
-              {/* Reps input */}
               <input
                 type="number"
                 inputMode="decimal"
@@ -127,7 +118,6 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
                 className="flex-1 h-10 text-center bg-background border border-border rounded-xl text-sm font-bold outline-none focus:border-primary transition-colors disabled:opacity-50 min-w-0 placeholder:text-muted-foreground/40 placeholder:font-normal"
               />
 
-              {/* Weight input */}
               <input
                 type="number"
                 inputMode="decimal"
@@ -142,7 +132,6 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
                 className="flex-1 h-10 text-center bg-background border border-border rounded-xl text-sm font-bold outline-none focus:border-primary transition-colors disabled:opacity-50 min-w-0 placeholder:text-muted-foreground/40 placeholder:font-normal"
               />
 
-              {/* RIR badge — tap to open picker */}
               <button
                 disabled={s.completed}
                 onClick={() => !s.completed && setRirPickerFor({ exId: ex.id, setIdx: actualIdx })}
@@ -150,8 +139,6 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
                   'w-14 h-10 rounded-xl border text-sm font-bold shrink-0 flex items-center justify-center transition-colors',
                   s.rpe !== '' && s.rpe != null
                     ? 'bg-primary/10 text-primary border-primary/40'
-                    : prevSets[normalIdx]?.rpe != null && prevSets[normalIdx]?.rpe !== ''
-                    ? 'border-border text-muted-foreground/40 hover:border-primary/50 disabled:opacity-50'
                     : 'border-border text-muted-foreground/40 hover:border-primary/50 disabled:opacity-50'
                 )}
               >
@@ -161,12 +148,9 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
                   ? prevSets[normalIdx].rpe
                   : '—'}
               </button>
-
-
             </>
           )}
 
-          {/* Complete button — opens RIR picker for strength sets */}
           <button
             onClick={() => {
               if (s.completed) return;
@@ -247,7 +231,6 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
           <ExerciseNotes ex={ex} onUpdateSet={onUpdateSet} onNotesChange={onNotesChange} />
           <ExerciseHistory exerciseName={ex.name} userId={userId} weightUnit={weightUnit} toDisplay={toDisplay} />
 
-          {/* Reps / Time mode toggle + quick presets */}
           {!isCardio && (
             <div className="mb-3">
               <div className="flex gap-1.5 mb-2">
@@ -317,7 +300,7 @@ export default function ActiveWorkout() {
   const [sets, setSets] = useState({});
   const [expanded, setExpanded] = useState({});
   const [elapsed, setElapsed] = useState(0);
-  const [restTimer, setRestTimer] = useState(null); // { seconds, total }
+  const [restTimer, setRestTimer] = useState(null);
   const [timerMinimized, setTimerMinimized] = useState(false);
   const [showPostModal, setShowPostModal] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
@@ -325,9 +308,8 @@ export default function ActiveWorkout() {
   const [persistedGameState, setPersistedGameState] = useState(null);
   const [exerciseOrder, setExerciseOrder] = useState([]);
   const [showEditor, setShowEditor] = useState(false);
-  const [localExercises, setLocalExercises] = useState(null); // null = use server exercises
-  const [repFeedback, setRepFeedback] = useState(null);
-  const [prCelebration, setPrCelebration] = useState(null);
+  const [localExercises, setLocalExercises] = useState(null);
+  const [notification, setNotification] = useState(null);
   const [isReordering, setIsReordering] = useState(false);
   const [summaryImageUrl, setSummaryImageUrl] = useState(null);
   const [showImportDay, setShowImportDay] = useState(false);
@@ -357,10 +339,8 @@ export default function ActiveWorkout() {
   const { data: prevLogs = [] } = useQuery({
     queryKey: ['prevSetLogs', user?.email, dayId],
     queryFn: async () => {
-      // Get workout logs for this specific split day
       const dayLogs = await base44.entities.WorkoutLog.filter({ user_id: user?.email, split_day_id: dayId }, '-created_date', 10);
       if (!dayLogs.length) return [];
-      // Get set logs from those sessions (skip the current one if it exists)
       const pastLogIds = dayLogs
         .filter((l) => l.id !== workoutLog?.id)
         .slice(0, 5)
@@ -375,7 +355,6 @@ export default function ActiveWorkout() {
     staleTime: 0,
   });
 
-  // All-time best sets per exercise (for PR detection)
   const { data: allTimeLogs = [] } = useQuery({
     queryKey: ['allTimeLogs', user?.email],
     queryFn: () => base44.entities.SetLog.filter({ user_id: user.email, completed: true }, '-weight_kg', 500),
@@ -383,7 +362,6 @@ export default function ActiveWorkout() {
     staleTime: 60000,
   });
 
-  // Build a map: exerciseName → { maxWeight, maxRepsAtMaxWeight }
   const allTimeBests = useMemo(() => {
     const bests = {};
     allTimeLogs.forEach((log) => {
@@ -404,10 +382,8 @@ export default function ActiveWorkout() {
     return bests;
   }, [allTimeLogs]);
 
-  // The active exercise list: prefer local edits, fall back to server data
   const activeExercises = localExercises ?? exercises;
 
-  // Initialize sets and order
   useEffect(() => {
     if (exercises.length && !exerciseOrder.length) {
       setExerciseOrder(exercises.map((e) => e.id));
@@ -435,7 +411,6 @@ export default function ActiveWorkout() {
     }
   }, [exercises]);
 
-  // Handlers for WorkoutExerciseEditor
   const handleEditorReorder = (fromIdx, toIdx) => {
     if (toIdx < 0 || toIdx >= activeExercises.length) return;
     const next = [...activeExercises];
@@ -486,7 +461,6 @@ export default function ActiveWorkout() {
   const getPrevSets = (exName) => {
     const prev = prevLogs.filter((s) => s.exercise_name === exName);
     if (!prev.length) return [];
-    // Sort by created_date descending to find the most recent session for this exercise
     const sorted = [...prev].sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
     const lastLogId = sorted[0].workout_log_id;
     return prev.filter((s) => s.workout_log_id === lastLogId).sort((a, b) => a.set_number - b.set_number);
@@ -501,17 +475,10 @@ export default function ActiveWorkout() {
 
   const completeSet = async (ex, setIdx, rpeOverride) => {
     const set = sets[ex.id][setIdx];
-    // Optimistic update
     updateSet(ex.id, setIdx, { completed: true });
 
-    // Rep range feedback (strength only)
-    if (ex.exercise_type !== 'cardio' && set.reps) {
-      const range = parseRepRange(ex.target_reps);
-      const completedNormalSets = (sets[ex.id] || []).filter((s, i) => i <= setIdx && s.set_type !== 'dropset').length;
-      const totalNormalSets = (sets[ex.id] || []).filter((s) => s.set_type !== 'dropset').length;
-      const feedback = getRepFeedback(set.reps, range, completedNormalSets, totalNormalSets);
-      if (feedback) setRepFeedback(feedback);
-    }
+    // Build notification: PR takes priority over rep feedback
+    let newNotification = null;
 
     // PR detection (strength only)
     if (ex.exercise_type !== 'cardio' && set.reps && set.weight_kg) {
@@ -532,11 +499,21 @@ export default function ActiveWorkout() {
         prMsg = `${ex.name}: ${r} reps at ${w}kg (prev best: ${best.maxRepsAtMaxWeight} reps)`;
       }
       if (isPR) {
-        setPrCelebration({ message: prMsg });
+        newNotification = { type: 'pr', message: prMsg };
       }
     }
 
-    // Use rpeOverride if provided (avoids stale state issue), else fall back to set.rpe
+    // Rep range feedback (strength only) — only if no PR
+    if (!newNotification && ex.exercise_type !== 'cardio' && set.reps) {
+      const range = parseRepRange(ex.target_reps);
+      const completedNormalSets = (sets[ex.id] || []).filter((s, i) => i <= setIdx && s.set_type !== 'dropset').length;
+      const totalNormalSets = (sets[ex.id] || []).filter((s) => s.set_type !== 'dropset').length;
+      const feedback = getRepFeedback(set.reps, range, completedNormalSets, totalNormalSets);
+      if (feedback) newNotification = { type: 'rep_feedback', ...feedback };
+    }
+
+    setNotification(newNotification);
+
     const rpeValue = rpeOverride !== undefined ? rpeOverride : set.rpe;
 
     if (workoutLog) {
@@ -615,7 +592,6 @@ export default function ActiveWorkout() {
           duration_minutes: Math.round(elapsed / 60),
         });
       }
-      // Fetch & increment streak
       if (user) {
         const members = await base44.entities.GroupMember.filter({ user_id: user.email });
         const newStreak = (members[0]?.streak || 0) + 1;
@@ -630,13 +606,11 @@ export default function ActiveWorkout() {
       setShowSummary(true);
     },
     onError: () => {
-      // Still show summary even if saving failed
       setShowSummary(true);
     },
   });
 
   const handleImportDay = (parsed) => {
-    // Add imported exercises as new local exercises with their set data pre-filled
     const imported = (parsed.exercises || []).map((ex, i) => ({
       id: `ai-import-${Date.now()}-${i}`,
       name: ex.exercise_name,
@@ -714,7 +688,6 @@ export default function ActiveWorkout() {
             <div className="text-xs text-muted-foreground">{completedSets}/{totalSets}</div>
           </div>
         </div>
-        {/* Progress bar */}
         <div className="w-full bg-muted rounded-full h-1.5">
           <div
             className="bg-primary h-1.5 rounded-full transition-all"
@@ -723,7 +696,6 @@ export default function ActiveWorkout() {
         </div>
       </div>
 
-      {/* Reorder mode banner */}
       {isReordering && (
         <div className="mx-4 mt-3 px-4 py-2 bg-primary/10 border border-primary/30 rounded-xl text-xs text-primary font-semibold text-center">
           Drag to reorder · release to confirm
@@ -754,15 +726,11 @@ export default function ActiveWorkout() {
                           snapshot.isDragging && 'shadow-2xl border-primary/50 scale-[1.02]'
                         )}
                       >
-                        {/* Drag handle — long-press activates drag on mobile */}
                         <div className="flex items-center">
                           <div
                             {...drag.dragHandleProps}
                             className="px-3 py-4 text-muted-foreground touch-none flex items-center self-stretch"
-                            onTouchStart={() => {
-                              // Collapse all when drag starts
-                              setExpanded({});
-                            }}
+                            onTouchStart={() => setExpanded({})}
                           >
                             <GripVertical size={16} />
                           </div>
@@ -795,7 +763,6 @@ export default function ActiveWorkout() {
         </Droppable>
       </DragDropContext>
 
-      {/* AI Import Day modal */}
       {showImportDay && (
         <ImportWorkoutModal
           mode="day"
@@ -804,7 +771,6 @@ export default function ActiveWorkout() {
         />
       )}
 
-      {/* Exercise editor panel */}
       {showEditor && (
         <WorkoutExerciseEditor
           exercises={activeExercises}
@@ -820,25 +786,21 @@ export default function ActiveWorkout() {
         />
       )}
 
-      {/* PR celebration */}
-      <PRCelebration pr={prCelebration} onDismiss={() => setPrCelebration(null)} />
-
-      {/* Rest timer */}
+      {/* Single rest timer — notification shown inside it */}
       {restTimer && (
         <RestTimer
           seconds={restTimer.seconds}
           total={restTimer.total}
-          onDone={() => { setRestTimer(null); setRepFeedback(null); }}
-          onSkip={() => { setRestTimer(null); setRepFeedback(null); }}
+          onDone={() => { setRestTimer(null); setNotification(null); }}
+          onSkip={() => { setRestTimer(null); setNotification(null); }}
           isMinimized={timerMinimized}
           onToggleMinimize={() => setTimerMinimized(!timerMinimized)}
           gameState={persistedGameState}
           onGameStateChange={setPersistedGameState}
-          feedback={repFeedback}
+          notification={notification}
         />
       )}
 
-      {/* Workout summary screen */}
       {showSummary && (
         <WorkoutSummaryScreen
           summaryRef={summaryRef}
@@ -850,7 +812,6 @@ export default function ActiveWorkout() {
             .map((ex) => getWeightSuggestion(ex.name, ex.target_reps, sets[ex.id] || []))
             .filter(Boolean)}
           onContinue={async () => {
-            // Capture summary as image for sharing
             if (summaryRef.current) {
               try {
                 const canvas = await html2canvas(summaryRef.current, { backgroundColor: null, scale: 2 });
@@ -858,9 +819,7 @@ export default function ActiveWorkout() {
                 const file = new File([blob], 'workout-summary.png', { type: 'image/png' });
                 const { file_url } = await base44.integrations.Core.UploadFile({ file });
                 setSummaryImageUrl(file_url);
-              } catch (e) {
-                // If capture fails, proceed without image
-              }
+              } catch (e) {}
             }
             setShowSummary(false);
             setShowPostModal(true);
@@ -868,7 +827,6 @@ export default function ActiveWorkout() {
         />
       )}
 
-      {/* Post workout modal */}
       {showPostModal && workoutLog && (
         <PostWorkoutModal
           workoutLog={workoutLog}
@@ -878,7 +836,6 @@ export default function ActiveWorkout() {
         />
       )}
 
-      {/* Finish / Discard buttons */}
       <div className="fixed bottom-0 left-0 right-0 flex gap-2 px-4 pt-3 bg-background/90 backdrop-blur-md border-t border-border" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
         <Button
           variant="outline"
@@ -893,14 +850,14 @@ export default function ActiveWorkout() {
           Discard
         </Button>
         <Button
-        className={cn(
-        'flex-1 gap-2 font-heading font-bold text-base py-5 transition-all touch-target-44',
-        allDone
-        ? 'bg-primary text-primary-foreground shadow-[0_0_20px_hsl(35_96%_58%/0.5)]'
-        : 'bg-secondary text-secondary-foreground'
-        )}
-        onClick={() => finishMutation.mutate()}
-        disabled={finishMutation.isPending}
+          className={cn(
+            'flex-1 gap-2 font-heading font-bold text-base py-5 transition-all touch-target-44',
+            allDone
+              ? 'bg-primary text-primary-foreground shadow-[0_0_20px_hsl(35_96%_58%/0.5)]'
+              : 'bg-secondary text-secondary-foreground'
+          )}
+          onClick={() => finishMutation.mutate()}
+          disabled={finishMutation.isPending}
         >
           <Flag size={18} />
           {allDone ? 'Finish Workout!' : `Finish (${totalSets - completedSets} sets left)`}
