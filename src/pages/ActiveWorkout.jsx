@@ -36,9 +36,10 @@ function ExerciseNotes({ ex, onNotesChange }) {
       ) : (
         <button
           onClick={() => setEditing(true)}
-          className="w-full text-left bg-muted/40 rounded-xl px-3 py-2 text-xs text-muted-foreground italic hover:bg-muted/60 transition-colors"
+          className="w-full text-left bg-muted/40 rounded-xl px-3 py-2 text-xs text-muted-foreground hover:bg-muted/60 transition-colors flex items-center gap-2"
         >
-          {ex.notes || '+ Add note'}
+          <Pencil size={11} className="shrink-0 opacity-50" />
+          <span className={ex.notes ? '' : 'italic opacity-60'}>{ex.notes || 'Add a note...'}</span>
         </button>
       )}
     </div>
