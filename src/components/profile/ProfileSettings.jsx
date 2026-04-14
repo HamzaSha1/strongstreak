@@ -50,6 +50,7 @@ export default function ProfileSettings({ user, profile, setProfile }) {
   const [handleStatus, setHandleStatus] = useState('idle'); // idle | checking | available | taken | invalid | same
   const [savingHandle, setSavingHandle] = useState(false);
   const debounceRef = useRef(null);
+  const bgColorDebounceRef = useRef(null);
 
   const normalizeHandle = (val) => val.toLowerCase().replace(/[^a-z0-9_.]/g, '');
 
@@ -245,13 +246,13 @@ export default function ProfileSettings({ user, profile, setProfile }) {
           <input
             type="color"
             value={profile.bg_color || '#0e1117'}
-            onChange={async (e) => {
+            onChange={(e) => {
               const color = e.target.value;
-              const updated = { ...profile, bg_color: color };
-              setProfile(updated);
-              if (profile.id) {
-                await base44.entities.Profile.update(profile.id, { bg_color: color });
-              }
+              setProfile({ ...profile, bg_color: color });
+              if (bgColorDebounceRef.current) clearTimeout(bgColorDebounceRef.current);
+              bgColorDebounceRef.current = setTimeout(() => {
+                if (profile.id) base44.entities.Profile.update(profile.id, { bg_color: color });
+              }, 600);
             }}
             className="w-10 h-10 rounded-xl border border-border cursor-pointer bg-transparent p-0.5"
           />
