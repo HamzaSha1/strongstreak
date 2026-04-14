@@ -82,21 +82,21 @@ export default function RestTimer({ seconds, total, onDone, onSkip, isMinimized,
               className={cn(
                 'w-full rounded-2xl px-5 py-4 flex flex-col items-center gap-2 border cursor-pointer',
                 isPR
-                  ? 'bg-yellow-500 border-yellow-600 shadow-[0_0_12px_hsl(45_93%_47%/0.4)]'
+                  ? 'bg-zinc-900 border-yellow-500/50 shadow-[0_0_12px_hsl(45_93%_47%/0.4)]'
                   : notification.color
               )}
             >
               {isPR ? (
-                <div className="w-10 h-10 rounded-full bg-yellow-600 border border-yellow-700 flex items-center justify-center">
-                  <Star size={20} className="text-yellow-100 fill-yellow-100" />
+                <div className="w-10 h-10 rounded-full bg-yellow-500/10 border border-yellow-500/50 flex items-center justify-center">
+                  <Star size={20} className="text-yellow-500 fill-yellow-500" />
                 </div>
               ) : (
                 <span className="text-3xl">{notification.emoji}</span>
               )}
-              <p className={cn('font-heading font-bold text-base', isPR ? 'text-yellow-950' : '')}>
+              <p className={cn('font-heading font-bold text-base', isPR ? 'text-yellow-400' : '')}>
                 {isPR ? '🏆 New Personal Record!' : notification.title}
               </p>
-              <p className={cn('text-xs text-center leading-relaxed', isPR ? 'text-yellow-900' : 'opacity-90')}>
+              <p className={cn('text-xs text-center leading-relaxed', isPR ? 'text-zinc-300' : 'opacity-90')}>
                 {notification.message}
               </p>
               <p className="text-[10px] opacity-50 mt-1">Tap to dismiss · timer running</p>
