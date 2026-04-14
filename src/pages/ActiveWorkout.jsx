@@ -341,21 +341,23 @@ export default function ActiveWorkout() {
   });
 
   const { data: prevLogs = [] } = useQuery({
-    queryKey: ['prevSetLogs', user?.email, dayId],
+    queryKey: ['prevSetLogs', user?.email, activeExercises.map((e) => e.name).join(',')],
     queryFn: async () => {
-      const dayLogs = await base44.entities.WorkoutLog.filter({ user_id: user?.email, split_day_id: dayId }, '-created_date', 10);
-      if (!dayLogs.length) return [];
-      const pastLogIds = dayLogs
-        .filter((l) => l.id !== workoutLog?.id)
-        .slice(0, 5)
-        .map((l) => l.id);
-      if (!pastLogIds.length) return [];
-      const allSets = await Promise.all(
-        pastLogIds.map((id) => base44.entities.SetLog.filter({ workout_log_id: id, completed: true }))
+      if (!activeExercises.length) return [];
+      // For each exercise in the current workout, fetch its most recent completed sets
+      // across ALL workout days (not restricted to this split_day_id)
+      const perExercise = await Promise.all(
+        activeExercises.map((ex) =>
+          base44.entities.SetLog.filter(
+            { user_id: user.email, exercise_name: ex.name, completed: true },
+            '-created_date',
+            20
+          )
+        )
       );
-      return allSets.flat();
+      return perExercise.flat();
     },
-    enabled: !!user && !!dayId,
+    enabled: !!user && activeExercises.length > 0,
     staleTime: 0,
   });
 
