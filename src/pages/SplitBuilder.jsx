@@ -285,14 +285,14 @@ export default function SplitBuilder() {
           </div>
           <button
             onClick={handleShareSplit}
-            className="flex items-center gap-1.5 bg-secondary text-secondary-foreground px-3 py-1.5 rounded-xl text-sm font-medium"
+            className="flex items-center gap-1.5 bg-secondary text-secondary-foreground border border-transparent px-3 py-1.5 rounded-xl text-sm font-medium"
           >
             <Share2 size={15} />
             Share
           </button>
           <button
             onClick={() => setShowImport(true)}
-            className="flex items-center gap-1.5 bg-secondary text-secondary-foreground px-3 py-1.5 rounded-xl text-sm font-medium"
+            className="flex items-center gap-1.5 bg-secondary text-secondary-foreground border border-transparent px-3 py-1.5 rounded-xl text-sm font-medium"
           >
             <ImagePlus size={15} />
             Import
@@ -307,7 +307,7 @@ export default function SplitBuilder() {
           <button
             onClick={() => saveMutation.mutate()}
             disabled={saveMutation.isPending}
-            className="flex items-center gap-1.5 bg-secondary text-secondary-foreground px-3 py-1.5 rounded-xl text-sm font-medium"
+            className="flex items-center gap-1.5 bg-secondary text-secondary-foreground border border-transparent px-3 py-1.5 rounded-xl text-sm font-medium"
           >
             {saveMutation.isPending ? (
               <div className="w-4 h-4 border-2 border-foreground/30 border-t-foreground rounded-full animate-spin" />
