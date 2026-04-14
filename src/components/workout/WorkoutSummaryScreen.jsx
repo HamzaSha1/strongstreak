@@ -34,7 +34,7 @@ function computeAchievements(sets, exercises) {
   return achievements.slice(0, 3);
 }
 
-export default function WorkoutSummaryScreen({ sets, exercises, streak, durationMinutes, onContinue, summaryRef, weightSuggestions = [] }) {
+export default function WorkoutSummaryScreen({ sets, exercises, streak, durationMinutes, onContinue, onSkip, summaryRef, weightSuggestions = [] }) {
   const [showStreak, setShowStreak] = useState(false);
   const [showAchievements, setShowAchievements] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -190,13 +190,20 @@ export default function WorkoutSummaryScreen({ sets, exercises, streak, duration
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 2.4 }}
-        className="w-full max-w-sm"
+        className="w-full max-w-sm flex flex-col gap-2"
       >
         <Button
           onClick={onContinue}
           className="w-full py-5 font-heading font-bold text-base bg-primary text-primary-foreground shadow-[0_0_20px_hsl(35_96%_58%/0.4)]"
         >
           Share Workout 🔥
+        </Button>
+        <Button
+          variant="outline"
+          onClick={onSkip}
+          className="w-full py-5 font-heading font-bold text-base border-border text-muted-foreground"
+        >
+          Done
         </Button>
       </motion.div>
     </div>

@@ -808,6 +808,7 @@ export default function ActiveWorkout() {
           exercises={activeExercises}
           streak={currentStreak}
           durationMinutes={Math.round(elapsed / 60)}
+          onSkip={() => navigate('/')}
           weightSuggestions={activeExercises
             .map((ex) => getWeightSuggestion(ex.name, ex.target_reps, sets[ex.id] || []))
             .filter(Boolean)}
