@@ -47,7 +47,7 @@ function ExerciseNotes({ ex, onNotesChange }) {
   );
 }
 
-function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onCompleteSet, onAddSet, onNotesChange, onRepRangeChange, onRepModeChange, divider, userId }) {
+function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onCompleteSet, onUncompleteSet, onAddSet, onNotesChange, onRepRangeChange, onRepModeChange, divider, userId }) {
   const { unit: weightUnit, toggle: toggleUnit, toDisplay, toKg } = useWeightUnit();
   const isCardio = ex.exercise_type === 'cardio';
   const cardioUnit = CARDIO_UNITS[ex.cardio_metric] || 'km';
@@ -153,8 +153,9 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
 
           <button
             onClick={() => {
-              if (s.completed) return;
-              if (!isCardio) {
+              if (s.completed) {
+                onUncompleteSet(ex, actualIdx);
+              } else if (!isCardio) {
                 setRirPickerFor({ exId: ex.id, setIdx: actualIdx });
               } else {
                 onCompleteSet(ex, actualIdx);
@@ -473,6 +474,20 @@ export default function ActiveWorkout() {
     }));
   };
 
+  const uncompleteSet = async (ex, setIdx) => {
+    const set = sets[ex.id][setIdx];
+    updateSet(ex.id, setIdx, { completed: false });
+    if (workoutLog) {
+      const logs = await base44.entities.SetLog.filter({
+        workout_log_id: workoutLog.id,
+        exercise_name: ex.name,
+        set_number: set.set_number,
+        completed: true,
+      });
+      await Promise.all(logs.map((l) => base44.entities.SetLog.delete(l.id)));
+    }
+  };
+
   const completeSet = async (ex, setIdx, rpeOverride) => {
     const set = sets[ex.id][setIdx];
     updateSet(ex.id, setIdx, { completed: true });
@@ -743,6 +758,7 @@ export default function ActiveWorkout() {
                               onToggle={() => !isReordering && setExpanded((p) => ({ ...p, [ex.id]: !p[ex.id] }))}
                               onUpdateSet={updateSet}
                               onCompleteSet={completeSet}
+                              onUncompleteSet={uncompleteSet}
                               onAddSet={addSet}
                               onNotesChange={updateExerciseNotes}
                               onRepRangeChange={updateRepRange}
