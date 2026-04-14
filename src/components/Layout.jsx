@@ -93,6 +93,9 @@ export default function Layout() {
       --secondary: ${isDark ? '0 0% 100% / 0.10' : '222 18% 7% / 0.08'};
       --border: ${isDark ? '0 0% 100% / 0.14' : '222 18% 7% / 0.12'};
       --input: ${isDark ? '0 0% 100% / 0.08' : '222 18% 7% / 0.07'};
+      --primary-foreground: 222 18% 7%;
+      --destructive-foreground: 0 0% 98%;
+      --accent-foreground: 222 18% 7%;
     }
   ` : '';
 
