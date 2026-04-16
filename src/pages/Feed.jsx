@@ -164,6 +164,17 @@ export default function Feed() {
     return { email, display_name: null, full_name: null, handle: null, avatar_url: null };
   };
 
+  const getPostAvatar = (userId) => {
+    const p = getProfileData(userId);
+    if (p?.avatar_url) return <img src={p.avatar_url} alt="" className="w-full h-full object-cover" />;
+    return (p?.handle?.[0] || p?.full_name?.[0] || userId?.[0] || '?').toUpperCase();
+  };
+
+  const getPostDisplayName = (userId) => {
+    const p = getProfileData(userId);
+    return p?.handle ? '@' + p.handle : p?.display_name || p?.full_name || userId?.split('@')[0];
+  };
+
   return (
     <>
     {selectedProfile && (
@@ -237,15 +248,10 @@ export default function Feed() {
                   className="flex items-center gap-3 px-4 py-3 w-full text-left active:opacity-70 transition-opacity"
                 >
                   <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center text-primary font-heading font-bold text-sm overflow-hidden shrink-0">
-                    {(() => {
-                      const p = getProfileData(post.user_id || post.created_by);
-                      return p?.avatar_url
-                        ? <img src={p.avatar_url} alt="" className="w-full h-full object-cover" />
-                        : (p?.handle?.[0] || p?.full_name?.[0] || (post.user_id || post.created_by)?.[0] || '?').toUpperCase();
-                    })()}
+                    {getPostAvatar(post.user_id || post.created_by)}
                   </div>
                   <div>
-                    <p className="font-medium text-sm">{(() => { const p = getProfileData(post.user_id || post.created_by); return p?.handle ? '@' + p.handle : p?.display_name || p?.full_name || (post.user_id || post.created_by)?.split('@')[0]; })()}</p>
+                    <p className="font-medium text-sm">{getPostDisplayName(post.user_id || post.created_by)}</p>
                     <div className="flex items-center gap-1 text-muted-foreground text-xs">
                       <Clock size={10} />
                       {formatDistanceToNow(new Date(post.created_date), { addSuffix: true })}

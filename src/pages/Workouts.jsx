@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Flame, Plus, Edit, Play, BedDouble, Dumbbell, Upload } from 'lucide-react';
@@ -31,6 +31,7 @@ export default function Workouts() {
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleteInput, setDeleteInput] = useState('');
   const [showImportSplit, setShowImportSplit] = useState(false);
+  const deleteTimerRef = useRef(null);
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
@@ -254,8 +255,10 @@ export default function Workouts() {
 
                 <p className="text-muted-foreground text-sm mb-3">
                   {day.session_type === 'Rest'
-                    ? 'Rest & recovery'
-                    : `${getExerciseCount(day.id)} exercise${getExerciseCount(day.id) !== 1 ? 's' : ''}`}
+                    ? 'Rest & recovery — no workout today'
+                    : getExerciseCount(day.id) === 0
+                      ? 'No exercises yet — tap Edit to add some'
+                      : `${getExerciseCount(day.id)} exercise${getExerciseCount(day.id) !== 1 ? 's' : ''}`}
                 </p>
 
                 {day.session_type !== 'Rest' && (
@@ -318,7 +321,24 @@ export default function Workouts() {
               </Button>
               <Button
                 className="flex-1 bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                onClick={() => deleteSplitMutation.mutate(activeSplitName)}
+                onClick={() => {
+                  setDeleteConfirm(false);
+                  setDeleteInput('');
+                  const splitToDelete = activeSplitName;
+                  toast('Split will be deleted in 5 seconds…', {
+                    duration: 5000,
+                    action: {
+                      label: 'Undo',
+                      onClick: () => {
+                        clearTimeout(deleteTimerRef.current);
+                        toast.success('Delete cancelled');
+                      },
+                    },
+                  });
+                  deleteTimerRef.current = setTimeout(() => {
+                    deleteSplitMutation.mutate(splitToDelete);
+                  }, 5000);
+                }}
                 disabled={deleteInput !== 'DELETE' || deleteSplitMutation.isPending}
               >
                 Delete

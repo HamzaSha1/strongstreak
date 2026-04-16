@@ -54,6 +54,9 @@ export default function Progress() {
       setShowForm(false);
       toast.success('Weight logged');
     },
+    onError: () => {
+      toast.error('Could not save weight. Please try again.');
+    },
   });
 
   const chartData = weights
@@ -108,6 +111,7 @@ export default function Progress() {
             type="date"
             value={formData.date}
             onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+            min="2000-01-01"
             max={format(new Date(), 'yyyy-MM-dd')}
             className="w-full h-10 rounded-xl bg-input border border-border px-3 text-sm mb-3"
           />
@@ -135,9 +139,23 @@ export default function Progress() {
               </button>
             </div>
           ) : (
-            <label className="flex flex-col items-center justify-center gap-2 h-20 rounded-xl border-2 border-dashed border-border hover:border-primary transition-colors cursor-pointer mb-3">
-              <Camera size={18} className="text-muted-foreground" />
-              <span className="text-xs text-muted-foreground">Add progress photo</span>
+            <label className={cn(
+              "flex flex-col items-center justify-center gap-2 h-20 rounded-xl border-2 border-dashed transition-colors mb-3",
+              uploading
+                ? "border-primary/40 bg-primary/5 cursor-wait"
+                : "border-border hover:border-primary cursor-pointer"
+            )}>
+              {uploading ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                  <span className="text-xs text-primary font-medium">Uploading…</span>
+                </>
+              ) : (
+                <>
+                  <Camera size={18} className="text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">Add progress photo</span>
+                </>
+              )}
               <input
                 type="file"
                 accept="image/*"
@@ -172,6 +190,15 @@ export default function Progress() {
               Save
             </Button>
           </div>
+        </div>
+      )}
+
+      {/* Empty state */}
+      {chartData.length === 0 && !showForm && (
+        <div className="flex flex-col items-center justify-center py-12 gap-3 text-center">
+          <TrendingUp size={36} className="text-muted-foreground/40" />
+          <p className="text-muted-foreground text-sm">No weight entries yet.</p>
+          <p className="text-muted-foreground text-xs">Tap "Log Weight" above to start tracking your progress.</p>
         </div>
       )}
 
