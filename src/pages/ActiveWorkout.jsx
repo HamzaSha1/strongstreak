@@ -3,7 +3,8 @@ import html2canvas from 'html2canvas';
 import { useParams, useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, ChevronDown, ChevronUp, Plus, Check, Flag, Pencil, GripVertical, ScanLine } from 'lucide-react';
+import { ArrowLeft, ArrowLeftRight, ChevronDown, ChevronUp, Plus, Check, Flag, Pencil, GripVertical, ScanLine, Trash2, X } from 'lucide-react';
+import { EXERCISES_BY_MUSCLE, SESSION_MUSCLE_GROUPS } from '@/components/splitbuilder/exerciseData';
 import ImportWorkoutModal from '@/components/import/ImportWorkoutModal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,6 +22,71 @@ import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { startOfDay, differenceInCalendarDays, subDays, format, parse } from 'date-fns';
 
 const CARDIO_UNITS = { distance: 'km', time: 'min', calories: 'kcal' };
+
+function SwapExerciseModal({ ex, sessionType, onSwap, onClose }) {
+  const [query, setQuery] = useState('');
+  const allExercises = useMemo(() => {
+    const groups = SESSION_MUSCLE_GROUPS[sessionType] || SESSION_MUSCLE_GROUPS['Custom'] || [];
+    const seen = new Set();
+    return groups.flatMap((g) => EXERCISES_BY_MUSCLE[g] || []).filter((e) => {
+      if (seen.has(e.name)) return false;
+      seen.add(e.name);
+      return true;
+    });
+  }, [sessionType]);
+  const filtered = useMemo(() => {
+    if (!query) return allExercises.slice(0, 40);
+    return allExercises.filter((e) => e.name.toLowerCase().includes(query.toLowerCase())).slice(0, 40);
+  }, [allExercises, query]);
+  return (
+    <div className="fixed inset-0 z-[70] flex items-end bg-black/60 backdrop-blur-sm" onClick={onClose}>
+      <div
+        className="w-full bg-card rounded-t-3xl border-t border-border flex flex-col"
+        style={{ maxHeight: '72vh' }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between px-5 pt-5 pb-3">
+          <div>
+            <p className="font-heading font-bold text-base">Swap Exercise</p>
+            <p className="text-xs text-muted-foreground">Currently: {ex.name}</p>
+          </div>
+          <button onClick={onClose} className="text-muted-foreground p-1"><X size={18} /></button>
+        </div>
+        <div className="px-4 pb-3">
+          <input
+            autoFocus
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search exercises..."
+            className="w-full h-10 rounded-xl bg-input border border-border px-3 text-sm outline-none focus:border-primary"
+          />
+        </div>
+        <div className="overflow-y-auto flex-1 px-4 pb-8">
+          {query.trim() && (
+            <button
+              onClick={() => onSwap(query.trim())}
+              className="w-full text-left px-3 py-3 rounded-xl hover:bg-muted/50 text-sm font-semibold text-primary border-b border-border/30 mb-1"
+            >
+              + Use "{query.trim()}" as custom exercise
+            </button>
+          )}
+          {filtered.map((e) => (
+            <button
+              key={e.name}
+              onClick={() => onSwap(e.name)}
+              className={cn(
+                'w-full text-left px-3 py-3 rounded-xl hover:bg-muted/50 text-sm border-b border-border/30 last:border-0',
+                e.name === ex.name ? 'text-primary font-semibold' : 'text-foreground'
+              )}
+            >
+              {e.name}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function ExerciseNotes({ ex, onNotesChange }) {
   const [editing, setEditing] = useState(false);
@@ -48,11 +114,40 @@ function ExerciseNotes({ ex, onNotesChange }) {
   );
 }
 
-function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onCompleteSet, onUncompleteSet, onAddSet, onNotesChange, onRepRangeChange, onRepModeChange, divider, userId }) {
+function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onCompleteSet, onUncompleteSet, onAddSet, onNotesChange, onRepRangeChange, onRepModeChange, onDeleteSet, onSwapExercise, sessionType, divider, userId }) {
   const { unit: weightUnit, toggle: toggleUnit, toDisplay, toKg } = useWeightUnit();
   const isCardio = ex.exercise_type === 'cardio';
   const cardioUnit = CARDIO_UNITS[ex.cardio_metric] || 'km';
   const [rirPickerFor, setRirPickerFor] = useState(null);
+  const [showSwap, setShowSwap] = useState(false);
+  const [editingRange, setEditingRange] = useState(false);
+  const [swipeOffsets, setSwipeOffsets] = useState({});
+  const swipeTouchStart = useRef({});
+
+  const handleSwipeTouchStart = (idx, e) => {
+    swipeTouchStart.current[idx] = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  };
+
+  const handleSwipeTouchMove = (idx, e) => {
+    const start = swipeTouchStart.current[idx];
+    if (!start) return;
+    const dx = e.touches[0].clientX - start.x;
+    const dy = e.touches[0].clientY - start.y;
+    if (dx < 0 && Math.abs(dx) > Math.abs(dy) + 5) {
+      setSwipeOffsets((prev) => ({ ...prev, [idx]: Math.max(dx, -90) }));
+    }
+  };
+
+  const handleSwipeTouchEnd = (idx) => {
+    const offset = swipeOffsets[idx] || 0;
+    if (offset < -65) {
+      onDeleteSet(ex.id, idx);
+      setSwipeOffsets((prev) => { const n = { ...prev }; delete n[idx]; return n; });
+    } else {
+      setSwipeOffsets((prev) => ({ ...prev, [idx]: 0 }));
+    }
+    delete swipeTouchStart.current[idx];
+  };
 
   const renderSets = () => {
     const rows = [];
@@ -77,103 +172,135 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
 
     normalSets.forEach((s, normalIdx) => {
       const actualIdx = exSets.indexOf(s);
+      const swipeOffset = swipeOffsets[actualIdx] || 0;
       rows.push(
         <div
           key={actualIdx}
-          className={cn(
-            'flex items-center gap-1.5 rounded-2xl px-3 py-2.5 transition-all',
-            s.completed ? 'bg-primary/10' : 'bg-muted/40'
-          )}
+          className="relative overflow-hidden rounded-2xl"
+          onTouchStart={(e) => handleSwipeTouchStart(actualIdx, e)}
+          onTouchMove={(e) => handleSwipeTouchMove(actualIdx, e)}
+          onTouchEnd={() => handleSwipeTouchEnd(actualIdx)}
         >
-          <span className={cn('text-xs font-semibold w-5 shrink-0 text-center', s.completed ? 'text-primary' : 'text-muted-foreground')}>
-            {s.set_number}
-          </span>
-
-          {isCardio ? (
-            <>
-              <Input
-                type="number"
-                placeholder={ex.target_reps || cardioUnit}
-                value={s.reps}
-                min="0"
-                onChange={(e) => onUpdateSet(ex.id, actualIdx, { reps: e.target.value === '' ? '' : String(Math.max(0, parseFloat(e.target.value) || 0)) })}
-                onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
-                disabled={s.completed}
-                className="flex-1 h-10 text-center bg-background border-border rounded-xl text-sm font-semibold"
-              />
-              <span className="text-xs text-muted-foreground shrink-0">{cardioUnit}</span>
-            </>
-          ) : (
-            <>
-              <div className="w-14 shrink-0 h-10 flex items-center justify-center bg-muted/60 border border-border rounded-xl text-xs font-semibold text-muted-foreground">
-                {ex.target_reps || '—'}
-              </div>
-
-              <input
-                type="number"
-                inputMode="decimal"
-                placeholder={prevSets[normalIdx]?.reps?.toString() || '—'}
-                value={s.reps}
-                min="0"
-                onChange={(e) => onUpdateSet(ex.id, actualIdx, { reps: e.target.value === '' ? '' : String(Math.max(0, parseFloat(e.target.value) || 0)) })}
-                onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
-                disabled={s.completed}
-                className="flex-1 h-10 text-center bg-background border border-border rounded-xl text-sm font-bold outline-none focus:border-primary transition-colors disabled:opacity-50 min-w-0 placeholder:text-muted-foreground/40 placeholder:font-normal"
-              />
-
-              <input
-                type="number"
-                inputMode="decimal"
-                placeholder={prevSets[normalIdx]?.weight_kg != null ? toDisplay(prevSets[normalIdx].weight_kg).toString() : '—'}
-                value={s.weight_display ?? ''}
-                min="0"
-                onChange={(e) => {
-                  const displayVal = e.target.value === '' ? '' : String(Math.max(0, parseFloat(e.target.value) || 0));
-                  onUpdateSet(ex.id, actualIdx, { weight_display: displayVal, weight_kg: toKg(displayVal) });
-                }}
-                onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
-                disabled={s.completed}
-                className="flex-1 h-10 text-center bg-background border border-border rounded-xl text-sm font-bold outline-none focus:border-primary transition-colors disabled:opacity-50 min-w-0 placeholder:text-muted-foreground/40 placeholder:font-normal"
-              />
-
-              <button
-                disabled={s.completed}
-                onClick={() => !s.completed && setRirPickerFor({ exId: ex.id, setIdx: actualIdx })}
-                className={cn(
-                  'w-14 h-10 rounded-xl border text-sm font-bold shrink-0 flex items-center justify-center transition-colors',
-                  s.rpe !== '' && s.rpe != null
-                    ? 'bg-primary/10 text-primary border-primary/40'
-                    : 'border-border text-muted-foreground/40 hover:border-primary/50 disabled:opacity-50'
-                )}
-              >
-                {s.rpe !== '' && s.rpe != null
-                  ? s.rpe
-                  : prevSets[normalIdx]?.rpe != null
-                  ? prevSets[normalIdx].rpe
-                  : '—'}
-              </button>
-            </>
-          )}
-
-          <button
-            onClick={() => {
-              if (s.completed) {
-                onUncompleteSet(ex, actualIdx);
-              } else if (!isCardio) {
-                setRirPickerFor({ exId: ex.id, setIdx: actualIdx });
-              } else {
-                onCompleteSet(ex, actualIdx);
-              }
-            }}
+          {/* Red delete strip revealed on swipe left */}
+          <div className="absolute inset-y-0 right-0 w-20 bg-destructive flex items-center justify-center">
+            <Trash2 size={16} className="text-white" />
+          </div>
+          <div
             className={cn(
-              'w-10 h-10 rounded-full flex items-center justify-center transition-all shrink-0',
-              s.completed
-                ? 'bg-primary text-primary-foreground shadow-[0_0_10px_hsl(35_96%_58%/0.4)]'
-                : 'border-2 border-border text-muted-foreground hover:border-primary hover:text-primary'
+              'flex items-center gap-1.5 rounded-2xl px-3 py-2.5 transition-all',
+              s.completed ? 'bg-primary/10' : 'bg-muted/40'
             )}
+            style={{
+              transform: `translateX(${swipeOffset}px)`,
+              transition: swipeTouchStart.current[actualIdx] ? 'none' : 'transform 0.2s ease',
+            }}
           >
-            <Check size={14} />
-          </button>
+            <span className={cn('text-xs font-semibold w-5 shrink-0 text-center', s.completed ? 'text-primary' : 'text-muted-foreground')}>
+              {s.set_number}
+            </span>
+
+            {isCardio ? (
+              <>
+                <Input
+                  type="number"
+                  placeholder={ex.target_reps || cardioUnit}
+                  value={s.reps}
+                  min="0"
+                  onChange={(e) => onUpdateSet(ex.id, actualIdx, { reps: e.target.value === '' ? '' : String(Math.max(0, parseFloat(e.target.value) || 0)) })}
+                  onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
+                  disabled={s.completed}
+                  className="flex-1 h-10 text-center bg-background border-border rounded-xl text-sm font-semibold"
+                />
+                <span className="text-xs text-muted-foreground shrink-0">{cardioUnit}</span>
+              </>
+            ) : (
+              <>
+                {/* Tap to inline-edit the rep range */}
+                {editingRange ? (
+                  <input
+                    autoFocus
+                    type="text"
+                    defaultValue={ex.target_reps || ''}
+                    onBlur={(e) => { onRepRangeChange(ex.id, e.target.value); setEditingRange(false); }}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { onRepRangeChange(ex.id, e.target.value); setEditingRange(false); } }}
+                    className="w-14 shrink-0 h-10 text-center bg-background border-2 border-primary rounded-xl text-xs font-semibold outline-none"
+                  />
+                ) : (
+                  <button
+                    onClick={() => setEditingRange(true)}
+                    className="w-14 shrink-0 h-10 flex items-center justify-center bg-muted/60 border border-border rounded-xl text-xs font-semibold text-muted-foreground hover:border-primary/50 transition-colors"
+                    title="Tap to edit rep range"
+                  >
+                    {ex.target_reps || '—'}
+                  </button>
+                )}
+
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  placeholder={prevSets[normalIdx]?.reps?.toString() || '—'}
+                  value={s.reps}
+                  min="0"
+                  onChange={(e) => onUpdateSet(ex.id, actualIdx, { reps: e.target.value === '' ? '' : String(Math.max(0, parseFloat(e.target.value) || 0)) })}
+                  onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
+                  disabled={s.completed}
+                  className="flex-1 h-10 text-center bg-background border border-border rounded-xl text-sm font-bold outline-none focus:border-primary transition-colors disabled:opacity-50 min-w-0 placeholder:text-muted-foreground/40 placeholder:font-normal"
+                />
+
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  placeholder={prevSets[normalIdx]?.weight_kg != null ? toDisplay(prevSets[normalIdx].weight_kg).toString() : '—'}
+                  value={s.weight_display ?? ''}
+                  min="0"
+                  onChange={(e) => {
+                    const displayVal = e.target.value === '' ? '' : String(Math.max(0, parseFloat(e.target.value) || 0));
+                    onUpdateSet(ex.id, actualIdx, { weight_display: displayVal, weight_kg: toKg(displayVal) });
+                  }}
+                  onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
+                  disabled={s.completed}
+                  className="flex-1 h-10 text-center bg-background border border-border rounded-xl text-sm font-bold outline-none focus:border-primary transition-colors disabled:opacity-50 min-w-0 placeholder:text-muted-foreground/40 placeholder:font-normal"
+                />
+
+                <button
+                  disabled={s.completed}
+                  onClick={() => !s.completed && setRirPickerFor({ exId: ex.id, setIdx: actualIdx })}
+                  className={cn(
+                    'w-14 h-10 rounded-xl border text-sm font-bold shrink-0 flex items-center justify-center transition-colors',
+                    s.rpe !== '' && s.rpe != null
+                      ? 'bg-primary/10 text-primary border-primary/40'
+                      : 'border-border text-muted-foreground/40 hover:border-primary/50 disabled:opacity-50'
+                  )}
+                >
+                  {s.rpe !== '' && s.rpe != null
+                    ? s.rpe
+                    : prevSets[normalIdx]?.rpe != null
+                    ? prevSets[normalIdx].rpe
+                    : '—'}
+                </button>
+              </>
+            )}
+
+            <button
+              onClick={() => {
+                if (s.completed) {
+                  onUncompleteSet(ex, actualIdx);
+                } else if (!isCardio) {
+                  setRirPickerFor({ exId: ex.id, setIdx: actualIdx });
+                } else {
+                  onCompleteSet(ex, actualIdx);
+                }
+              }}
+              className={cn(
+                'w-10 h-10 rounded-full flex items-center justify-center transition-all shrink-0',
+                s.completed
+                  ? 'bg-primary text-primary-foreground shadow-[0_0_10px_hsl(35_96%_58%/0.4)]'
+                  : 'border-2 border-border text-muted-foreground hover:border-primary hover:text-primary'
+              )}
+            >
+              <Check size={14} />
+            </button>
+          </div>
         </div>
       );
     });
@@ -203,6 +330,14 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
           onSkip={handleRirSkip}
         />
       )}
+      {showSwap && (
+        <SwapExerciseModal
+          ex={ex}
+          sessionType={sessionType || 'Custom'}
+          onSwap={(newName) => { onSwapExercise(ex.id, newName); setShowSwap(false); }}
+          onClose={() => setShowSwap(false)}
+        />
+      )}
       {divider && <div className="border-t border-border/50" />}
       <button
         className="w-full flex items-center justify-between px-4 py-3 min-h-11"
@@ -217,6 +352,14 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {/* Swap exercise button */}
+          <button
+            onClick={(e) => { e.stopPropagation(); setShowSwap(true); }}
+            className="p-1.5 rounded-lg border border-border text-muted-foreground hover:text-primary hover:border-primary/50 transition-colors"
+            title="Swap exercise"
+          >
+            <ArrowLeftRight size={13} />
+          </button>
           {!isCardio && (
             <button
               onClick={(e) => { e.stopPropagation(); toggleUnit(); }}
@@ -590,6 +733,21 @@ export default function ActiveWorkout() {
     setLocalExercises((prev) => update(prev ?? exercises));
   };
 
+  const deleteSet = (exId, setIdx) => {
+    setSets((prev) => {
+      const updated = (prev[exId] || [])
+        .filter((_, i) => i !== setIdx)
+        .map((s, i) => ({ ...s, set_number: i + 1 }));
+      return { ...prev, [exId]: updated };
+    });
+  };
+
+  const swapExercise = (exId, newName) => {
+    setLocalExercises((prev) =>
+      (prev ?? exercises).map((e) => e.id === exId ? { ...e, name: newName } : e)
+    );
+  };
+
   const handleDragEnd = (result) => {
     setIsReordering(false);
     if (!result.destination) return;
@@ -878,6 +1036,9 @@ export default function ActiveWorkout() {
                               onNotesChange={updateExerciseNotes}
                               onRepRangeChange={updateRepRange}
                               onRepModeChange={updateRepMode}
+                              onDeleteSet={deleteSet}
+                              onSwapExercise={swapExercise}
+                              sessionType={day?.session_type}
                               divider={false}
                               userId={user?.email}
                             />

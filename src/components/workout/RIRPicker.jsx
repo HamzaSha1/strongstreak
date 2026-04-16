@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Check, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const RIR_VALUES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+const RIR_VALUES = [0, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
 /**
  * Full-screen overlay RIR picker.
@@ -32,7 +32,7 @@ export default function RIRPicker({ initialValue, onConfirm, onSkip }) {
         {/* Title */}
         <div className="text-center">
           <p className="font-heading font-bold text-lg">Effort Level (RIR)</p>
-          <p className="text-xs text-muted-foreground mt-0.5">0 = Very Easy · 10 = Max Effort (0 reps left)</p>
+          <p className="text-xs text-muted-foreground mt-0.5">0 = Failure (max) · 10 = Very Easy (10+ reps left)</p>
         </div>
 
         {/* Horizontal scroll picker */}
@@ -53,8 +53,9 @@ export default function RIRPicker({ initialValue, onConfirm, onSkip }) {
               )}
             >
               {val}
-              {val === 0 && <span className="text-[9px] font-normal leading-none mt-0.5 opacity-70">easy</span>}
-              {val === 10 && <span className="text-[9px] font-normal leading-none mt-0.5 opacity-70">max</span>}
+              {val === 0 && <span className="text-[9px] font-normal leading-none mt-0.5 opacity-70">fail</span>}
+              {val === 0.5 && <span className="text-[9px] font-normal leading-none mt-0.5 opacity-70">hard</span>}
+              {val === 10 && <span className="text-[9px] font-normal leading-none mt-0.5 opacity-70">easy</span>}
             </button>
           ))}
         </div>
@@ -63,15 +64,15 @@ export default function RIRPicker({ initialValue, onConfirm, onSkip }) {
         <div className="text-center text-sm text-muted-foreground min-h-[20px]">
           {selected != null
             ? selected === 0
-              ? 'Very Easy — lots left in the tank'
-              : selected <= 3
-              ? `${selected}/10 — moderate effort`
-              : selected <= 6
-              ? `${selected}/10 — challenging`
-              : selected <= 9
-              ? `${selected}/10 — very hard`
-              : 'Max Effort — 0 reps in reserve 💪'
-            : 'Select your effort level (0 = Easy, 10 = Max)'}
+              ? 'Failure — 0 reps in reserve 💪'
+              : selected <= 2
+              ? `${selected} RIR — very hard`
+              : selected <= 5
+              ? `${selected} RIR — moderate effort`
+              : selected <= 8
+              ? `${selected} RIR — still plenty left`
+              : 'Very Easy — 10+ reps in reserve'
+            : 'Select your RIR (0 = Max Effort, 10 = Very Easy)'}
         </div>
 
         {/* Actions */}
