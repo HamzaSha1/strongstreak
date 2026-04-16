@@ -89,7 +89,7 @@ export default function ImportSplitJsonModal({ user, onClose, onSuccess }) {
   return (
     <div className="fixed inset-0 z-50 flex flex-col justify-end">
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-      <div className="relative bg-card rounded-t-3xl border-t border-border p-6 flex flex-col gap-4">
+      <div className="relative bg-card rounded-t-3xl border-t border-border p-6 flex flex-col gap-4" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 88px)' }}>
         <div className="flex items-center justify-between">
           <h2 className="font-heading font-bold text-base">Import Split from File</h2>
           <button onClick={onClose} className="text-muted-foreground p-1">

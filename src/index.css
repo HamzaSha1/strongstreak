@@ -6,24 +6,24 @@
 
 @layer base {
   :root {
-    --background: 222 18% 9%;
-    --foreground: 210 40% 98%;
-    --card: 222 18% 11%;
+    --background: 0 0% 4%;
+    --foreground: 0 0% 97%;
+    --card: 0 0% 7%;
     --card-foreground: 0 0% 95%;
-    --popover: 222 18% 11%;
+    --popover: 0 0% 7%;
     --popover-foreground: 0 0% 95%;
     --primary: 35 96% 58%;
-    --primary-foreground: 222 18% 7%;
-    --secondary: 222 18% 16%;
+    --primary-foreground: 0 0% 5%;
+    --secondary: 0 0% 13%;
     --secondary-foreground: 0 0% 85%;
-    --muted: 222 18% 14%;
+    --muted: 0 0% 11%;
     --muted-foreground: 0 0% 55%;
     --accent: 35 96% 58%;
-    --accent-foreground: 222 18% 7%;
+    --accent-foreground: 0 0% 5%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
-    --border: 222 18% 18%;
-    --input: 222 18% 14%;
+    --border: 0 0% 16%;
+    --input: 0 0% 11%;
     --ring: 35 96% 58%;
     --radius: 1rem;
     --font-heading: 'Space Grotesk', sans-serif;

@@ -220,7 +220,7 @@ export default function SplitBuilder() {
     toast.success('Split imported from screenshot!');
   };
 
-  const handleShareSplit = () => {
+  const handleShareSplit = async () => {
     const exportData = {
       split_name: activeSplit.name,
       days: activeSplit.days.map((d, i) => ({
@@ -243,12 +243,35 @@ export default function SplitBuilder() {
         })),
       })),
     };
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+
+    const fileName = `${activeSplit.name.replace(/\s+/g, '_')}.json`;
+    const json = JSON.stringify(exportData, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+
+    // Use native share sheet on iOS/Android (shows AirDrop, Messages, Files, etc.)
+    if (navigator.share) {
+      try {
+        const file = new File([blob], fileName, { type: 'application/json' });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file], title: activeSplit.name });
+          return;
+        }
+        // Share text fallback if file sharing not supported
+        await navigator.share({ title: activeSplit.name, text: json });
+        return;
+      } catch (err) {
+        if (err.name === 'AbortError') return; // User cancelled — no toast
+      }
+    }
+
+    // Desktop fallback: trigger a file download
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${activeSplit.name.replace(/\s+/g, '_')}.json`;
+    a.download = fileName;
+    document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
     URL.revokeObjectURL(url);
     toast.success(`"${activeSplit.name}" exported!`);
   };

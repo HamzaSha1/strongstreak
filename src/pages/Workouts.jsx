@@ -262,12 +262,14 @@ export default function Workouts() {
                 </p>
 
                 {day.session_type !== 'Rest' && (
-                  <Link to={`/workout/${day.id}`}>
-                    <Button size="sm" className="bg-primary text-primary-foreground gap-1.5 w-full">
-                      <Play size={13} fill="currentColor" />
-                      Start Workout
-                    </Button>
-                  </Link>
+                  <Button
+                    size="sm"
+                    className="bg-primary text-primary-foreground gap-1.5 w-full"
+                    onClick={() => navigate(`/workout/${day.id}`)}
+                  >
+                    <Play size={13} fill="currentColor" />
+                    Start Workout
+                  </Button>
                 )}
               </div>
             );
