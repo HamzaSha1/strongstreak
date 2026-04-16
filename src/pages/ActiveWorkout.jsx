@@ -342,6 +342,9 @@ export default function ActiveWorkout() {
     enabled: !!dayId,
   });
 
+  // Must be declared before the prevLogs query which references it
+  const activeExercises = localExercises ?? exercises;
+
   const { data: prevLogs = [] } = useQuery({
     queryKey: ['prevSetLogs', user?.email, activeExercises.map((e) => e.name).join(',')],
     queryFn: async () => {
@@ -389,8 +392,6 @@ export default function ActiveWorkout() {
     });
     return bests;
   }, [allTimeLogs]);
-
-  const activeExercises = localExercises ?? exercises;
 
   useEffect(() => {
     if (exercises.length && !exerciseOrder.length) {
