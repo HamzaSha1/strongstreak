@@ -3,12 +3,13 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useState, useCallback } from 'react';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import Layout from '@/components/Layout';
 import ErrorBoundary from '@/components/ErrorBoundary';
+import SplashScreen from '@/components/SplashScreen';
 // Add page imports here
 const Workouts = lazy(() => import('@/pages/Workouts'));
 const Feed = lazy(() => import('@/pages/Feed'));
@@ -83,8 +84,12 @@ const AuthenticatedApp = () => {
 };
 
 function App() {
+  const [splashDone, setSplashDone] = useState(false);
+  const handleSplashDone = useCallback(() => setSplashDone(true), []);
+
   return (
     <ErrorBoundary>
+      {!splashDone && <SplashScreen onDone={handleSplashDone} />}
       <Router>
         <QueryClientProvider client={queryClientInstance}>
           <AuthProvider>
