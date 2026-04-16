@@ -39,7 +39,7 @@ export default function ExerciseHistory({ exerciseName, userId, weightUnit = 'kg
   // Chart data: max weight per session (for trend chart)
   const chartData = sessions.map((s) => ({
     date: s.date ? format(new Date(s.date), 'MMM d') : '?',
-    weight: Math.max(...s.sets.map((x) => toDisplay(x.weight_kg) || 0)),
+    weight: s.sets.length ? Math.max(0, ...s.sets.map((x) => toDisplay(x.weight_kg) || 0)) : 0,
     reps: Math.round(s.sets.reduce((acc, x) => acc + (x.reps || 0), 0) / s.sets.length),
   }));
 

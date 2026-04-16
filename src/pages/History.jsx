@@ -127,7 +127,7 @@ export default function History() {
                         {log.is_rest_day ? '😴 Rest Day' : log.split_day_name || 'Workout'}
                       </p>
                       <p className="text-muted-foreground text-xs mt-0.5">
-                        {log.created_date
+                        {log.created_date && !isNaN(new Date(log.created_date))
                           ? format(new Date(log.created_date), 'EEE, MMM d · h:mm a')
                           : ''}
                       </p>

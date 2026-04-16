@@ -165,8 +165,9 @@ export default function Groups() {
           </span>
           <button
             onClick={() => {
-              navigator.clipboard.writeText(selectedGroup.invite_code);
-              toast.success('Copied!');
+              navigator.clipboard.writeText(selectedGroup.invite_code)
+                .then(() => toast.success('Copied!'))
+                .catch(() => toast.error('Could not copy. Please copy it manually.'));
             }}
           >
             <Copy size={15} className="text-muted-foreground hover:text-foreground transition-colors" />

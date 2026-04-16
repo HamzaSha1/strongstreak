@@ -29,7 +29,7 @@ export default function SplitBuilder() {
   const [activeTab, setActiveTab] = useState(0);
   const [initialized, setInitialized] = useState(false);
   const [pendingNewSplit, setPendingNewSplit] = useState(
-    () => new URLSearchParams(window.location.search).get('newSplit') === '1'
+    () => typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('newSplit') === '1'
   );
   const [showImport, setShowImport] = useState(false);
   const [showAIImport, setShowAIImport] = useState(false);

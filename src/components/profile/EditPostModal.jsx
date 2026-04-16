@@ -24,20 +24,30 @@ export default function EditPostModal({ post, onClose, onUpdated, onDeleted }) {
 
   const handleSave = async () => {
     setSaving(true);
-    await base44.entities.Post.update(post.id, { caption, visibility, image_url: imageUrl });
-    toast.success('Post updated');
-    onUpdated({ ...post, caption, visibility, image_url: imageUrl });
-    setSaving(false);
-    onClose();
+    try {
+      await base44.entities.Post.update(post.id, { caption, visibility, image_url: imageUrl });
+      toast.success('Post updated');
+      onUpdated({ ...post, caption, visibility, image_url: imageUrl });
+      onClose();
+    } catch {
+      toast.error('Could not save changes. Please try again.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleDelete = async () => {
     setDeleting(true);
-    await base44.entities.Post.delete(post.id);
-    toast.success('Post deleted');
-    onDeleted(post.id);
-    setDeleting(false);
-    onClose();
+    try {
+      await base44.entities.Post.delete(post.id);
+      toast.success('Post deleted');
+      onDeleted(post.id);
+      onClose();
+    } catch {
+      toast.error('Could not delete post. Please try again.');
+    } finally {
+      setDeleting(false);
+    }
   };
 
   return (

@@ -18,35 +18,43 @@ export default function PostWorkoutModal({ workoutLog, user, onClose, summaryIma
     const file = e.target.files[0];
     if (!file) return;
     setUploading(true);
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    setImageUrl(file_url);
-    setImage(URL.createObjectURL(file));
-    setUploading(false);
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      setImageUrl(file_url);
+      setImage(URL.createObjectURL(file));
+    } catch {
+      toast.error('Photo upload failed. Please try again.');
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handlePost = async () => {
     setModerating(true);
-    // AI moderation check on caption and/or image
-    const res = await base44.functions.invoke('moderateContent', {
-      text: caption || '',
-      image_url: imageUrl || null,
-    });
-    setModerating(false);
-    if (res.data?.safe === false) {
-      toast.error(`Post blocked: ${res.data.reason || 'Content violates community guidelines.'}`);
-      return;
+    try {
+      const res = await base44.functions.invoke('moderateContent', {
+        text: caption || '',
+        image_url: imageUrl || null,
+      });
+      if (res.data?.safe === false) {
+        toast.error(`Post blocked: ${res.data.reason || 'Content violates community guidelines.'}`);
+        return;
+      }
+      await base44.entities.Post.create({
+        user_id: user.email,
+        workout_log_id: workoutLog.id,
+        image_url: imageUrl,
+        caption,
+        visibility,
+        likes_count: 0,
+      });
+      toast.success('Post shared!');
+      onClose();
+    } catch {
+      toast.error('Could not share post. Please try again.');
+    } finally {
+      setModerating(false);
     }
-
-    await base44.entities.Post.create({
-      user_id: user.email,
-      workout_log_id: workoutLog.id,
-      image_url: imageUrl,
-      caption,
-      visibility,
-      likes_count: 0,
-    });
-    toast.success('Post shared!');
-    onClose();
   };
 
   return (

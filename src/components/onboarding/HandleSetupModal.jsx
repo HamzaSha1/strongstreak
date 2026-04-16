@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { AtSign, Check, X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { toast } from 'sonner';
 
 export default function HandleSetupModal({ user, onComplete }) {
   const [handle, setHandle] = useState('');
@@ -34,22 +35,24 @@ export default function HandleSetupModal({ user, onComplete }) {
   const handleSubmit = async () => {
     if (status !== 'available' || handle.length < 3) return;
     setSaving(true);
-
-    // Check if profile exists
-    const profiles = await base44.entities.Profile.filter({ user_id: user.email });
-    if (profiles.length > 0) {
-      await base44.entities.Profile.update(profiles[0].id, { handle });
-    } else {
-      await base44.entities.Profile.create({
-        user_id: user.email,
-        display_name: user.full_name || handle,
-        handle,
-        is_private: false,
-      });
+    try {
+      const profiles = await base44.entities.Profile.filter({ user_id: user.email });
+      if (profiles.length > 0) {
+        await base44.entities.Profile.update(profiles[0].id, { handle });
+      } else {
+        await base44.entities.Profile.create({
+          user_id: user.email,
+          display_name: user.full_name || handle,
+          handle,
+          is_private: false,
+        });
+      }
+      onComplete(handle);
+    } catch {
+      toast.error('Could not save your handle. Please try again.');
+    } finally {
+      setSaving(false);
     }
-
-    setSaving(false);
-    onComplete(handle);
   };
 
   const statusIcon = () => {

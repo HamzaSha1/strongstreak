@@ -63,8 +63,12 @@ export default function ProfileSettings({ user, profile, setProfile }) {
     if (cleaned.length < 3) { setHandleStatus(cleaned.length > 0 ? 'invalid' : 'idle'); return; }
     setHandleStatus('checking');
     debounceRef.current = setTimeout(async () => {
-      const res = await base44.functions.invoke('checkHandle', { handle: cleaned });
-      setHandleStatus(res.data.available ? 'available' : 'taken');
+      try {
+        const res = await base44.functions.invoke('checkHandle', { handle: cleaned });
+        setHandleStatus(res.data.available ? 'available' : 'taken');
+      } catch {
+        setHandleStatus('idle');
+      }
     }, 500);
   };
 

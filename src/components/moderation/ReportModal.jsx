@@ -20,16 +20,21 @@ export default function ReportModal({ reporterId, reportedUserId, contentType, c
   const handleSubmit = async () => {
     if (!reason) return;
     setLoading(true);
-    await base44.entities.Report.create({
-      reporter_id: reporterId,
-      reported_user_id: reportedUserId,
-      content_type: contentType,
-      content_id: contentId,
-      reason,
-    });
-    toast.success('Report submitted. Thank you for keeping the community safe.');
-    onClose();
-    setLoading(false);
+    try {
+      await base44.entities.Report.create({
+        reporter_id: reporterId,
+        reported_user_id: reportedUserId,
+        content_type: contentType,
+        content_id: contentId,
+        reason,
+      });
+      toast.success('Report submitted. Thank you for keeping the community safe.');
+      onClose();
+    } catch {
+      toast.error('Could not submit report. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleBlock = async () => {
@@ -38,20 +43,23 @@ export default function ReportModal({ reporterId, reportedUserId, contentType, c
       return;
     }
     setBlocking(true);
-    // Create block record
-    await base44.entities.Block.create({
-      blocker_id: reporterId,
-      blocked_id: reportedUserId,
-    });
-    // Notify developer via backend function
-    base44.functions.invoke('notifyBlockEvent', {
-      event: { type: 'create' },
-      data: { blocker_id: reporterId, blocked_id: reportedUserId },
-    }).catch(() => {});
-    toast.success('User blocked. Their content has been removed from your feed.');
-    onBlocked?.(reportedUserId);
-    onClose();
-    setBlocking(false);
+    try {
+      await base44.entities.Block.create({
+        blocker_id: reporterId,
+        blocked_id: reportedUserId,
+      });
+      base44.functions.invoke('notifyBlockEvent', {
+        event: { type: 'create' },
+        data: { blocker_id: reporterId, blocked_id: reportedUserId },
+      }).catch(() => {});
+      toast.success('User blocked. Their content has been removed from your feed.');
+      onBlocked?.(reportedUserId);
+      onClose();
+    } catch {
+      toast.error('Could not block user. Please try again.');
+    } finally {
+      setBlocking(false);
+    }
   };
 
   return (

@@ -122,7 +122,7 @@ export default function Workouts() {
     if (!workoutLogs.length) return 0;
     const loggedDates = new Set(
       workoutLogs
-        .filter((l) => !l.is_rest_day)
+        .filter((l) => !l.is_rest_day && l.started_at)
         .map((l) => new Date(l.started_at).toDateString())
     );
     let count = 0;

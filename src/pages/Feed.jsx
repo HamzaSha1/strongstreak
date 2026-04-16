@@ -229,7 +229,7 @@ export default function Feed() {
         <div className="flex justify-center py-20">
           <div className="w-7 h-7 border-2 border-primary border-t-transparent rounded-full animate-spin" />
         </div>
-      ) : posts.filter((p) => p.visibility === 'public').length === 0 ? (
+      ) : posts.filter((p) => p.visibility === 'public' && !blockedIds.has(p.user_id || p.created_by)).length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 px-6 gap-3">
           <p className="text-4xl">🏋️</p>
           <p className="text-muted-foreground text-center text-sm">

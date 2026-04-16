@@ -13,7 +13,7 @@ export default function WorkoutExerciseEditor({ exercises, sessionType, onClose,
   const [editingRepRangeId, setEditingRepRangeId] = useState(null);
 
   const muscleGroups = SESSION_MUSCLE_GROUPS[sessionType] ||
-    SESSION_MUSCLE_GROUPS['Custom'];
+    SESSION_MUSCLE_GROUPS['Custom'] || [];
 
   const existingNames = new Set(exercises.map((e) => e.name));
 
