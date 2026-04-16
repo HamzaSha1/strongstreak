@@ -158,7 +158,14 @@ export default function Progress() {
               Cancel
             </Button>
             <Button
-              onClick={() => addWeightMutation.mutate(formData)}
+              onClick={() => {
+                const w = parseFloat(formData.weight_kg);
+                if (!w || w <= 0 || w > 500) {
+                  toast.error('Please enter a valid weight between 1 and 500 kg.');
+                  return;
+                }
+                addWeightMutation.mutate(formData);
+              }}
               disabled={!formData.weight_kg || addWeightMutation.isPending || uploading}
               className="flex-1"
             >

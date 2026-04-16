@@ -8,6 +8,7 @@ import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import Layout from '@/components/Layout';
+import ErrorBoundary from '@/components/ErrorBoundary';
 // Add page imports here
 const Workouts = lazy(() => import('@/pages/Workouts'));
 const Feed = lazy(() => import('@/pages/Feed'));
@@ -83,14 +84,16 @@ const AuthenticatedApp = () => {
 
 function App() {
   return (
-    <Router>
-      <QueryClientProvider client={queryClientInstance}>
-        <AuthProvider>
-          <AuthenticatedApp />
-          <Toaster />
-        </AuthProvider>
-      </QueryClientProvider>
-    </Router>
+    <ErrorBoundary>
+      <Router>
+        <QueryClientProvider client={queryClientInstance}>
+          <AuthProvider>
+            <AuthenticatedApp />
+            <Toaster />
+          </AuthProvider>
+        </QueryClientProvider>
+      </Router>
+    </ErrorBoundary>
   )
 }
 

@@ -321,6 +321,7 @@ export default function ActiveWorkout() {
   const summaryRef = useRef(null);
   const startTime = useRef(new Date());
   const timerRef = useRef(null);
+  const startingWorkout = useRef(false);
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
@@ -449,15 +450,22 @@ export default function ActiveWorkout() {
   };
 
   const startWorkout = async () => {
-    if (!workoutLog && user && day) {
-      const log = await base44.entities.WorkoutLog.create({
-        user_id: user.email,
-        split_day_id: dayId,
-        split_day_name: `${day.day_of_week} — ${day.session_type}`,
-        started_at: startTime.current.toISOString(),
-        is_rest_day: false,
-      });
-      setWorkoutLog(log);
+    if (!workoutLog && user && day && !startingWorkout.current) {
+      startingWorkout.current = true;
+      try {
+        const log = await base44.entities.WorkoutLog.create({
+          user_id: user.email,
+          split_day_id: dayId,
+          split_day_name: `${day.day_of_week} — ${day.session_type}`,
+          started_at: startTime.current.toISOString(),
+          is_rest_day: false,
+        });
+        setWorkoutLog(log);
+      } catch (err) {
+        toast.error('Failed to start workout. Please try again.');
+      } finally {
+        startingWorkout.current = false;
+      }
     }
   };
 

@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import ReportModal from '@/components/moderation/ReportModal';
 import UserProfileSheet from '@/components/people/UserProfileSheet';
 import { useAuth } from '@/lib/AuthContext';
+import { toast } from 'sonner';
 
 export default function Feed() {
   const { user } = useAuth();
@@ -75,8 +76,13 @@ export default function Feed() {
   const { data: allUsers = [] } = useQuery({
     queryKey: ['allUsers'],
     queryFn: async () => {
-      const res = await base44.functions.invoke('getUsers', {});
-      return res.data.users || [];
+      try {
+        const res = await base44.functions.invoke('getUsers', {});
+        return res.data.users || [];
+      } catch (err) {
+        toast.error('Could not load users. Pull down to retry.');
+        return [];
+      }
     },
     enabled: !!user,
     staleTime: 0,

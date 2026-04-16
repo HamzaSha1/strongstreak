@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Shield, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 
 export default function TermsModal({ onAccepted }) {
@@ -17,9 +18,14 @@ export default function TermsModal({ onAccepted }) {
 
   const handleAccept = async () => {
     setLoading(true);
-    await base44.auth.updateMe({ terms_accepted: true, terms_accepted_at: new Date().toISOString() });
-    onAccepted();
-    setLoading(false);
+    try {
+      await base44.auth.updateMe({ terms_accepted: true, terms_accepted_at: new Date().toISOString() });
+      onAccepted();
+    } catch (err) {
+      toast.error('Something went wrong. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
