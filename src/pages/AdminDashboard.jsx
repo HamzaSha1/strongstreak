@@ -28,15 +28,19 @@ export default function AdminDashboard() {
         const u = await base44.auth.me();
         if (u?.role === 'admin') {
           setUser(u);
+        } else {
+          // Non-admin: redirect immediately — don't linger on this page
+          navigate('/', { replace: true });
         }
       } catch (err) {
-        console.error('Auth check failed:', err);
+        // Auth failed — send them home
+        navigate('/', { replace: true });
       } finally {
         setAuthChecked(true);
       }
     };
     checkAuth();
-  }, []);
+  }, [navigate]);
 
   if (!authChecked) {
     return (

@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ChevronDown, ChevronUp, Clock, Dumbbell } from 'lucide-react';
 import { format, formatDistanceStrict } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 export default function History() {
   const [user, setUser] = useState(null);
@@ -47,12 +48,15 @@ export default function History() {
     queryKey: ['workoutLogs', user?.email],
     queryFn: () => base44.entities.WorkoutLog.filter({ user_id: user?.email }, '-created_date', 50),
     enabled: !!user,
+    throwOnError: false,
+    meta: { onError: () => toast.error('Could not load workout history.') },
   });
 
   const { data: setLogs = [] } = useQuery({
     queryKey: ['setLogs', user?.email],
     queryFn: () => base44.entities.SetLog.filter({ user_id: user?.email }, '-created_date', 500),
     enabled: !!user,
+    throwOnError: false,
   });
 
   const getSetsForLog = (logId) => setLogs.filter((s) => s.workout_log_id === logId);

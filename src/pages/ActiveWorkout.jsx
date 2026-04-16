@@ -18,7 +18,7 @@ import RIRPicker from '@/components/workout/RIRPicker';
 import WorkoutSummaryScreen from '@/components/workout/WorkoutSummaryScreen';
 import { useWeightUnit } from '@/hooks/useWeightUnit';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import { startOfDay, differenceInCalendarDays, subDays, format } from 'date-fns';
+import { startOfDay, differenceInCalendarDays, subDays, format, parse } from 'date-fns';
 
 const CARDIO_UNITS = { distance: 'km', time: 'min', calories: 'kcal' };
 
@@ -566,9 +566,17 @@ export default function ActiveWorkout() {
     }
   };
 
+  const notesTimers = useRef({});
   const updateExerciseNotes = (exId, notes) => {
     const update = (list) => list.map((e) => e.id === exId ? { ...e, notes } : e);
     setLocalExercises((prev) => update(prev ?? exercises));
+    // Debounce: save to DB 1 second after the user stops typing
+    if (notesTimers.current[exId]) clearTimeout(notesTimers.current[exId]);
+    notesTimers.current[exId] = setTimeout(() => {
+      base44.entities.SplitExercise.update(exId, { notes }).catch(() => {
+        toast.error('Could not save note. Please try again.');
+      });
+    }, 1000);
   };
 
   const updateRepRange = (exId, target_reps) => {
@@ -613,6 +621,13 @@ export default function ActiveWorkout() {
   const completedSets = Object.values(sets).flat().filter((s) => s.completed).length;
   const allDone = totalSets > 0 && completedSets === totalSets;
 
+  // Parse a date string as local time (avoids UTC-midnight timezone bug for date-only strings)
+  const parseLocalDate = (dateStr) => {
+    if (!dateStr) return new Date();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return parse(dateStr, 'yyyy-MM-dd', new Date());
+    return new Date(dateStr);
+  };
+
   const finishMutation = useMutation({
     mutationFn: async () => {
       if (workoutLog) {
@@ -638,7 +653,7 @@ export default function ActiveWorkout() {
         // Check if a completed workout already exists today (other than this session)
         const alreadyLoggedToday = allLogs.some((l) => {
           if (l.id === workoutLog?.id || l.is_rest_day) return false;
-          return differenceInCalendarDays(today, startOfDay(new Date(l.created_date))) === 0 && l.finished_at;
+          return differenceInCalendarDays(today, startOfDay(parseLocalDate(l.created_date))) === 0 && l.finished_at;
         });
 
         if (alreadyLoggedToday) {
@@ -663,7 +678,7 @@ export default function ActiveWorkout() {
           return;
         }
 
-        const lastDay = startOfDay(new Date(lastLog.created_date));
+        const lastDay = startOfDay(parseLocalDate(lastLog.created_date));
         const daysSinceLast = differenceInCalendarDays(today, lastDay);
 
         if (daysSinceLast === 0) {
@@ -687,7 +702,7 @@ export default function ActiveWorkout() {
         const loggedDays = new Set(
           allLogs
             .filter((l) => l.finished_at && !l.is_rest_day)
-            .map((l) => startOfDay(new Date(l.created_date)).getTime())
+            .map((l) => startOfDay(parseLocalDate(l.created_date)).getTime())
         );
 
         // Check each gap day (from day after lastDay up to yesterday)
@@ -719,6 +734,7 @@ export default function ActiveWorkout() {
       setShowSummary(true);
     },
     onError: () => {
+      toast.error('Workout saved locally but could not sync. Check your connection.');
       setShowSummary(true);
     },
   });

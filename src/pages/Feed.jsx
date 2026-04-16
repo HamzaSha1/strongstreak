@@ -55,14 +55,14 @@ export default function Feed() {
   const { data: posts = [], isLoading } = useQuery({
     queryKey: ['posts'],
     queryFn: () => base44.entities.Post.list('-created_date', 50),
-    staleTime: 0,
+    staleTime: 60_000, // Re-fetch at most once per minute — pull-to-refresh handles manual updates
   });
 
   const { data: blocks = [] } = useQuery({
     queryKey: ['blocks', user?.email],
     queryFn: () => base44.entities.Block.filter({ blocker_id: user?.email }),
     enabled: !!user,
-    staleTime: 0,
+    staleTime: 60_000,
     refetchOnMount: true,
   });
   const blockedIds = new Set([...blocks.map((b) => b.blocked_id), ...locallyBlockedIds]);
@@ -85,7 +85,7 @@ export default function Feed() {
       }
     },
     enabled: !!user,
-    staleTime: 0,
+    staleTime: 60_000,
   });
 
   const { data: myProfile } = useQuery({
@@ -93,7 +93,7 @@ export default function Feed() {
     queryFn: () => base44.entities.Profile.filter({ user_id: user.email }),
     enabled: !!user,
     select: (data) => data[0] || null,
-    staleTime: 0,
+    staleTime: 60_000,
   });
 
   const { data: myLikes = [] } = useQuery({
