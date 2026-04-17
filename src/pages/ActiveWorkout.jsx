@@ -242,14 +242,26 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
                     autoFocus
                     type="text"
                     defaultValue={ex.target_reps || ''}
-                    onBlur={(e) => { onRepRangeChange(ex.id, e.target.value); setEditingRange(false); }}
-                    onKeyDown={(e) => { if (e.key === 'Enter') { onRepRangeChange(ex.id, e.target.value); setEditingRange(false); } }}
+                    onBlur={(e) => {
+                      const val = e.target.value.trim();
+                      onRepRangeChange(ex.id, val);
+                      if (ex.split_day_id) base44.entities.SplitExercise.update(ex.id, { target_reps: val }).catch(() => {});
+                      setEditingRange(false);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        const val = e.target.value.trim();
+                        onRepRangeChange(ex.id, val);
+                        if (ex.split_day_id) base44.entities.SplitExercise.update(ex.id, { target_reps: val }).catch(() => {});
+                        setEditingRange(false);
+                      }
+                    }}
                     className="w-14 shrink-0 h-10 text-center bg-background border-2 border-primary rounded-xl text-xs font-semibold outline-none"
                   />
                 ) : (
                   <button
                     onClick={() => setEditingRange(true)}
-                    className="w-14 shrink-0 h-10 flex items-center justify-center bg-muted/60 border border-border rounded-xl text-xs font-semibold text-muted-foreground hover:border-primary/50 transition-colors"
+                    className="w-14 shrink-0 h-10 flex items-center justify-center bg-primary/10 border border-primary/40 rounded-xl text-xs font-semibold text-primary hover:border-primary transition-colors"
                     title="Tap to edit rep range"
                   >
                     {ex.target_reps || '—'}
