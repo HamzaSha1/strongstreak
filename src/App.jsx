@@ -23,6 +23,7 @@ const Profile = lazy(() => import('@/pages/Profile'));
 const Privacy = lazy(() => import('@/pages/Privacy'));
 const Terms = lazy(() => import('@/pages/Terms'));
 const AdminDashboard = lazy(() => import('@/pages/AdminDashboard'));
+const SplashPreview = lazy(() => import('@/pages/SplashPreview'));
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -73,6 +74,7 @@ const AuthenticatedApp = () => {
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/splash-preview" element={<SplashPreview />} />
 
           <Route path="/workout/:dayId" element={<ActiveWorkout />} />
           <Route path="*" element={<PageNotFound />} />
