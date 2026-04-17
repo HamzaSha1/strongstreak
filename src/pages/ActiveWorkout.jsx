@@ -140,10 +140,11 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
 
   const handleSwipeTouchEnd = (idx) => {
     const offset = swipeOffsets[idx] || 0;
-    if (offset < -50) {
+    if (offset < -40) {
       // Snap open to reveal delete button
       setSwipeOffsets((prev) => ({ ...prev, [idx]: -80 }));
     } else {
+      // Snap back closed
       setSwipeOffsets((prev) => ({ ...prev, [idx]: 0 }));
     }
     delete swipeTouchStart.current[idx];
@@ -191,17 +192,22 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
           onTouchStart={(e) => handleSwipeTouchStart(actualIdx, e)}
           onTouchMove={(e) => handleSwipeTouchMove(actualIdx, e)}
           onTouchEnd={() => handleSwipeTouchEnd(actualIdx)}
+          onClick={() => { if ((swipeOffsets[actualIdx] || 0) < 0) setSwipeOffsets((prev) => ({ ...prev, [actualIdx]: 0 })); }}
         >
-          {/* Red delete button revealed on swipe left */}
+          {/* Red delete button — starts hidden (shifted right by 80px), slides in as user swipes */}
           <button
             className="absolute inset-y-0 right-0 w-20 bg-destructive flex items-center justify-center"
-            onClick={() => handleDeleteTap(actualIdx)}
+            style={{
+              transform: `translateX(${80 + swipeOffset}px)`,
+              transition: swipeTouchStart.current[actualIdx] ? 'none' : 'transform 0.2s ease',
+            }}
+            onClick={(e) => { e.stopPropagation(); handleDeleteTap(actualIdx); }}
           >
             <Trash2 size={16} className="text-white" />
           </button>
           <div
             className={cn(
-              'flex items-center gap-1.5 rounded-2xl px-3 py-2.5 transition-all',
+              'flex items-center gap-1.5 px-3 py-2.5 transition-all',
               s.completed ? 'bg-primary/10' : 'bg-muted/40'
             )}
             style={{
