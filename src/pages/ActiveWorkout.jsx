@@ -120,7 +120,6 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
   const cardioUnit = CARDIO_UNITS[ex.cardio_metric] || 'km';
   const [rirPickerFor, setRirPickerFor] = useState(null);
   const [showSwap, setShowSwap] = useState(false);
-  const [editingRange, setEditingRange] = useState(false);
   const [swipeOffsets, setSwipeOffsets] = useState({});
   const swipeTouchStart = useRef({});
 
@@ -236,37 +235,10 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
               </>
             ) : (
               <>
-                {/* Tap to inline-edit the rep range */}
-                {editingRange ? (
-                  <input
-                    autoFocus
-                    type="text"
-                    defaultValue={ex.target_reps || ''}
-                    onBlur={(e) => {
-                      const val = e.target.value.trim();
-                      onRepRangeChange(ex.id, val);
-                      if (ex.split_day_id) base44.entities.SplitExercise.update(ex.id, { target_reps: val }).catch(() => {});
-                      setEditingRange(false);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        const val = e.target.value.trim();
-                        onRepRangeChange(ex.id, val);
-                        if (ex.split_day_id) base44.entities.SplitExercise.update(ex.id, { target_reps: val }).catch(() => {});
-                        setEditingRange(false);
-                      }
-                    }}
-                    className="w-14 shrink-0 h-10 text-center bg-background border-2 border-primary rounded-xl text-xs font-semibold outline-none"
-                  />
-                ) : (
-                  <button
-                    onClick={() => setEditingRange(true)}
-                    className="w-14 shrink-0 h-10 flex items-center justify-center bg-primary/10 border border-primary/40 rounded-xl text-xs font-semibold text-primary hover:border-primary transition-colors"
-                    title="Tap to edit rep range"
-                  >
-                    {ex.target_reps || '—'}
-                  </button>
-                )}
+                {/* Rep range — static display per row (editable in the field above the set list) */}
+                <div className="w-14 shrink-0 h-10 flex items-center justify-center bg-muted/60 border border-border rounded-xl text-xs font-semibold text-muted-foreground">
+                  {ex.target_reps || '—'}
+                </div>
 
                 <input
                   type="number"
@@ -414,6 +386,18 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
 
           {!isCardio && (
             <div className="mb-3">
+              {/* Rep range — always-editable input field */}
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-xs text-muted-foreground shrink-0">Rep range:</span>
+                <input
+                  type="text"
+                  value={ex.target_reps || ''}
+                  onChange={(e) => onRepRangeChange(ex.id, e.target.value)}
+                  onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
+                  placeholder="e.g. 8-12"
+                  className="flex-1 h-9 text-center bg-background border border-border rounded-xl text-sm font-bold outline-none focus:border-primary transition-colors"
+                />
+              </div>
               <div className="flex gap-1.5 mb-2">
                 <button
                   onClick={() => onRepModeChange(ex.id, 'reps')}
