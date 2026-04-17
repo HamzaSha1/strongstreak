@@ -140,13 +140,24 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
 
   const handleSwipeTouchEnd = (idx) => {
     const offset = swipeOffsets[idx] || 0;
-    if (offset < -65) {
-      onDeleteSet(ex.id, idx);
-      setSwipeOffsets((prev) => { const n = { ...prev }; delete n[idx]; return n; });
+    if (offset < -50) {
+      // Snap open to reveal delete button
+      setSwipeOffsets((prev) => ({ ...prev, [idx]: -80 }));
     } else {
       setSwipeOffsets((prev) => ({ ...prev, [idx]: 0 }));
     }
     delete swipeTouchStart.current[idx];
+  };
+
+  const handleDeleteTap = (idx) => {
+    onDeleteSet(ex.id, idx);
+    setSwipeOffsets((prev) => { const n = { ...prev }; delete n[idx]; return n; });
+  };
+
+  const handleRowTap = (idx) => {
+    if ((swipeOffsets[idx] || 0) < 0) {
+      setSwipeOffsets((prev) => ({ ...prev, [idx]: 0 }));
+    }
   };
 
   const renderSets = () => {
@@ -181,10 +192,13 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
           onTouchMove={(e) => handleSwipeTouchMove(actualIdx, e)}
           onTouchEnd={() => handleSwipeTouchEnd(actualIdx)}
         >
-          {/* Red delete strip revealed on swipe left */}
-          <div className="absolute inset-y-0 right-0 w-20 bg-destructive flex items-center justify-center">
+          {/* Red delete button revealed on swipe left */}
+          <button
+            className="absolute inset-y-0 right-0 w-20 bg-destructive flex items-center justify-center"
+            onClick={() => handleDeleteTap(actualIdx)}
+          >
             <Trash2 size={16} className="text-white" />
-          </div>
+          </button>
           <div
             className={cn(
               'flex items-center gap-1.5 rounded-2xl px-3 py-2.5 transition-all',
@@ -194,6 +208,7 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
               transform: `translateX(${swipeOffset}px)`,
               transition: swipeTouchStart.current[actualIdx] ? 'none' : 'transform 0.2s ease',
             }}
+            onClick={() => handleRowTap(actualIdx)}
           >
             <span className={cn('text-xs font-semibold w-5 shrink-0 text-center', s.completed ? 'text-primary' : 'text-muted-foreground')}>
               {s.set_number}
