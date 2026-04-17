@@ -20,7 +20,7 @@ export default function SplashScreen({ onDone }) {
         position: 'fixed',
         inset: 0,
         zIndex: 9999,
-        backgroundColor: '#000000',
+        backgroundColor: '#11141C',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
