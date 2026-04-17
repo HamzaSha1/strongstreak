@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Flame, Plus, Edit, Play, BedDouble, Dumbbell, Upload } from 'lucide-react';
 import ImportSplitJsonModal from '@/components/splitbuilder/ImportSplitJsonModal';
+import StreakCalendar from '@/components/workout/StreakCalendar';
 import { Button } from '@/components/ui/button.jsx';
 import { Badge } from '@/components/ui/badge.jsx';
 import { Link, useNavigate } from 'react-router-dom';
@@ -31,6 +32,7 @@ export default function Workouts() {
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleteInput, setDeleteInput] = useState('');
   const [showImportSplit, setShowImportSplit] = useState(false);
+  const [showStreakCalendar, setShowStreakCalendar] = useState(false);
   const deleteTimerRef = useRef(null);
 
   useEffect(() => {
@@ -155,11 +157,22 @@ export default function Workouts() {
             {user ? `Hey, ${user.full_name?.split(' ')[0] || 'Athlete'} 👋` : 'Loading...'}
           </p>
         </div>
-        <div className="flex items-center gap-1.5 bg-primary/10 border border-primary/30 rounded-2xl px-3 py-2">
+        <button
+          onClick={() => setShowStreakCalendar(true)}
+          className="flex items-center gap-1.5 bg-primary/10 border border-primary/30 rounded-2xl px-3 py-2 active:scale-95 transition-transform"
+        >
           <Flame size={20} className="text-primary flame-glow" />
           <span className="text-primary font-heading font-bold text-lg streak-pulse">{streak}</span>
-        </div>
+        </button>
       </div>
+
+      {showStreakCalendar && (
+        <StreakCalendar
+          workoutLogs={workoutLogs}
+          streak={streak}
+          onClose={() => setShowStreakCalendar(false)}
+        />
+      )}
 
       {showImportSplit && (
         <ImportSplitJsonModal
