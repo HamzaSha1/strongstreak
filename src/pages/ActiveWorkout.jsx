@@ -3,7 +3,7 @@ import html2canvas from 'html2canvas';
 import { useParams, useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, ArrowLeftRight, ChevronDown, ChevronUp, Plus, Check, Flag, Pencil, GripVertical, ScanLine, Trash2, X, Camera } from 'lucide-react';
+import { ArrowLeft, ArrowLeftRight, Plus, Check, Flag, Pencil, GripVertical, ScanLine, Trash2, X, Camera } from 'lucide-react';
 import { EXERCISES_BY_MUSCLE, SESSION_MUSCLE_GROUPS } from '@/components/splitbuilder/exerciseData';
 import ImportWorkoutModal from '@/components/import/ImportWorkoutModal';
 import { Button } from '@/components/ui/button';
@@ -372,9 +372,8 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
         className="hidden"
         onChange={handlePhotoChange}
       />
-      <button
+      <div
         className="w-full flex items-center justify-between px-4 py-3 min-h-11"
-        onClick={onToggle}
       >
         <div className="flex items-center gap-3 min-w-0">
           {/* Exercise thumbnail */}
@@ -427,11 +426,10 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
           <span className="text-xs text-muted-foreground">
             {exSets.filter((s) => s.completed).length}/{exSets.length}
           </span>
-          {isOpen ? <ChevronUp size={15} className="text-muted-foreground" /> : <ChevronDown size={15} className="text-muted-foreground" />}
+
         </div>
-      </button>
-      {isOpen && (
-        <div className="border-t border-border px-4 pb-4 pt-3">
+      </div>
+      <div className="border-t border-border px-4 pb-4 pt-3">
           <ExerciseNotes ex={ex} onUpdateSet={onUpdateSet} onNotesChange={onNotesChange} />
           <ExerciseHistory exerciseName={ex.name} userId={userId} weightUnit={weightUnit} toDisplay={toDisplay} />
 
@@ -452,7 +450,6 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
             <Plus size={12} /> Add set
           </button>
         </div>
-      )}
     </>
   );
 }
@@ -1059,7 +1056,7 @@ export default function ActiveWorkout() {
                             <ExerciseCard
                               ex={ex}
                               exSets={sets[ex.id] || []}
-                              isOpen={!isReordering && expanded[ex.id]}
+                              isOpen={!isReordering}
                               prevSets={getPrevSets(ex.name)}
                               onToggle={() => !isReordering && setExpanded((p) => ({ ...p, [ex.id]: !p[ex.id] }))}
                               onUpdateSet={updateSet}
