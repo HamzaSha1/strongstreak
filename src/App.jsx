@@ -3,13 +3,12 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { lazy, Suspense, useState, useCallback } from 'react';
+import { lazy, Suspense } from 'react';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import Layout from '@/components/Layout';
 import ErrorBoundary from '@/components/ErrorBoundary';
-import SplashScreen from '@/components/SplashScreen';
 // Add page imports here
 const Workouts = lazy(() => import('@/pages/Workouts'));
 const Feed = lazy(() => import('@/pages/Feed'));
@@ -23,8 +22,6 @@ const Profile = lazy(() => import('@/pages/Profile'));
 const Privacy = lazy(() => import('@/pages/Privacy'));
 const Terms = lazy(() => import('@/pages/Terms'));
 const AdminDashboard = lazy(() => import('@/pages/AdminDashboard'));
-const SplashPreview = lazy(() => import('@/pages/SplashPreview'));
-
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
   const location = useLocation();
@@ -74,8 +71,6 @@ const AuthenticatedApp = () => {
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/splash-preview" element={<SplashPreview />} />
-
           <Route path="/workout/:dayId" element={<ActiveWorkout />} />
           <Route path="*" element={<PageNotFound />} />
         </Routes>
@@ -86,12 +81,8 @@ const AuthenticatedApp = () => {
 };
 
 function App() {
-  const [splashDone, setSplashDone] = useState(false);
-  const handleSplashDone = useCallback(() => setSplashDone(true), []);
-
   return (
     <ErrorBoundary>
-      {!splashDone && <SplashScreen onDone={handleSplashDone} />}
       <Router>
         <QueryClientProvider client={queryClientInstance}>
           <AuthProvider>
