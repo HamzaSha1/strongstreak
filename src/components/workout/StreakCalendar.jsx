@@ -6,12 +6,12 @@ import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameDay,
 export default function StreakCalendar({ workoutLogs, streak, onClose }) {
   const [viewDate, setViewDate] = useState(new Date());
 
-  // Build a Set of date strings for worked-out days (non-rest, finished)
+  // Build a Set of date strings for worked-out days (non-rest, finished only)
   const workedOutDays = useMemo(() => {
     const s = new Set();
     workoutLogs
-      .filter((l) => !l.is_rest_day && l.started_at)
-      .forEach((l) => s.add(format(new Date(l.started_at), 'yyyy-MM-dd')));
+      .filter((l) => !l.is_rest_day && l.finished_at)
+      .forEach((l) => s.add(format(new Date(l.finished_at), 'yyyy-MM-dd')));
     return s;
   }, [workoutLogs]);
 
