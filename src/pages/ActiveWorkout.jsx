@@ -21,7 +21,7 @@ import WorkoutSummaryScreen from '@/components/workout/WorkoutSummaryScreen';
 import StreakCelebration from '@/components/workout/StreakCelebration';
 import { useWeightUnit } from '@/hooks/useWeightUnit';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import { startOfDay, differenceInCalendarDays, subDays, format, parse } from 'date-fns';
+
 
 const CARDIO_UNITS = { distance: 'km', time: 'min', calories: 'kcal' };
 
@@ -832,13 +832,6 @@ export default function ActiveWorkout() {
   const completedSets = Object.values(sets).flat().filter((s) => s.completed).length;
   const allDone = totalSets > 0 && completedSets === totalSets;
 
-  // Parse a date string as local time (avoids UTC-midnight timezone bug for date-only strings)
-  const parseLocalDate = (dateStr) => {
-    if (!dateStr) return new Date();
-    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return parse(dateStr, 'yyyy-MM-dd', new Date());
-    return new Date(dateStr);
-  };
-
   const finishMutation = useMutation({
     mutationFn: async () => {
       if (workoutLog) {
@@ -850,97 +843,20 @@ export default function ActiveWorkout() {
 
       streakIncreased.current = false;
 
-      // Only count streak for real (non-Rest) workout days
-      if (!day || day.session_type === 'Rest') {
-        setCurrentStreak(0);
-        return;
+      // Call backend to update group streaks (only increments if ALL members done today)
+      const streakRes = await base44.functions.invoke('updateGroupStreaks', {});
+      const updatedGroups = streakRes.data?.updated || [];
+
+      // Determine current streak for celebration display
+      // Re-fetch my membership to get updated streak value
+      const members = await base44.entities.GroupMember.filter({ user_id: user.email });
+      const newStreak = members[0]?.streak || 0;
+      const prevStreak = newStreak - (updatedGroups.length > 0 ? 1 : 0);
+
+      if (updatedGroups.length > 0 && newStreak > prevStreak) {
+        streakIncreased.current = true;
       }
-
-      if (user) {
-        const members = await base44.entities.GroupMember.filter({ user_id: user.email });
-        const member = members[0];
-        const prevStreak = member?.streak || 0;
-
-        // Fetch all past completed workout logs for this user (excluding current session)
-        const allLogs = await base44.entities.WorkoutLog.filter(
-          { user_id: user.email },
-          '-created_date',
-          100
-        );
-        const today = startOfDay(new Date());
-
-        // Check if a completed workout already exists today (other than this session)
-        const alreadyLoggedToday = allLogs.some((l) => {
-          if (l.id === workoutLog?.id || l.is_rest_day) return false;
-          return differenceInCalendarDays(today, startOfDay(parseLocalDate(l.created_date))) === 0 && l.finished_at;
-        });
-
-        if (alreadyLoggedToday) {
-          // Don't increment — already counted today
-          setCurrentStreak(prevStreak);
-          if (member) await base44.entities.GroupMember.update(member.id, { streak: prevStreak });
-          return;
-        }
-
-        // Find the most recent completed workout log before today
-        const pastLogs = allLogs
-          .filter((l) => l.id !== workoutLog?.id && l.finished_at && !l.is_rest_day)
-          .sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
-
-        const lastLog = pastLogs[0];
-
-        if (!lastLog) {
-          // First ever workout
-          const newStreak = 1;
-          streakIncreased.current = true;
-          setCurrentStreak(newStreak);
-          if (member) await base44.entities.GroupMember.update(member.id, { streak: newStreak });
-          return;
-        }
-
-        const lastDay = startOfDay(parseLocalDate(lastLog.created_date));
-        const daysSinceLast = differenceInCalendarDays(today, lastDay);
-
-        if (daysSinceLast === 0) {
-          setCurrentStreak(prevStreak);
-          if (member) await base44.entities.GroupMember.update(member.id, { streak: prevStreak });
-          return;
-        }
-
-        if (daysSinceLast === 1) {
-          // Consecutive day — simple increment
-          const newStreak = prevStreak + 1;
-          streakIncreased.current = true;
-          setCurrentStreak(newStreak);
-          if (member) await base44.entities.GroupMember.update(member.id, { streak: newStreak });
-          return;
-        }
-
-        // Gap > 1 day — check if missed days were all Rest days in the split
-        const allSplitDays = await base44.entities.SplitDay.filter({ user_id: user.email });
-        const loggedDays = new Set(
-          allLogs
-            .filter((l) => l.finished_at && !l.is_rest_day)
-            .map((l) => startOfDay(parseLocalDate(l.created_date)).getTime())
-        );
-
-        let streakBroken = false;
-        for (let d = 1; d < daysSinceLast; d++) {
-          const gapDate = startOfDay(subDays(today, daysSinceLast - d));
-          if (loggedDays.has(gapDate.getTime())) continue;
-          const dayName = format(gapDate, 'EEEE');
-          const splitDay = allSplitDays.find((sd) => sd.day_of_week === dayName);
-          if (!splitDay || splitDay.session_type !== 'Rest') {
-            streakBroken = true;
-            break;
-          }
-        }
-
-        const newStreak = streakBroken ? 1 : prevStreak + daysSinceLast;
-        streakIncreased.current = newStreak > prevStreak;
-        setCurrentStreak(newStreak);
-        if (member) await base44.entities.GroupMember.update(member.id, { streak: newStreak });
-      }
+      setCurrentStreak(newStreak);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['workoutLogs'] });
