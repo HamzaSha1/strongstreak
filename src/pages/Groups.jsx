@@ -22,6 +22,7 @@ export default function Groups() {
   const [reportTarget, setReportTarget] = useState(null);
   const [groupName, setGroupName] = useState('');
   const [groupDesc, setGroupDesc] = useState('');
+  const [groupDifficulty, setGroupDifficulty] = useState('medium');
   const [joinCode, setJoinCode] = useState('');
   const queryClient = useQueryClient();
 
@@ -58,6 +59,7 @@ export default function Groups() {
         description: groupDesc,
         created_by: user.email,
         invite_code: code,
+        difficulty: groupDifficulty,
       });
       await base44.entities.GroupMember.create({
         group_id: group.id,
@@ -72,6 +74,7 @@ export default function Groups() {
       queryClient.invalidateQueries({ queryKey: ['myMemberships'] });
       setGroupName('');
       setGroupDesc('');
+      setGroupDifficulty('medium');
       setView('list');
       toast.success('Group created!');
     },
@@ -172,9 +175,23 @@ export default function Groups() {
           )}
         </div>
         <h2 className="font-heading font-bold text-xl mb-1">{selectedGroup.name}</h2>
-        {selectedGroup.description && (
-          <p className="text-muted-foreground text-sm mb-4">{selectedGroup.description}</p>
-        )}
+        <div className="flex items-center gap-2 mb-3">
+          {selectedGroup.difficulty && (
+            <span className={cn(
+              'text-xs font-semibold px-2.5 py-1 rounded-full border',
+              selectedGroup.difficulty === 'easy' && 'bg-green-500/10 text-green-400 border-green-500/30',
+              selectedGroup.difficulty === 'medium' && 'bg-primary/10 text-primary border-primary/30',
+              selectedGroup.difficulty === 'hard' && 'bg-red-500/10 text-red-400 border-red-500/30',
+            )}>
+              {selectedGroup.difficulty === 'easy' && '😌 Easy'}
+              {selectedGroup.difficulty === 'medium' && '💪 Medium'}
+              {selectedGroup.difficulty === 'hard' && '🔥 Hard'}
+            </span>
+          )}
+          {selectedGroup.description && (
+            <p className="text-muted-foreground text-sm">{selectedGroup.description}</p>
+          )}
+        </div>
 
         {/* Invite code */}
         <div className="flex items-center gap-2 bg-muted rounded-xl px-4 py-3 mb-6">
@@ -218,11 +235,31 @@ export default function Groups() {
               );
             })}
           </div>
-          <div className={cn('mt-3 text-xs font-semibold rounded-xl px-3 py-2', allMembersCompleted ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground')}>
-            {allMembersCompleted
-              ? '🔥 Everyone\'s done today — group streak updated!'
-              : `⏳ Waiting for ${groupMembers.filter((m) => !memberCompletedToday(m.user_id)).length} member(s) to finish their day`}
-          </div>
+          {(() => {
+            const diff = selectedGroupData?.difficulty || 'medium';
+            const anyDone = groupMembers.some((m) => memberCompletedToday(m.user_id));
+            const pendingCount = groupMembers.filter((m) => !memberCompletedToday(m.user_id)).length;
+            if (diff === 'easy') {
+              return (
+                <div className={cn('mt-3 text-xs font-semibold rounded-xl px-3 py-2', anyDone ? 'bg-green-500/10 text-green-400' : 'bg-muted text-muted-foreground')}>
+                  {anyDone ? '😌 Streak is growing — keep going!' : '⏳ No one has worked out yet today'}
+                </div>
+              );
+            }
+            if (diff === 'medium') {
+              return (
+                <div className={cn('mt-3 text-xs font-semibold rounded-xl px-3 py-2', anyDone ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground')}>
+                  {anyDone ? `💪 ${groupMembers.filter((m) => memberCompletedToday(m.user_id)).length} member(s) keeping the streak alive!` : '⏳ No one has worked out yet — streak at risk!'}
+                </div>
+              );
+            }
+            // hard
+            return (
+              <div className={cn('mt-3 text-xs font-semibold rounded-xl px-3 py-2', allMembersCompleted ? 'bg-red-500/10 text-red-400' : 'bg-muted text-muted-foreground')}>
+                {allMembersCompleted ? '🔥 Everyone\'s done — group streak saved!' : `⏳ ${pendingCount} member(s) still need to finish — streak at risk!`}
+              </div>
+            );
+          })()}
         </div>
 
         <Button
@@ -273,8 +310,31 @@ export default function Groups() {
             placeholder="Description (optional)"
             value={groupDesc}
             onChange={(e) => setGroupDesc(e.target.value)}
-            className="mb-3 bg-input border-border"
+            className="mb-4 bg-input border-border"
           />
+          {/* Difficulty picker */}
+          <p className="text-xs text-muted-foreground font-semibold uppercase tracking-widest mb-2">Streak Difficulty</p>
+          <div className="flex gap-2 mb-4">
+            {[
+              { key: 'easy', label: '😌 Easy', desc: 'Anyone working out keeps the streak alive' },
+              { key: 'medium', label: '💪 Medium', desc: 'One person can carry — only resets if everyone stops' },
+              { key: 'hard', label: '🔥 Hard', desc: 'Everyone must complete their day or streak resets' },
+            ].map(({ key, label, desc }) => (
+              <button
+                key={key}
+                onClick={() => setGroupDifficulty(key)}
+                className={cn(
+                  'flex-1 flex flex-col items-center gap-1 px-2 py-2.5 rounded-xl border text-xs font-semibold transition-colors',
+                  groupDifficulty === key
+                    ? 'bg-primary/15 border-primary text-primary'
+                    : 'border-border text-muted-foreground'
+                )}
+              >
+                <span>{label}</span>
+                <span className={cn('text-[10px] font-normal text-center leading-tight', groupDifficulty === key ? 'text-primary/70' : 'text-muted-foreground/60')}>{desc}</span>
+              </button>
+            ))}
+          </div>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" className="flex-1" onClick={() => setView('list')}>
               Cancel
@@ -333,17 +393,26 @@ export default function Groups() {
             >
               <div className="flex items-center justify-between mb-1">
                 <span className="font-heading font-semibold">{group.name}</span>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-2">
                   <Flame size={13} className="text-primary" />
-                  <span className="text-xs font-bold text-primary">
-                    {group.group_streak || 0}
-                  </span>
-                  <span className="text-xs text-muted-foreground font-mono ml-2">{group.invite_code}</span>
+                  <span className="text-xs font-bold text-primary">{group.group_streak || 0}</span>
+                  {group.difficulty && (
+                    <span className={cn(
+                      'text-[10px] font-semibold px-1.5 py-0.5 rounded-full',
+                      group.difficulty === 'easy' && 'bg-green-500/15 text-green-400',
+                      group.difficulty === 'medium' && 'bg-primary/15 text-primary',
+                      group.difficulty === 'hard' && 'bg-red-500/15 text-red-400',
+                    )}>
+                      {group.difficulty === 'easy' ? '😌' : group.difficulty === 'medium' ? '💪' : '🔥'}
+                      {' '}{group.difficulty}
+                    </span>
+                  )}
                 </div>
               </div>
-              {group.description && (
-                <p className="text-muted-foreground text-sm">{group.description}</p>
-              )}
+              <div className="flex items-center gap-2">
+                {group.description && <p className="text-muted-foreground text-sm flex-1">{group.description}</p>}
+                <span className="text-xs text-muted-foreground font-mono">{group.invite_code}</span>
+              </div>
             </button>
           ))}
         </div>

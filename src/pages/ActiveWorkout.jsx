@@ -948,11 +948,31 @@ export default function ActiveWorkout() {
               })
             );
 
-            if (!memberDone.every(Boolean)) continue;
-
+            const difficulty = groupData.difficulty || 'medium';
             const prevGroupStreak = groupData.group_streak || 0;
             const yesterday = format(subDays(today, 1), 'yyyy-MM-dd');
-            const newGroupStreak = groupData.group_streak_date === yesterday ? prevGroupStreak + 1 : 1;
+            const streakContinues = groupData.group_streak_date === yesterday || groupData.group_streak_date === todayStr;
+
+            let newGroupStreak;
+
+            if (difficulty === 'easy') {
+              // Easy: I worked out → streak grows. Never resets — just keeps climbing.
+              // (We only reach this code when the current user finishes a workout)
+              newGroupStreak = streakContinues ? prevGroupStreak + 1 : 1;
+
+            } else if (difficulty === 'medium') {
+              // Medium: At least ONE member finished a real workout today → streak continues.
+              // Everyone stopped → streak resets.
+              const anyoneFinished = memberDone.some(Boolean);
+              if (!anyoneFinished) continue; // nobody done yet, skip update
+              newGroupStreak = streakContinues ? prevGroupStreak + 1 : 1;
+
+            } else {
+              // Hard: ALL members must complete their day (workout OR rest day).
+              // A single miss → reset to 0.
+              if (!memberDone.every(Boolean)) continue; // not everyone done yet
+              newGroupStreak = streakContinues ? prevGroupStreak + 1 : 1;
+            }
 
             await base44.entities.Group.update(groupData.id, {
               group_streak: newGroupStreak,
