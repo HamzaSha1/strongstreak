@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 
-const REPS_OPTIONS = ['4', '5', '6', '8', '10', '12', '15', '20', 'AMRAP'];
+const REPS_OPTIONS = ['1', '2', '3', '4', '5', '6', '8', '10', '12', '15', '20', 'AMRAP'];
 const TIME_OPTIONS = ['20s', '30s', '45s', '60s', '90s', '2min', '3min'];
 
 export default function RepRangePicker({ exId, repMode, targetReps, onRepRangeChange, onRepModeChange }) {
