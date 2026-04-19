@@ -3,7 +3,7 @@ import html2canvas from 'html2canvas';
 import { useParams, useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, ArrowLeftRight, ChevronDown, ChevronUp, Plus, Check, Flag, Pencil, GripVertical, ScanLine, Trash2, X } from 'lucide-react';
+import { ArrowLeft, ArrowLeftRight, ChevronDown, ChevronUp, Plus, Check, Flag, Pencil, GripVertical, ScanLine, Trash2, X, Camera } from 'lucide-react';
 import { EXERCISES_BY_MUSCLE, SESSION_MUSCLE_GROUPS } from '@/components/splitbuilder/exerciseData';
 import ImportWorkoutModal from '@/components/import/ImportWorkoutModal';
 import { Button } from '@/components/ui/button';
@@ -116,14 +116,26 @@ function ExerciseNotes({ ex, onNotesChange }) {
   );
 }
 
-function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onCompleteSet, onUncompleteSet, onAddSet, onNotesChange, onRepRangeChange, onRepModeChange, onDeleteSet, onSwapExercise, sessionType, divider, userId }) {
+function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onCompleteSet, onUncompleteSet, onAddSet, onNotesChange, onRepRangeChange, onRepModeChange, onDeleteSet, onSwapExercise, onImageChange, sessionType, divider, userId }) {
   const { unit: weightUnit, toggle: toggleUnit, toDisplay, toKg } = useWeightUnit();
   const isCardio = ex.exercise_type === 'cardio';
   const cardioUnit = CARDIO_UNITS[ex.cardio_metric] || 'km';
   const [rirPickerFor, setRirPickerFor] = useState(null);
   const [showSwap, setShowSwap] = useState(false);
   const [swipeOffsets, setSwipeOffsets] = useState({});
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const photoInputRef = useRef(null);
   const swipeTouchStart = useRef({});
+
+  const handlePhotoChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingImage(true);
+    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    await base44.entities.SplitExercise.update(ex.id, { image_url: file_url });
+    onImageChange && onImageChange(ex.id, file_url);
+    setUploadingImage(false);
+  };
 
   const handleSwipeTouchStart = (idx, e) => {
     swipeTouchStart.current[idx] = { x: e.touches[0].clientX, y: e.touches[0].clientY };
@@ -346,19 +358,51 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
         />
       )}
       {divider && <div className="border-t border-border/50" />}
+      {/* Hidden file input for photo */}
+      <input
+        ref={photoInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={handlePhotoChange}
+      />
       <button
         className="w-full flex items-center justify-between px-4 py-3 min-h-11"
         onClick={onToggle}
       >
-        <div>
-          <p className="font-heading font-semibold text-sm text-left">{ex.name}</p>
-          <p className="text-muted-foreground text-xs">
-            {isCardio
-              ? `${ex.cardio_metric || 'distance'} · target: ${ex.target_reps || '—'} ${cardioUnit}`
-              : `${ex.target_sets} × ${ex.target_reps} · ${ex.rest_seconds}s rest`}
-          </p>
+        <div className="flex items-center gap-3 min-w-0">
+          {/* Exercise thumbnail */}
+          {ex.image_url ? (
+            <button
+              onClick={(e) => { e.stopPropagation(); photoInputRef.current?.click(); }}
+              className="w-10 h-10 rounded-xl overflow-hidden border border-border shrink-0"
+            >
+              <img src={ex.image_url} alt={ex.name} className="w-full h-full object-cover" />
+            </button>
+          ) : (
+            <button
+              onClick={(e) => { e.stopPropagation(); photoInputRef.current?.click(); }}
+              className="w-10 h-10 rounded-xl border border-dashed border-border flex items-center justify-center shrink-0 text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors"
+              title="Add photo"
+            >
+              {uploadingImage ? (
+                <div className="w-3 h-3 border-2 border-muted border-t-primary rounded-full animate-spin" />
+              ) : (
+                <Camera size={14} />
+              )}
+            </button>
+          )}
+          <div className="min-w-0">
+            <p className="font-heading font-semibold text-sm text-left">{ex.name}</p>
+            <p className="text-muted-foreground text-xs">
+              {isCardio
+                ? `${ex.cardio_metric || 'distance'} · target: ${ex.target_reps || '—'} ${cardioUnit}`
+                : `${ex.target_sets} × ${ex.target_reps} · ${ex.rest_seconds}s rest`}
+            </p>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           {/* Swap exercise button */}
           <button
             onClick={(e) => { e.stopPropagation(); setShowSwap(true); }}
@@ -719,6 +763,12 @@ export default function ActiveWorkout() {
     );
   };
 
+  const updateExerciseImage = (exId, image_url) => {
+    setLocalExercises((prev) =>
+      (prev ?? exercises).map((e) => e.id === exId ? { ...e, image_url } : e)
+    );
+  };
+
   const handleDragEnd = (result) => {
     setIsReordering(false);
     if (!result.destination) return;
@@ -1016,6 +1066,7 @@ export default function ActiveWorkout() {
                               onRepModeChange={updateRepMode}
                               onDeleteSet={deleteSet}
                               onSwapExercise={swapExercise}
+                              onImageChange={updateExerciseImage}
                               sessionType={day?.session_type}
                               divider={false}
                               userId={user?.email}
