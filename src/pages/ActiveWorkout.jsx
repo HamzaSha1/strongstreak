@@ -138,7 +138,11 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
   };
 
   const handleSwipeTouchStart = (idx, e) => {
-    swipeTouchStart.current[idx] = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    swipeTouchStart.current[idx] = {
+      x: e.touches[0].clientX,
+      y: e.touches[0].clientY,
+      baseOffset: swipeOffsets[idx] || 0,
+    };
   };
 
   const handleSwipeTouchMove = (idx, e) => {
@@ -146,8 +150,9 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
     if (!start) return;
     const dx = e.touches[0].clientX - start.x;
     const dy = e.touches[0].clientY - start.y;
-    if (dx < 0 && Math.abs(dx) > Math.abs(dy) + 5) {
-      setSwipeOffsets((prev) => ({ ...prev, [idx]: Math.max(dx, -90) }));
+    if (Math.abs(dx) > Math.abs(dy) + 5) {
+      const newOffset = Math.min(Math.max(start.baseOffset + dx, -90), 0);
+      setSwipeOffsets((prev) => ({ ...prev, [idx]: newOffset }));
     }
   };
 
@@ -976,7 +981,7 @@ export default function ActiveWorkout() {
 
   return (
     <div style={{ paddingBottom: 'calc(7rem + env(safe-area-inset-bottom))' }}>
-      {/* Header */}
+      {/* Header — padded to sit below the iOS status bar */}
       <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border px-4 pb-3" style={{ paddingTop: 'calc(0.75rem + env(safe-area-inset-top))' }}>
         <div className="flex items-center justify-between mb-2">
           <button onClick={() => navigate('/')} className="text-muted-foreground">
