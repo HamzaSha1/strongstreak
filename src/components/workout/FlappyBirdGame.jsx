@@ -4,11 +4,11 @@ const W = 300;
 const H = 300;
 const BIRD_X = 60;
 const BIRD_R = 12;
-const GRAVITY = 0.5;
-const FLAP = -8;
+const GRAVITY = 0.35;
+const FLAP = -6.5;
 const PIPE_W = 40;
-const GAP = 90;
-const PIPE_SPEED = 2.5;
+const GAP = 120;
+const PIPE_SPEED = 2;
 
 function makePipe() {
   const topH = 40 + Math.random() * (H - GAP - 80);
