@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Flame, Plus, Edit, Play, BedDouble, Dumbbell, Upload } from 'lucide-react';
@@ -30,10 +30,9 @@ export default function Workouts() {
   const [user, setUser] = useState(null);
   const [activeTab, setActiveTab] = useState(0);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
-  const [deleteInput, setDeleteInput] = useState('');
   const [showImportSplit, setShowImportSplit] = useState(false);
   const [showStreakCalendar, setShowStreakCalendar] = useState(false);
-  const deleteTimerRef = useRef(null);
+
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
@@ -67,7 +66,6 @@ export default function Workouts() {
       queryClient.invalidateQueries({ queryKey: ['splitExercises'] });
       setActiveTab(0);
       setDeleteConfirm(false);
-      setDeleteInput('');
       toast.success('Split deleted');
     },
     onError: () => toast.error('Failed to delete split'),
@@ -307,44 +305,24 @@ export default function Workouts() {
           <div className="w-full bg-card rounded-t-3xl p-6 border-t border-border mb-20">
             <h2 className="text-lg font-heading font-bold mb-2">Delete Split?</h2>
             <p className="text-sm text-muted-foreground mb-4">
-              This will permanently delete "{activeSplitName}" and all its exercises. Type DELETE to confirm.
+              Are you sure you want to delete "{activeSplitName}" and all its exercises? This cannot be undone.
             </p>
-            <input
-              type="text"
-              placeholder="Type DELETE..."
-              value={deleteInput}
-              onChange={(e) => setDeleteInput(e.target.value)}
-              className="w-full h-10 rounded-xl bg-input border border-border px-3 text-sm mb-4"
-            />
             <div className="flex gap-2">
               <Button
                 variant="outline"
                 className="flex-1"
-                onClick={() => { setDeleteConfirm(false); setDeleteInput(''); }}
+                onClick={() => setDeleteConfirm(false)}
               >
                 Cancel
               </Button>
               <Button
                 className="flex-1 bg-destructive text-destructive-foreground hover:bg-destructive/90"
                 onClick={() => {
-                  setDeleteConfirm(false);
-                  setDeleteInput('');
                   const splitToDelete = activeSplitName;
-                  toast('Split will be deleted in 5 seconds…', {
-                    duration: 5000,
-                    action: {
-                      label: 'Undo',
-                      onClick: () => {
-                        clearTimeout(deleteTimerRef.current);
-                        toast.success('Delete cancelled');
-                      },
-                    },
-                  });
-                  deleteTimerRef.current = setTimeout(() => {
-                    deleteSplitMutation.mutate(splitToDelete);
-                  }, 5000);
+                  setDeleteConfirm(false);
+                  deleteSplitMutation.mutate(splitToDelete);
                 }}
-                disabled={deleteInput !== 'DELETE' || deleteSplitMutation.isPending}
+                disabled={deleteSplitMutation.isPending}
               >
                 Delete
               </Button>
