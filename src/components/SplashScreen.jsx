@@ -20,7 +20,7 @@ export default function SplashScreen({ onDone }) {
         position: 'fixed',
         inset: 0,
         zIndex: 9999,
-        backgroundColor: '#11141C',
+        backgroundColor: '#212C5C',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -31,22 +31,14 @@ export default function SplashScreen({ onDone }) {
     >
       {/* Try local icon first, fall back to the logo shown in Base44 App Settings */}
       <img
-        src="/icons/icon-512.png"
+        src="https://media.base44.com/images/public/69c726762a424892bc419135/41fb24274_Gemini_Generated_Image_8jcamv8jcamv8jca1.png"
         alt="StrongStreak"
         style={{
-          width: 140,
-          height: 140,
-          borderRadius: 32,
+          width: 200,
+          height: 200,
+          objectFit: 'contain',
           transition: 'transform 0.4s ease',
           transform: fading ? 'scale(1.05)' : 'scale(1)',
-        }}
-        onError={(e) => {
-          e.target.onerror = null;
-          e.target.src = 'https://cdn.base44.com/apps/strongstreak/icon.png';
-          e.target.onerror = (e2) => {
-            e2.target.style.display = 'none';
-            e2.target.nextSibling.style.display = 'block';
-          };
         }}
       />
       {/* Text fallback if all image sources fail */}
