@@ -1,7 +1,7 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Flame, Plus, Edit, Play, BedDouble, Dumbbell, Upload, Trash2 } from 'lucide-react';
+import { Flame, Plus, Edit, Play, BedDouble, Dumbbell, Upload } from 'lucide-react';
 import ImportSplitJsonModal from '@/components/splitbuilder/ImportSplitJsonModal';
 import StreakCalendar from '@/components/workout/StreakCalendar';
 import { Button } from '@/components/ui/button.jsx';
@@ -32,26 +32,7 @@ export default function Workouts() {
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [showImportSplit, setShowImportSplit] = useState(false);
   const [showStreakCalendar, setShowStreakCalendar] = useState(false);
-  const [swipeOffsets, setSwipeOffsets] = useState({});
-  const swipeTouchStart = useRef({});
 
-  const handleSwipeTouchStart = (id, e) => {
-    swipeTouchStart.current[id] = { x: e.touches[0].clientX, y: e.touches[0].clientY, base: swipeOffsets[id] || 0 };
-  };
-  const handleSwipeTouchMove = (id, e) => {
-    const s = swipeTouchStart.current[id];
-    if (!s) return;
-    const dx = e.touches[0].clientX - s.x;
-    const dy = e.touches[0].clientY - s.y;
-    if (Math.abs(dx) > Math.abs(dy) + 5) {
-      setSwipeOffsets((prev) => ({ ...prev, [id]: Math.min(Math.max(s.base + dx, -80), 0) }));
-    }
-  };
-  const handleSwipeTouchEnd = (id) => {
-    const offset = swipeOffsets[id] || 0;
-    setSwipeOffsets((prev) => ({ ...prev, [id]: offset < -40 ? -72 : 0 }));
-    delete swipeTouchStart.current[id];
-  };
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
@@ -247,84 +228,50 @@ export default function Workouts() {
         <div className="flex flex-col gap-3">
           {activeDays.map((day, i) => {
             const isToday = day.day_of_week === today;
-            const offset = swipeOffsets[day.id] || 0;
             return (
               <div
                 key={day.id}
-                className="relative overflow-hidden rounded-2xl"
+                className={cn(
+                  'slide-up rounded-2xl border p-4 transition-all',
+                  isToday ? 'border-primary/50 bg-primary/5' : 'border-border bg-card'
+                )}
                 style={{ animationDelay: `${i * 40}ms` }}
-                onTouchStart={(e) => handleSwipeTouchStart(day.id, e)}
-                onTouchMove={(e) => handleSwipeTouchMove(day.id, e)}
-                onTouchEnd={() => handleSwipeTouchEnd(day.id)}
               >
-                {/* Delete button revealed on swipe */}
-                <button
-                  className="absolute inset-y-0 right-0 w-[72px] bg-destructive flex flex-col items-center justify-center gap-1"
-                  style={{
-                    transform: `translateX(${72 + offset}px)`,
-                    transition: swipeTouchStart.current[day.id] ? 'none' : 'transform 0.2s ease',
-                  }}
-                  onClick={async () => {
-                    const dayExercises = exercises.filter((e) => e.split_day_id === day.id);
-                    for (const ex of dayExercises) await base44.entities.SplitExercise.delete(ex.id);
-                    await base44.entities.SplitDay.delete(day.id);
-                    queryClient.invalidateQueries({ queryKey: ['splitDays'] });
-                    queryClient.invalidateQueries({ queryKey: ['splitExercises'] });
-                    toast.success('Day deleted');
-                  }}
-                >
-                  <Trash2 size={18} className="text-white" />
-                  <span className="text-white text-[10px] font-semibold">Delete</span>
-                </button>
-
-                {/* Card content */}
-                <div
-                  className={cn(
-                    'slide-up rounded-2xl border p-4 transition-all',
-                    isToday ? 'border-primary/50 bg-primary/5' : 'border-border bg-card'
-                  )}
-                  style={{
-                    transform: `translateX(${offset}px)`,
-                    transition: swipeTouchStart.current[day.id] ? 'none' : 'transform 0.2s ease',
-                  }}
-                  onClick={() => { if (offset < 0) setSwipeOffsets((prev) => ({ ...prev, [day.id]: 0 })); }}
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <span className="font-heading font-semibold text-base">{day.day_of_week}</span>
-                      {isToday && (
-                        <span className="text-[10px] bg-primary text-primary-foreground rounded-full px-2 py-0.5 font-medium">
-                          TODAY
-                        </span>
-                      )}
-                    </div>
-                    <Badge
-                      variant="outline"
-                      className={cn('text-xs border', SESSION_COLORS[day.session_type] || SESSION_COLORS.Custom)}
-                    >
-                      {day.session_type || 'Unset'}
-                    </Badge>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="font-heading font-semibold text-base">{day.day_of_week}</span>
+                    {isToday && (
+                      <span className="text-[10px] bg-primary text-primary-foreground rounded-full px-2 py-0.5 font-medium">
+                        TODAY
+                      </span>
+                    )}
                   </div>
-
-                  <p className="text-muted-foreground text-sm mb-3">
-                    {day.session_type === 'Rest'
-                      ? 'Rest & recovery — no workout today'
-                      : getExerciseCount(day.id) === 0
-                        ? 'No exercises yet — tap Edit to add some'
-                        : `${getExerciseCount(day.id)} exercise${getExerciseCount(day.id) !== 1 ? 's' : ''}`}
-                  </p>
-
-                  {day.session_type !== 'Rest' && (
-                    <Button
-                      size="sm"
-                      className="bg-primary text-primary-foreground gap-1.5 w-full"
-                      onClick={(e) => { e.stopPropagation(); navigate(`/workout/${day.id}`); }}
-                    >
-                      <Play size={13} fill="currentColor" />
-                      Start Workout
-                    </Button>
-                  )}
+                  <Badge
+                    variant="outline"
+                    className={cn('text-xs border', SESSION_COLORS[day.session_type] || SESSION_COLORS.Custom)}
+                  >
+                    {day.session_type || 'Unset'}
+                  </Badge>
                 </div>
+
+                <p className="text-muted-foreground text-sm mb-3">
+                  {day.session_type === 'Rest'
+                    ? 'Rest & recovery — no workout today'
+                    : getExerciseCount(day.id) === 0
+                      ? 'No exercises yet — tap Edit to add some'
+                      : `${getExerciseCount(day.id)} exercise${getExerciseCount(day.id) !== 1 ? 's' : ''}`}
+                </p>
+
+                {day.session_type !== 'Rest' && (
+                  <Button
+                    size="sm"
+                    className="bg-primary text-primary-foreground gap-1.5 w-full"
+                    onClick={() => navigate(`/workout/${day.id}`)}
+                  >
+                    <Play size={13} fill="currentColor" />
+                    Start Workout
+                  </Button>
+                )}
               </div>
             );
           })}
