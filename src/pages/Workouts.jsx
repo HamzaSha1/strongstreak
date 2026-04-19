@@ -120,26 +120,16 @@ export default function Workouts() {
     enabled: !!user,
   });
 
+  const { data: groupMembers = [] } = useQuery({
+    queryKey: ['groupMembers', user?.email],
+    queryFn: () => base44.entities.GroupMember.filter({ user_id: user.email }),
+    enabled: !!user,
+  });
+
   const streak = useMemo(() => {
-    if (!workoutLogs.length) return 0;
-    const loggedDates = new Set(
-      workoutLogs
-        .filter((l) => !l.is_rest_day && l.started_at)
-        .map((l) => new Date(l.started_at).toDateString())
-    );
-    let count = 0;
-    const today = new Date();
-    for (let i = 0; ; i++) {
-      const d = new Date(today);
-      d.setDate(today.getDate() - i);
-      if (loggedDates.has(d.toDateString())) {
-        count++;
-      } else if (i > 0) {
-        break;
-      }
-    }
-    return count;
-  }, [workoutLogs]);
+    if (groupMembers.length > 0) return groupMembers[0].streak || 0;
+    return 0;
+  }, [groupMembers]);
 
   const splitNames = [...new Set(splitDays.map((d) => d.split_name).filter(Boolean))];
   const activeSplitName = splitNames[activeTab] || splitNames[0];
