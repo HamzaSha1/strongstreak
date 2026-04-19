@@ -136,22 +136,157 @@ export default function Workouts() {
   const today = DAYS[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1];
 
   return (
-    <div className="px-4 pb-4" style={{ paddingTop: 'calc(1.5rem + env(safe-area-inset-top))' }}>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-heading font-bold text-foreground">StrongStreak</h1>
-          <p className="text-muted-foreground text-sm mt-0.5">
-            {user ? `Hey, ${user.full_name?.split(' ')[0] || 'Athlete'} 👋` : 'Loading...'}
-          </p>
+    <div className="flex flex-col h-full">
+      {/* Static header section — never scrolls */}
+      <div className="shrink-0 px-4 pb-3 bg-background" style={{ paddingTop: 'calc(1.5rem + env(safe-area-inset-top))' }}>
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-heading font-bold text-foreground">StrongStreak</h1>
+            <p className="text-muted-foreground text-sm mt-0.5">
+              {user ? `Hey, ${user.full_name?.split(' ')[0] || 'Athlete'} 👋` : 'Loading...'}
+            </p>
+          </div>
+          <button
+            onClick={() => setShowStreakCalendar(true)}
+            className="flex items-center gap-1.5 bg-primary/10 border border-primary/30 rounded-2xl px-3 py-2 active:scale-95 transition-transform"
+          >
+            <Flame size={20} className="text-primary flame-glow" />
+            <span className="text-primary font-heading font-bold text-lg streak-pulse">{streak}</span>
+          </button>
         </div>
-        <button
-          onClick={() => setShowStreakCalendar(true)}
-          className="flex items-center gap-1.5 bg-primary/10 border border-primary/30 rounded-2xl px-3 py-2 active:scale-95 transition-transform"
-        >
-          <Flame size={20} className="text-primary flame-glow" />
-          <span className="text-primary font-heading font-bold text-lg streak-pulse">{streak}</span>
-        </button>
+
+        {/* Quick actions */}
+        <div className="flex gap-2 mb-4">
+          <Link to="/split-builder" className="flex-1">
+            <Button variant="outline" className="w-full border-border gap-2 text-sm">
+              <Edit size={15} />
+              {splitDays.length ? 'Edit Splits' : 'Build Split'}
+            </Button>
+          </Link>
+          <Button variant="outline" className="flex-1 border-border gap-2 text-sm text-muted-foreground" onClick={() => setShowImportSplit(true)}>
+            <Upload size={15} />
+            Import Split
+          </Button>
+        </div>
+
+        {/* Split Tabs */}
+        <div className="flex items-center gap-1 overflow-x-auto pb-1">
+          {(splitNames.length > 0 ? splitNames : ['Split 1']).map((name, i) => (
+            <button
+              key={name}
+              onClick={() => setActiveTab(i)}
+              className={cn(
+                'flex-shrink-0 px-3.5 py-1.5 rounded-xl text-sm font-medium transition-colors whitespace-nowrap',
+                i === activeTab
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-secondary text-muted-foreground hover:text-foreground'
+              )}
+            >
+              {name || `Split ${i + 1}`}
+            </button>
+          ))}
+          <button
+            onClick={() => navigate('/split-builder?newSplit=1')}
+            className="flex-shrink-0 w-8 h-8 rounded-xl bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors ml-0.5"
+            title="Add new split"
+          >
+            <Plus size={16} />
+          </button>
+        </div>
+      </div>
+
+      {/* Scrollable day cards area */}
+      <div className="flex-1 overflow-y-auto px-4 pt-3" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}>
+        {splitDays.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-4">
+            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+              <Dumbbell size={28} className="text-primary" />
+            </div>
+            <p className="text-muted-foreground text-center text-sm max-w-xs">
+              You haven't built your workout split yet. Tap below to get started!
+            </p>
+            <Link to="/split-builder">
+              <Button className="bg-primary text-primary-foreground gap-2">
+                <Plus size={16} />
+                Build My Split
+              </Button>
+            </Link>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3">
+            {activeDays.map((day, i) => {
+              const isToday = day.day_of_week === today;
+              return (
+                <div
+                  key={day.id}
+                  className={cn(
+                    'slide-up rounded-2xl border p-4 transition-all',
+                    isToday ? 'border-primary/50 bg-primary/5' : 'border-border bg-card'
+                  )}
+                  style={{ animationDelay: `${i * 40}ms` }}
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <span className="font-heading font-semibold text-base">{day.day_of_week}</span>
+                      {isToday && (
+                        <span className="text-[10px] bg-primary text-primary-foreground rounded-full px-2 py-0.5 font-medium">
+                          TODAY
+                        </span>
+                      )}
+                    </div>
+                    <Badge
+                      variant="outline"
+                      className={cn('text-xs border', SESSION_COLORS[day.session_type] || SESSION_COLORS.Custom)}
+                    >
+                      {day.session_type || 'Unset'}
+                    </Badge>
+                  </div>
+
+                  <p className="text-muted-foreground text-sm mb-3">
+                    {day.session_type === 'Rest'
+                      ? 'Rest & recovery — no workout today'
+                      : getExerciseCount(day.id) === 0
+                        ? 'No exercises yet — tap Edit to add some'
+                        : `${getExerciseCount(day.id)} exercise${getExerciseCount(day.id) !== 1 ? 's' : ''}`}
+                  </p>
+
+                  {day.session_type !== 'Rest' && (
+                    <Button
+                      size="sm"
+                      className="bg-primary text-primary-foreground gap-1.5 w-full"
+                      onClick={() => navigate(`/workout/${day.id}`)}
+                    >
+                      <Play size={13} fill="currentColor" />
+                      Start Workout
+                    </Button>
+                  )}
+                </div>
+              );
+            })}
+
+            {/* Delete/Duplicate section inside scroll area */}
+            {splitNames.length > 0 && (
+              <div className="mt-2 pt-4 border-t border-border flex gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1 border-destructive text-destructive hover:bg-destructive/10"
+                  onClick={() => setDeleteConfirm(true)}
+                >
+                  Delete Split
+                </Button>
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => duplicateSplitMutation.mutate(activeSplitName)}
+                  disabled={duplicateSplitMutation.isPending}
+                >
+                  Duplicate Split
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {showStreakCalendar && (
@@ -167,136 +302,6 @@ export default function Workouts() {
           user={user}
           onClose={() => setShowImportSplit(false)}
         />
-      )}
-
-      {/* Quick actions */}
-      <div className="flex gap-2 mb-4">
-        <Link to="/split-builder" className="flex-1">
-          <Button variant="outline" className="w-full border-border gap-2 text-sm">
-            <Edit size={15} />
-            {splitDays.length ? 'Edit Splits' : 'Build Split'}
-          </Button>
-        </Link>
-        <Button variant="outline" className="flex-1 border-border gap-2 text-sm text-muted-foreground" onClick={() => setShowImportSplit(true)}>
-          <Upload size={15} />
-          Import Split
-        </Button>
-      </div>
-
-      {/* Split Tabs */}
-      <div className="flex items-center gap-1 mb-4 overflow-x-auto pb-1">
-        {(splitNames.length > 0 ? splitNames : ['Split 1']).map((name, i) => (
-          <button
-            key={name}
-            onClick={() => setActiveTab(i)}
-            className={cn(
-              'flex-shrink-0 px-3.5 py-1.5 rounded-xl text-sm font-medium transition-colors whitespace-nowrap',
-              i === activeTab
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-secondary text-muted-foreground hover:text-foreground'
-            )}
-          >
-            {name || `Split ${i + 1}`}
-          </button>
-        ))}
-        <button
-          onClick={() => navigate('/split-builder?newSplit=1')}
-          className="flex-shrink-0 w-8 h-8 rounded-xl bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors ml-0.5"
-          title="Add new split"
-        >
-          <Plus size={16} />
-        </button>
-      </div>
-
-      {/* Day Cards */}
-      {splitDays.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 gap-4">
-          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-            <Dumbbell size={28} className="text-primary" />
-          </div>
-          <p className="text-muted-foreground text-center text-sm max-w-xs">
-            You haven't built your workout split yet. Tap below to get started!
-          </p>
-          <Link to="/split-builder">
-            <Button className="bg-primary text-primary-foreground gap-2">
-              <Plus size={16} />
-              Build My Split
-            </Button>
-          </Link>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-3">
-          {activeDays.map((day, i) => {
-            const isToday = day.day_of_week === today;
-            return (
-              <div
-                key={day.id}
-                className={cn(
-                  'slide-up rounded-2xl border p-4 transition-all',
-                  isToday ? 'border-primary/50 bg-primary/5' : 'border-border bg-card'
-                )}
-                style={{ animationDelay: `${i * 40}ms` }}
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <span className="font-heading font-semibold text-base">{day.day_of_week}</span>
-                    {isToday && (
-                      <span className="text-[10px] bg-primary text-primary-foreground rounded-full px-2 py-0.5 font-medium">
-                        TODAY
-                      </span>
-                    )}
-                  </div>
-                  <Badge
-                    variant="outline"
-                    className={cn('text-xs border', SESSION_COLORS[day.session_type] || SESSION_COLORS.Custom)}
-                  >
-                    {day.session_type || 'Unset'}
-                  </Badge>
-                </div>
-
-                <p className="text-muted-foreground text-sm mb-3">
-                  {day.session_type === 'Rest'
-                    ? 'Rest & recovery — no workout today'
-                    : getExerciseCount(day.id) === 0
-                      ? 'No exercises yet — tap Edit to add some'
-                      : `${getExerciseCount(day.id)} exercise${getExerciseCount(day.id) !== 1 ? 's' : ''}`}
-                </p>
-
-                {day.session_type !== 'Rest' && (
-                  <Button
-                    size="sm"
-                    className="bg-primary text-primary-foreground gap-1.5 w-full"
-                    onClick={() => navigate(`/workout/${day.id}`)}
-                  >
-                    <Play size={13} fill="currentColor" />
-                    Start Workout
-                  </Button>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Delete/Duplicate section */}
-      {splitNames.length > 0 && (
-        <div className="mt-6 pt-4 border-t border-border flex gap-2">
-          <Button
-            variant="outline"
-            className="flex-1 border-destructive text-destructive hover:bg-destructive/10"
-            onClick={() => setDeleteConfirm(true)}
-          >
-            Delete Split
-          </Button>
-          <Button
-            variant="outline"
-            className="flex-1"
-            onClick={() => duplicateSplitMutation.mutate(activeSplitName)}
-            disabled={duplicateSplitMutation.isPending}
-          >
-            Duplicate Split
-          </Button>
-        </div>
       )}
 
       {/* Delete confirmation modal */}
