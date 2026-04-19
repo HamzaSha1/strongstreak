@@ -16,6 +16,7 @@ import WorkoutExerciseEditor from '@/components/workout/WorkoutExerciseEditor.js
 import { parseRepRange, getRepFeedback, getWeightSuggestion } from '@/components/workout/RepFeedback';
 import ExerciseHistory from '@/components/workout/ExerciseHistory';
 import RIRPicker from '@/components/workout/RIRPicker';
+import RepRangePicker from '@/components/workout/RepRangePicker';
 import WorkoutSummaryScreen from '@/components/workout/WorkoutSummaryScreen';
 import StreakCelebration from '@/components/workout/StreakCelebration';
 import { useWeightUnit } from '@/hooks/useWeightUnit';
@@ -386,63 +387,13 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
           <ExerciseHistory exerciseName={ex.name} userId={userId} weightUnit={weightUnit} toDisplay={toDisplay} />
 
           {!isCardio && (
-            <div className="mb-3">
-              {/* Rep range — always-editable input field */}
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-xs text-muted-foreground shrink-0">Rep range:</span>
-                <input
-                  type="text"
-                  value={ex.target_reps || ''}
-                  onChange={(e) => onRepRangeChange(ex.id, e.target.value)}
-                  onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
-                  placeholder="e.g. 8-12"
-                  className="flex-1 h-9 text-center bg-background border border-border rounded-xl text-sm font-bold outline-none focus:border-primary transition-colors"
-                />
-              </div>
-              <div className="flex gap-1.5 mb-2">
-                <button
-                  onClick={() => onRepModeChange(ex.id, 'reps')}
-                  className={cn(
-                    'flex-1 py-1.5 rounded-xl border text-xs font-semibold transition-colors',
-                    (ex.rep_mode || 'reps') === 'reps'
-                      ? 'bg-primary text-primary-foreground border-primary'
-                      : 'border-border text-muted-foreground'
-                  )}
-                >
-                  Reps
-                </button>
-                <button
-                  onClick={() => onRepModeChange(ex.id, 'time')}
-                  className={cn(
-                    'flex-1 py-1.5 rounded-xl border text-xs font-semibold transition-colors',
-                    ex.rep_mode === 'time'
-                      ? 'bg-primary text-primary-foreground border-primary'
-                      : 'border-border text-muted-foreground'
-                  )}
-                >
-                  Time
-                </button>
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                {(ex.rep_mode === 'time'
-                  ? ['20s', '30s', '45s', '60s', '90s', '2min', '3min']
-                  : ['6', '8', '10', '12', '15', '20', 'AMRAP']
-                ).map((preset) => (
-                  <button
-                    key={preset}
-                    onClick={() => onRepRangeChange(ex.id, preset)}
-                    className={cn(
-                      'px-3 py-1 rounded-xl border text-xs transition-colors',
-                      ex.target_reps === preset
-                        ? 'bg-primary text-primary-foreground border-primary'
-                        : 'border-border text-muted-foreground hover:border-primary/50'
-                    )}
-                  >
-                    {preset}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <RepRangePicker
+              exId={ex.id}
+              repMode={ex.rep_mode}
+              targetReps={ex.target_reps}
+              onRepRangeChange={onRepRangeChange}
+              onRepModeChange={onRepModeChange}
+            />
           )}
           <div className="flex flex-col gap-1.5">{renderSets()}</div>
           <button
