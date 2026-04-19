@@ -136,7 +136,7 @@ export default function Workouts() {
   const today = DAYS[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1];
 
   return (
-    <div className="px-4 pt-6 pb-4">
+    <div className="px-4 pb-4" style={{ paddingTop: 'calc(1.5rem + env(safe-area-inset-top))' }}>
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
