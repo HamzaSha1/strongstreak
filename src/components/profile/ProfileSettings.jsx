@@ -16,8 +16,9 @@ export default function ProfileSettings({ user, profile, setProfile }) {
   const { get: getRestGame, set: setRestGame } = useRestGame();
   const [restGame, setRestGameState] = useState(() => getRestGame());
 
-  const toggleRestGame = () => {
-    const next = restGame === 'snake' ? 'flappy' : 'snake';
+  const cycleRestGame = () => {
+    const options = ['snake', 'flappy', 'breathing'];
+    const next = options[(options.indexOf(restGame) + 1) % options.length];
     setRestGame(next);
     setRestGameState(next);
   };
@@ -291,10 +292,10 @@ export default function ProfileSettings({ user, profile, setProfile }) {
           <p className="text-xs text-muted-foreground">Mini-game during rest breaks</p>
         </div>
         <button
-          onClick={toggleRestGame}
+          onClick={cycleRestGame}
           className="flex items-center gap-1 px-4 py-2 rounded-xl border border-primary text-primary font-heading font-bold text-sm"
         >
-          {restGame === 'snake' ? '🐍 Snake' : '🐦 Flappy'}
+          {restGame === 'snake' ? '🐍 Snake' : restGame === 'flappy' ? '🐦 Flappy' : '🫁 Breathing'}
         </button>
       </div>
 

@@ -3,6 +3,7 @@ import { SkipForward, ChevronDown, ChevronUp, Edit2, Check, Star } from 'lucide-
 import { cn } from '@/lib/utils';
 import SnakeGame from './SnakeGame';
 import FlappyBirdGame from './FlappyBirdGame';
+import BoxBreathingExercise from './BoxBreathingExercise';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRestGame } from '@/hooks/useRestGame';
 
@@ -46,7 +47,7 @@ export default function RestTimer({ seconds, total, onDone, onSkip, isMinimized,
   }
 
   if (showGame) {
-    const gameLabel = preferredGame === 'flappy' ? 'Play Flappy Bird' : 'Play Snake';
+    const gameLabel = preferredGame === 'flappy' ? 'Play Flappy Bird' : preferredGame === 'breathing' ? 'Box Breathing' : 'Play Snake';
     return (
       <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm p-4">
         <div className="flex flex-col items-center gap-4 bg-card border border-border rounded-3xl p-6 w-full max-w-sm">
@@ -59,6 +60,8 @@ export default function RestTimer({ seconds, total, onDone, onSkip, isMinimized,
           <p className="text-lg font-heading font-bold text-primary">{remaining}s remaining</p>
           {preferredGame === 'flappy'
             ? <FlappyBirdGame isActive={true} />
+            : preferredGame === 'breathing'
+            ? <BoxBreathingExercise isActive={true} />
             : <SnakeGame isActive={true} onGameEnd={() => {}} gameState={gameState} onGameStateChange={onGameStateChange} />
           }
         </div>
@@ -153,7 +156,7 @@ export default function RestTimer({ seconds, total, onDone, onSkip, isMinimized,
 
         {!showNotification && !isEditing && (
           <p className="text-xs text-muted-foreground text-center">
-            Tap to play {preferredGame === 'flappy' ? 'Flappy Bird' : 'Snake'} while waiting
+            Tap to {preferredGame === 'breathing' ? 'do box breathing' : preferredGame === 'flappy' ? 'play Flappy Bird' : 'play Snake'} while waiting
           </p>
         )}
 
