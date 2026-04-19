@@ -843,20 +843,127 @@ export default function ActiveWorkout() {
 
       streakIncreased.current = false;
 
-      // Call backend to update group streaks (only increments if ALL members done today)
-      const streakRes = await base44.functions.invoke('updateGroupStreaks', {});
-      const updatedGroups = streakRes.data?.updated || [];
-
-      // Determine current streak for celebration display
-      // Re-fetch my membership to get updated streak value
-      const members = await base44.entities.GroupMember.filter({ user_id: user.email });
-      const newStreak = members[0]?.streak || 0;
-      const prevStreak = newStreak - (updatedGroups.length > 0 ? 1 : 0);
-
-      if (updatedGroups.length > 0 && newStreak > prevStreak) {
-        streakIncreased.current = true;
+      // Only count personal streak for real (non-Rest) workout days
+      if (!day || day.session_type === 'Rest') {
+        setCurrentStreak(0);
+        return;
       }
-      setCurrentStreak(newStreak);
+
+      if (user) {
+        const members = await base44.entities.GroupMember.filter({ user_id: user.email });
+        const member = members[0];
+        const prevStreak = member?.streak || 0;
+
+        // Fetch all past completed workout logs for this user
+        const allLogs = await base44.entities.WorkoutLog.filter(
+          { user_id: user.email },
+          '-created_date',
+          100
+        );
+        const today = startOfDay(new Date());
+
+        // Check if already logged a workout today
+        const alreadyLoggedToday = allLogs.some((l) => {
+          if (l.id === workoutLog?.id || l.is_rest_day) return false;
+          return differenceInCalendarDays(today, startOfDay(parseLocalDate(l.created_date))) === 0 && l.finished_at;
+        });
+
+        if (alreadyLoggedToday) {
+          setCurrentStreak(prevStreak);
+          if (member) await base44.entities.GroupMember.update(member.id, { streak: prevStreak });
+          return;
+        }
+
+        const pastLogs = allLogs
+          .filter((l) => l.id !== workoutLog?.id && l.finished_at && !l.is_rest_day)
+          .sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
+
+        const lastLog = pastLogs[0];
+
+        if (!lastLog) {
+          const newStreak = 1;
+          streakIncreased.current = true;
+          setCurrentStreak(newStreak);
+          if (member) await base44.entities.GroupMember.update(member.id, { streak: newStreak });
+        } else {
+          const lastDay = startOfDay(parseLocalDate(lastLog.created_date));
+          const daysSinceLast = differenceInCalendarDays(today, lastDay);
+
+          if (daysSinceLast === 0) {
+            setCurrentStreak(prevStreak);
+            if (member) await base44.entities.GroupMember.update(member.id, { streak: prevStreak });
+          } else if (daysSinceLast === 1) {
+            const newStreak = prevStreak + 1;
+            streakIncreased.current = true;
+            setCurrentStreak(newStreak);
+            if (member) await base44.entities.GroupMember.update(member.id, { streak: newStreak });
+          } else {
+            // Gap > 1 day — check if missed days were all Rest days
+            const allSplitDays = await base44.entities.SplitDay.filter({ user_id: user.email });
+            const loggedDays = new Set(
+              allLogs
+                .filter((l) => l.finished_at && !l.is_rest_day)
+                .map((l) => startOfDay(parseLocalDate(l.created_date)).getTime())
+            );
+            let streakBroken = false;
+            for (let d = 1; d < daysSinceLast; d++) {
+              const gapDate = startOfDay(subDays(today, daysSinceLast - d));
+              if (loggedDays.has(gapDate.getTime())) continue;
+              const dayName = format(gapDate, 'EEEE');
+              const splitDay = allSplitDays.find((sd) => sd.day_of_week === dayName);
+              if (!splitDay || splitDay.session_type !== 'Rest') { streakBroken = true; break; }
+            }
+            const newStreak = streakBroken ? 1 : prevStreak + daysSinceLast;
+            streakIncreased.current = newStreak > prevStreak;
+            setCurrentStreak(newStreak);
+            if (member) await base44.entities.GroupMember.update(member.id, { streak: newStreak });
+          }
+        }
+
+        // ── Group streak logic ──────────────────────────────────────────
+        // Increments only when ALL members have completed their planned day
+        // (finished workout OR planned rest day). Stored on the Group entity.
+        const todayStr = format(today, 'yyyy-MM-dd');
+        const todayDayName = format(today, 'EEEE');
+        const userGroupMemberships = await base44.entities.GroupMember.filter({ user_id: user.email });
+
+        for (const myMembership of userGroupMemberships) {
+          try {
+            const groupArr = await base44.entities.Group.filter({ id: myMembership.group_id });
+            const groupData = groupArr[0];
+            if (!groupData) continue;
+            if (groupData.group_streak_date === todayStr) continue; // Already updated today
+
+            const allGroupMembers = await base44.entities.GroupMember.filter({ group_id: myMembership.group_id });
+
+            const memberDone = await Promise.all(
+              allGroupMembers.map(async (m) => {
+                const mLogs = await base44.entities.WorkoutLog.filter({ user_id: m.user_id }, '-created_date', 20);
+                const finishedToday = mLogs.some(
+                  (l) => l.finished_at && (l.created_date || '').slice(0, 10) === todayStr
+                );
+                if (finishedToday) return true;
+                const mSplitDays = await base44.entities.SplitDay.filter({ user_id: m.user_id });
+                return mSplitDays.some((sd) => sd.day_of_week === todayDayName && sd.session_type === 'Rest');
+              })
+            );
+
+            if (!memberDone.every(Boolean)) continue;
+
+            const prevGroupStreak = groupData.group_streak || 0;
+            const yesterday = format(subDays(today, 1), 'yyyy-MM-dd');
+            const newGroupStreak = groupData.group_streak_date === yesterday ? prevGroupStreak + 1 : 1;
+
+            await base44.entities.Group.update(groupData.id, {
+              group_streak: newGroupStreak,
+              group_streak_date: todayStr,
+            });
+          } catch (_e) {
+            // Non-fatal
+          }
+        }
+        // ── End group streak logic ───────────────────────────────────────
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['workoutLogs'] });

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { subDays, format } from 'date-fns';
 import ReportModal from '@/components/moderation/ReportModal';
 
 function generateCode() {
@@ -110,6 +111,15 @@ export default function Groups() {
     },
   });
 
+  // Fresh data for the selected group (contains group_streak and group_streak_date)
+  const { data: selectedGroupData } = useQuery({
+    queryKey: ['groupData', selectedGroup?.id],
+    queryFn: () => base44.entities.Group.filter({ id: selectedGroup?.id }),
+    select: (d) => d[0],
+    enabled: !!selectedGroup,
+    staleTime: 0,
+  });
+
   // Fetch all workout logs to determine who completed today
   const { data: allLogs = [] } = useQuery({
     queryKey: ['allLogsForGroup'],
@@ -118,15 +128,23 @@ export default function Groups() {
   });
 
   const todayStr = new Date().toISOString().slice(0, 10);
+  const yesterdayStr = format(subDays(new Date(), 1), 'yyyy-MM-dd');
 
-  // A member "completed today" if they have a WorkoutLog created today
+  // A member "completed today" if they have a finished WorkoutLog today
   const memberCompletedToday = (memberId) =>
-    allLogs.some((l) => l.user_id === memberId && (l.started_at || l.created_date || '').slice(0, 10) === todayStr);
+    allLogs.some((l) => l.user_id === memberId && l.finished_at && (l.created_date || '').slice(0, 10) === todayStr);
 
   const allMembersCompleted = groupMembers.length > 0 && groupMembers.every((m) => memberCompletedToday(m.user_id));
 
-  // Group shared streak = the streak field stored on the group's first member record (same for all)
-  const groupStreak = groupMembers[0]?.streak || 0;
+  // Group streak — lives on the Group entity, computed as shared value
+  // If the last update was not today or yesterday, streak is considered broken (show 0)
+  const groupStreak = (() => {
+    const raw = selectedGroupData?.group_streak || 0;
+    const lastDate = selectedGroupData?.group_streak_date;
+    if (!lastDate) return 0;
+    if (lastDate === todayStr || lastDate === yesterdayStr) return raw;
+    return 0; // Gap detected — streak broken
+  })();
 
   if (view === 'detail' && selectedGroup) {
     return (
@@ -200,11 +218,11 @@ export default function Groups() {
               );
             })}
           </div>
-          {allMembersCompleted && (
-            <div className="mt-3 text-xs text-primary font-semibold">
-              🔥 Everyone's done today — streak grows!
-            </div>
-          )}
+          <div className={cn('mt-3 text-xs font-semibold rounded-xl px-3 py-2', allMembersCompleted ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground')}>
+            {allMembersCompleted
+              ? '🔥 Everyone\'s done today — group streak updated!'
+              : `⏳ Waiting for ${groupMembers.filter((m) => !memberCompletedToday(m.user_id)).length} member(s) to finish their day`}
+          </div>
         </div>
 
         <Button
@@ -318,7 +336,7 @@ export default function Groups() {
                 <div className="flex items-center gap-1">
                   <Flame size={13} className="text-primary" />
                   <span className="text-xs font-bold text-primary">
-                    {myMemberships.find((m) => m.group_id === group.id)?.streak || 0}
+                    {group.group_streak || 0}
                   </span>
                   <span className="text-xs text-muted-foreground font-mono ml-2">{group.invite_code}</span>
                 </div>
