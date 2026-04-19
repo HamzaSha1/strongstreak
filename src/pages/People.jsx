@@ -76,7 +76,7 @@ export default function People() {
           onClose={() => setSelectedUser(null)}
         />
       )}
-      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border px-4 py-4">
+      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border px-4 pb-4" style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top))' }}>
         <h1 className="text-xl font-heading font-bold mb-3">People</h1>
         <div className="relative">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />

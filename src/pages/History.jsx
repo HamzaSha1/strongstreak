@@ -90,7 +90,7 @@ export default function History() {
         </div>
       )}
 
-      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border px-4 py-4">
+      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border px-4 pb-4" style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top))' }}>
         <h1 className="text-xl font-heading font-bold">History</h1>
       </div>
 

@@ -72,7 +72,7 @@ export default function Progress() {
   const weightChange = currentWeight && previousWeight ? (currentWeight - previousWeight).toFixed(1) : null;
 
   return (
-    <div className="pb-24 pt-4 px-4">
+    <div className="pb-24 px-4" style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top))' }}>
       {/* Header */}
       <div className="mb-6">
         <h1 className="font-heading font-bold text-2xl mb-1">Progress</h1>

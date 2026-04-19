@@ -130,7 +130,7 @@ export default function Groups() {
 
   if (view === 'detail' && selectedGroup) {
     return (
-      <div className="px-4 pt-6">
+      <div className="px-4" style={{ paddingTop: 'calc(1.5rem + env(safe-area-inset-top))' }}>
         {reportTarget && (
           <ReportModal
             reporterId={user?.email}
@@ -220,8 +220,8 @@ export default function Groups() {
   }
 
   return (
-    <div className="px-4 pt-6">
-      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-md pb-4">
+    <div className="px-4">
+      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-md pb-4" style={{ paddingTop: 'calc(1.5rem + env(safe-area-inset-top))' }}>
         <h1 className="text-xl font-heading font-bold mb-4">Groups</h1>
         <div className="flex gap-2">
           <Button
