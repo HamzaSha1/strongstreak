@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react';
 import { SkipForward, ChevronDown, ChevronUp, Edit2, Check, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import SnakeGame from './SnakeGame';
+import FlappyBirdGame from './FlappyBirdGame';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useRestGame } from '@/hooks/useRestGame';
 
 const RADIUS = 45;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
@@ -10,6 +12,8 @@ const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 export default function RestTimer({ seconds, total, onDone, onSkip, isMinimized, onToggleMinimize, gameState, onGameStateChange, notification }) {
   const [remaining, setRemaining] = useState(seconds);
   const [showGame, setShowGame] = useState(false);
+  const { get: getRestGame } = useRestGame();
+  const preferredGame = getRestGame();
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(seconds);
   const [showNotification, setShowNotification] = useState(!!notification);
@@ -42,17 +46,21 @@ export default function RestTimer({ seconds, total, onDone, onSkip, isMinimized,
   }
 
   if (showGame) {
+    const gameLabel = preferredGame === 'flappy' ? 'Play Flappy Bird' : 'Play Snake';
     return (
       <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm p-4">
         <div className="flex flex-col items-center gap-4 bg-card border border-border rounded-3xl p-6 w-full max-w-sm">
           <div className="flex items-center justify-between w-full">
-            <p className="text-muted-foreground text-sm font-medium">Play Snake</p>
+            <p className="text-muted-foreground text-sm font-medium">{gameLabel}</p>
             <button onClick={() => setShowGame(false)} className="text-muted-foreground hover:text-foreground transition-colors p-1">
               <ChevronUp size={18} />
             </button>
           </div>
           <p className="text-lg font-heading font-bold text-primary">{remaining}s remaining</p>
-          <SnakeGame isActive={true} onGameEnd={() => {}} gameState={gameState} onGameStateChange={onGameStateChange} />
+          {preferredGame === 'flappy'
+            ? <FlappyBirdGame isActive={true} />
+            : <SnakeGame isActive={true} onGameEnd={() => {}} gameState={gameState} onGameStateChange={onGameStateChange} />
+          }
         </div>
       </div>
     );
@@ -144,7 +152,9 @@ export default function RestTimer({ seconds, total, onDone, onSkip, isMinimized,
         </AnimatePresence>
 
         {!showNotification && !isEditing && (
-          <p className="text-xs text-muted-foreground text-center">Tap to play Snake while waiting</p>
+          <p className="text-xs text-muted-foreground text-center">
+            Tap to play {preferredGame === 'flappy' ? 'Flappy Bird' : 'Snake'} while waiting
+          </p>
         )}
 
         <div className="flex items-center gap-3">

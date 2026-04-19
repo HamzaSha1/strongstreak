@@ -6,12 +6,21 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { useWeightUnit } from '@/hooks/useWeightUnit';
+import { useRestGame } from '@/hooks/useRestGame';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 export default function ProfileSettings({ user, profile, setProfile }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { unit: weightUnit, toggle: toggleUnit } = useWeightUnit();
+  const { get: getRestGame, set: setRestGame } = useRestGame();
+  const [restGame, setRestGameState] = useState(() => getRestGame());
+
+  const toggleRestGame = () => {
+    const next = restGame === 'snake' ? 'flappy' : 'snake';
+    setRestGame(next);
+    setRestGameState(next);
+  };
 
   const { data: blocks = [] } = useQuery({
     queryKey: ['blocks', user?.email],
@@ -273,6 +282,20 @@ export default function ProfileSettings({ user, profile, setProfile }) {
             </button>
           )}
         </div>
+      </div>
+
+      {/* Rest game */}
+      <div className="bg-card border border-border rounded-2xl p-4 flex items-center justify-between">
+        <div>
+          <p className="font-semibold text-sm">Rest Timer Game</p>
+          <p className="text-xs text-muted-foreground">Mini-game during rest breaks</p>
+        </div>
+        <button
+          onClick={toggleRestGame}
+          className="flex items-center gap-1 px-4 py-2 rounded-xl border border-primary text-primary font-heading font-bold text-sm"
+        >
+          {restGame === 'snake' ? '🐍 Snake' : '🐦 Flappy'}
+        </button>
       </div>
 
       {/* Weight unit */}
