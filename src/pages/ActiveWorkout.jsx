@@ -499,6 +499,7 @@ export default function ActiveWorkout() {
   const [summaryImageUrl, setSummaryImageUrl] = useState(null);
   const [showImportDay, setShowImportDay] = useState(false);
   const [showStreakCelebration, setShowStreakCelebration] = useState(false);
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
   const summaryRef = useRef(null);
   const startTime = useRef(new Date());
   const timerRef = useRef(null);
@@ -1009,7 +1010,7 @@ export default function ActiveWorkout() {
       {/* Header — padded to sit below the iOS status bar */}
       <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border px-4 pb-3" style={{ paddingTop: 'calc(0.75rem + env(safe-area-inset-top))' }}>
         <div className="flex items-center justify-between mb-2">
-          <button onClick={() => navigate('/')} className="text-muted-foreground">
+          <button onClick={() => setShowDiscardConfirm(true)} className="text-muted-foreground">
             <ArrowLeft size={20} />
           </button>
           <div className="text-center">
@@ -1205,6 +1206,33 @@ export default function ActiveWorkout() {
           summaryImageUrl={summaryImageUrl}
           onClose={() => navigate('/')}
         />
+      )}
+
+      {showDiscardConfirm && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-end">
+          <div className="w-full bg-card border-t border-border rounded-t-3xl p-6 flex flex-col gap-4" style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}>
+            <div className="text-center">
+              <p className="font-heading font-bold text-lg">Discard Workout?</p>
+              <p className="text-sm text-muted-foreground mt-1">All progress will be lost and cannot be recovered.</p>
+            </div>
+            <Button
+              className="w-full bg-destructive text-destructive-foreground hover:bg-destructive/90 font-heading font-bold py-5"
+              onClick={() => {
+                if (workoutLog) base44.entities.WorkoutLog.delete(workoutLog.id).catch(() => {});
+                navigate('/');
+              }}
+            >
+              Discard Workout
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full font-heading font-bold py-5"
+              onClick={() => setShowDiscardConfirm(false)}
+            >
+              Keep Going
+            </Button>
+          </div>
+        </div>
       )}
 
       <div className="fixed bottom-0 left-0 right-0 flex gap-2 px-4 pt-3 bg-background/90 backdrop-blur-md border-t border-border" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
