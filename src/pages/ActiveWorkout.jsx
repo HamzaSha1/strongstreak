@@ -174,8 +174,8 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
         ) : (
           <>
             <span className="w-14 text-[10px] text-muted-foreground text-center uppercase tracking-widest shrink-0">Range</span>
-            <span className="flex-1 text-[10px] text-muted-foreground text-center uppercase tracking-widest">Reps</span>
             <span className="flex-1 text-[10px] text-muted-foreground text-center uppercase tracking-widest">Weight ({weightUnit})</span>
+            <span className="flex-1 text-[10px] text-muted-foreground text-center uppercase tracking-widest">Reps</span>
             <span className="w-14 text-[10px] text-muted-foreground text-center uppercase tracking-widest ml-2">RIR</span>
             <span className="w-10 shrink-0" />
           </>
