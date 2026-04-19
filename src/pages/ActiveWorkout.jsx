@@ -179,9 +179,138 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
     }
   };
 
+  const renderSetRow = (s, actualIdx, label, isDropset = false, prevSet = null) => {
+    const swipeOffset = swipeOffsets[actualIdx] || 0;
+    return (
+      <div
+        key={actualIdx}
+        className="relative overflow-hidden rounded-2xl"
+        onTouchStart={(e) => handleSwipeTouchStart(actualIdx, e)}
+        onTouchMove={(e) => handleSwipeTouchMove(actualIdx, e)}
+        onTouchEnd={() => handleSwipeTouchEnd(actualIdx)}
+        onClick={() => { if ((swipeOffsets[actualIdx] || 0) < 0) setSwipeOffsets((prev) => ({ ...prev, [actualIdx]: 0 })); }}
+      >
+        <button
+          className="absolute inset-y-0 right-0 w-20 bg-destructive flex items-center justify-center"
+          style={{
+            transform: `translateX(${80 + swipeOffset}px)`,
+            transition: swipeTouchStart.current[actualIdx] ? 'none' : 'transform 0.2s ease',
+          }}
+          onClick={(e) => { e.stopPropagation(); handleDeleteTap(actualIdx); }}
+        >
+          <Trash2 size={16} className="text-white" />
+        </button>
+        <div
+          className={cn(
+            'flex items-center gap-1.5 px-3 py-2.5 transition-all',
+            isDropset ? 'bg-primary/5 ml-3 border-l-2 border-primary/30' : '',
+            s.completed ? 'bg-primary/10' : (!isDropset ? 'bg-muted/40' : '')
+          )}
+          style={{
+            transform: `translateX(${swipeOffset}px)`,
+            transition: swipeTouchStart.current[actualIdx] ? 'none' : 'transform 0.2s ease',
+          }}
+          onClick={() => handleRowTap(actualIdx)}
+        >
+          <span className={cn(
+            'text-xs font-semibold w-5 shrink-0 text-center',
+            isDropset ? 'text-primary/70' : (s.completed ? 'text-primary' : 'text-muted-foreground')
+          )}>
+            {label}
+          </span>
+
+          {isCardio ? (
+            <>
+              <Input
+                type="number"
+                placeholder={ex.target_reps || cardioUnit}
+                value={s.reps}
+                min="0"
+                onChange={(e) => onUpdateSet(ex.id, actualIdx, { reps: e.target.value === '' ? '' : String(Math.max(0, parseFloat(e.target.value) || 0)) })}
+                onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
+                disabled={s.completed}
+                className="flex-1 h-10 text-center bg-background border-border rounded-xl text-sm font-semibold"
+              />
+              <span className="text-xs text-muted-foreground shrink-0">{cardioUnit}</span>
+            </>
+          ) : (
+            <>
+              <div className={cn(
+                'w-14 shrink-0 h-10 flex items-center justify-center border rounded-xl text-xs font-semibold',
+                isDropset ? 'bg-primary/10 border-primary/20 text-primary/70' : 'bg-muted/60 border-border text-muted-foreground'
+              )}>
+                {isDropset ? 'DS' : (ex.target_reps || '—')}
+              </div>
+
+              <input
+                type="number"
+                inputMode="decimal"
+                placeholder={prevSet?.weight_kg != null ? toDisplay(prevSet.weight_kg).toString() : '—'}
+                value={s.weight_display ?? ''}
+                min="0"
+                onChange={(e) => {
+                  const displayVal = e.target.value === '' ? '' : String(Math.max(0, parseFloat(e.target.value) || 0));
+                  onUpdateSet(ex.id, actualIdx, { weight_display: displayVal, weight_kg: toKg(displayVal) });
+                }}
+                onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
+                disabled={s.completed}
+                className="flex-1 h-10 text-center bg-background border border-border rounded-xl text-sm font-bold outline-none focus:border-primary transition-colors disabled:opacity-50 min-w-0 placeholder:text-muted-foreground/40 placeholder:font-normal"
+              />
+
+              <input
+                type="number"
+                inputMode="decimal"
+                placeholder={prevSet?.reps?.toString() || '—'}
+                value={s.reps}
+                min="0"
+                onChange={(e) => onUpdateSet(ex.id, actualIdx, { reps: e.target.value === '' ? '' : String(Math.max(0, parseFloat(e.target.value) || 0)) })}
+                onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
+                disabled={s.completed}
+                className="flex-1 h-10 text-center bg-background border border-border rounded-xl text-sm font-bold outline-none focus:border-primary transition-colors disabled:opacity-50 min-w-0 placeholder:text-muted-foreground/40 placeholder:font-normal"
+              />
+
+              <button
+                disabled={s.completed}
+                onClick={() => !s.completed && setRirPickerFor({ exId: ex.id, setIdx: actualIdx })}
+                className={cn(
+                  'w-14 h-10 rounded-xl border text-sm font-bold shrink-0 flex items-center justify-center transition-colors',
+                  s.rpe !== '' && s.rpe != null
+                    ? 'bg-primary/10 text-primary border-primary/40'
+                    : 'border-border text-muted-foreground/40 hover:border-primary/50 disabled:opacity-50'
+                )}
+              >
+                {s.rpe !== '' && s.rpe != null ? s.rpe : (prevSet?.rpe != null ? prevSet.rpe : '—')}
+              </button>
+            </>
+          )}
+
+          <button
+            onClick={() => {
+              if (s.completed) {
+                onUncompleteSet(ex, actualIdx);
+              } else if (!isCardio) {
+                setRirPickerFor({ exId: ex.id, setIdx: actualIdx });
+              } else {
+                onCompleteSet(ex, actualIdx);
+              }
+            }}
+            className={cn(
+              'w-10 h-10 rounded-full flex items-center justify-center transition-all shrink-0',
+              s.completed
+                ? 'bg-primary text-primary-foreground shadow-[0_0_10px_hsl(35_96%_58%/0.4)]'
+                : 'border-2 border-border text-muted-foreground hover:border-primary hover:text-primary'
+            )}
+          >
+            <Check size={14} />
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   const renderSets = () => {
     const rows = [];
-    const normalSets = exSets;
+    const dropsetCount = ex.dropset_count || 0;
 
     rows.push(
       <div key="headers" className="flex items-center px-1 mb-1">
@@ -197,136 +326,29 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
             <span className="w-10 shrink-0" />
           </>
         )}
+        {!isCardio && dropsetCount > 0 && (
+          <span className="text-[9px] text-primary/60 font-semibold ml-1">+{dropsetCount}DS</span>
+        )}
       </div>
     );
 
+    // Group sets: each "normal" set may be followed by its drop sets
+    // We track which sets are normal vs dropset by set_type
+    const normalSets = exSets.filter((s) => s.set_type !== 'dropset');
+    const dropsetSets = exSets.filter((s) => s.set_type === 'dropset');
+
+    // Build a flat ordered list pairing normal sets with their drop sets
+    let dropsetIdx = 0;
     normalSets.forEach((s, normalIdx) => {
       const actualIdx = exSets.indexOf(s);
-      const swipeOffset = swipeOffsets[actualIdx] || 0;
-      rows.push(
-        <div
-          key={actualIdx}
-          className="relative overflow-hidden rounded-2xl"
-          onTouchStart={(e) => handleSwipeTouchStart(actualIdx, e)}
-          onTouchMove={(e) => handleSwipeTouchMove(actualIdx, e)}
-          onTouchEnd={() => handleSwipeTouchEnd(actualIdx)}
-          onClick={() => { if ((swipeOffsets[actualIdx] || 0) < 0) setSwipeOffsets((prev) => ({ ...prev, [actualIdx]: 0 })); }}
-        >
-          {/* Red delete button — starts hidden (shifted right by 80px), slides in as user swipes */}
-          <button
-            className="absolute inset-y-0 right-0 w-20 bg-destructive flex items-center justify-center"
-            style={{
-              transform: `translateX(${80 + swipeOffset}px)`,
-              transition: swipeTouchStart.current[actualIdx] ? 'none' : 'transform 0.2s ease',
-            }}
-            onClick={(e) => { e.stopPropagation(); handleDeleteTap(actualIdx); }}
-          >
-            <Trash2 size={16} className="text-white" />
-          </button>
-          <div
-            className={cn(
-              'flex items-center gap-1.5 px-3 py-2.5 transition-all',
-              s.completed ? 'bg-primary/10' : 'bg-muted/40'
-            )}
-            style={{
-              transform: `translateX(${swipeOffset}px)`,
-              transition: swipeTouchStart.current[actualIdx] ? 'none' : 'transform 0.2s ease',
-            }}
-            onClick={() => handleRowTap(actualIdx)}
-          >
-            <span className={cn('text-xs font-semibold w-5 shrink-0 text-center', s.completed ? 'text-primary' : 'text-muted-foreground')}>
-              {s.set_number}
-            </span>
+      rows.push(renderSetRow(s, actualIdx, String(s.set_number), false, prevSets[normalIdx]));
 
-            {isCardio ? (
-              <>
-                <Input
-                  type="number"
-                  placeholder={ex.target_reps || cardioUnit}
-                  value={s.reps}
-                  min="0"
-                  onChange={(e) => onUpdateSet(ex.id, actualIdx, { reps: e.target.value === '' ? '' : String(Math.max(0, parseFloat(e.target.value) || 0)) })}
-                  onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
-                  disabled={s.completed}
-                  className="flex-1 h-10 text-center bg-background border-border rounded-xl text-sm font-semibold"
-                />
-                <span className="text-xs text-muted-foreground shrink-0">{cardioUnit}</span>
-              </>
-            ) : (
-              <>
-                {/* Rep range — static display per row (editable in the field above the set list) */}
-                <div className="w-14 shrink-0 h-10 flex items-center justify-center bg-muted/60 border border-border rounded-xl text-xs font-semibold text-muted-foreground">
-                  {ex.target_reps || '—'}
-                </div>
-
-                <input
-                  type="number"
-                  inputMode="decimal"
-                  placeholder={prevSets[normalIdx]?.weight_kg != null ? toDisplay(prevSets[normalIdx].weight_kg).toString() : '—'}
-                  value={s.weight_display ?? ''}
-                  min="0"
-                  onChange={(e) => {
-                    const displayVal = e.target.value === '' ? '' : String(Math.max(0, parseFloat(e.target.value) || 0));
-                    onUpdateSet(ex.id, actualIdx, { weight_display: displayVal, weight_kg: toKg(displayVal) });
-                  }}
-                  onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
-                  disabled={s.completed}
-                  className="flex-1 h-10 text-center bg-background border border-border rounded-xl text-sm font-bold outline-none focus:border-primary transition-colors disabled:opacity-50 min-w-0 placeholder:text-muted-foreground/40 placeholder:font-normal"
-                />
-
-                <input
-                  type="number"
-                  inputMode="decimal"
-                  placeholder={prevSets[normalIdx]?.reps?.toString() || '—'}
-                  value={s.reps}
-                  min="0"
-                  onChange={(e) => onUpdateSet(ex.id, actualIdx, { reps: e.target.value === '' ? '' : String(Math.max(0, parseFloat(e.target.value) || 0)) })}
-                  onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
-                  disabled={s.completed}
-                  className="flex-1 h-10 text-center bg-background border border-border rounded-xl text-sm font-bold outline-none focus:border-primary transition-colors disabled:opacity-50 min-w-0 placeholder:text-muted-foreground/40 placeholder:font-normal"
-                />
-
-                <button
-                  disabled={s.completed}
-                  onClick={() => !s.completed && setRirPickerFor({ exId: ex.id, setIdx: actualIdx })}
-                  className={cn(
-                    'w-14 h-10 rounded-xl border text-sm font-bold shrink-0 flex items-center justify-center transition-colors',
-                    s.rpe !== '' && s.rpe != null
-                      ? 'bg-primary/10 text-primary border-primary/40'
-                      : 'border-border text-muted-foreground/40 hover:border-primary/50 disabled:opacity-50'
-                  )}
-                >
-                  {s.rpe !== '' && s.rpe != null
-                    ? s.rpe
-                    : prevSets[normalIdx]?.rpe != null
-                    ? prevSets[normalIdx].rpe
-                    : '—'}
-                </button>
-              </>
-            )}
-
-            <button
-              onClick={() => {
-                if (s.completed) {
-                  onUncompleteSet(ex, actualIdx);
-                } else if (!isCardio) {
-                  setRirPickerFor({ exId: ex.id, setIdx: actualIdx });
-                } else {
-                  onCompleteSet(ex, actualIdx);
-                }
-              }}
-              className={cn(
-                'w-10 h-10 rounded-full flex items-center justify-center transition-all shrink-0',
-                s.completed
-                  ? 'bg-primary text-primary-foreground shadow-[0_0_10px_hsl(35_96%_58%/0.4)]'
-                  : 'border-2 border-border text-muted-foreground hover:border-primary hover:text-primary'
-              )}
-            >
-              <Check size={14} />
-            </button>
-          </div>
-        </div>
-      );
+      // Inline drop set rows for this normal set
+      const myDropsets = dropsetSets.slice(normalIdx * dropsetCount, normalIdx * dropsetCount + dropsetCount);
+      myDropsets.forEach((ds, di) => {
+        const dsActualIdx = exSets.indexOf(ds);
+        rows.push(renderSetRow(ds, dsActualIdx, `D${di + 1}`, true, null));
+      });
     });
 
     return rows;
@@ -553,6 +575,20 @@ export default function ActiveWorkout() {
     return bests;
   }, [allTimeLogs]);
 
+  // Must be defined before useEffects that use it
+  const buildSetsForExerciseEarly = (ex, count) => {
+    const dropCount = ex.dropset_count || 0;
+    const result = [];
+    let setNum = 1;
+    for (let i = 0; i < count; i++) {
+      result.push({ set_number: setNum++, reps: '', weight_kg: '', weight_display: '', rpe: '', set_type: 'normal', completed: false });
+      for (let d = 0; d < dropCount; d++) {
+        result.push({ set_number: setNum++, reps: '', weight_kg: '', weight_display: '', rpe: '', set_type: 'dropset', completed: false });
+      }
+    }
+    return result;
+  };
+
   useEffect(() => {
     if (exercises.length && !exerciseOrder.length) {
       setExerciseOrder(exercises.map((e) => e.id));
@@ -565,15 +601,7 @@ export default function ActiveWorkout() {
       const exp = {};
       exercises.forEach((ex) => {
         exp[ex.id] = true;
-        initial[ex.id] = Array.from({ length: ex.target_sets || 3 }, (_, i) => ({
-          set_number: i + 1,
-          reps: '',
-          weight_kg: '',
-          weight_display: '',
-          rpe: '',
-          set_type: 'normal',
-          completed: false,
-        }));
+        initial[ex.id] = buildSetsForExerciseEarly(ex, ex.target_sets || 3);
       });
       setSets(initial);
       setExpanded(exp);
@@ -603,9 +631,7 @@ export default function ActiveWorkout() {
     setExerciseOrder(next.map((e) => e.id));
     setSets((prev) => ({
       ...prev,
-      [ex.id]: Array.from({ length: ex.target_sets || 3 }, (_, i) => ({
-        set_number: i + 1, reps: '', weight_kg: '', weight_display: '', rpe: '', set_type: 'normal', completed: false,
-      })),
+      [ex.id]: buildSetsForExerciseEarly(ex, ex.target_sets || 3),
     }));
     setExpanded((prev) => ({ ...prev, [ex.id]: true }));
   };
@@ -785,18 +811,20 @@ export default function ActiveWorkout() {
   };
 
   const addSet = (exId) => {
-    setSets((prev) => ({
-      ...prev,
-      [exId]: [...prev[exId], {
-        set_number: prev[exId].length + 1,
-        reps: '',
-        weight_kg: '',
-        weight_display: '',
-        rpe: '',
-        set_type: 'normal',
-        completed: false,
-      }],
-    }));
+    const ex = activeExercises.find((e) => e.id === exId);
+    const dropCount = ex?.dropset_count || 0;
+    setSets((prev) => {
+      const current = prev[exId] || [];
+      const normalCount = current.filter((s) => s.set_type !== 'dropset').length;
+      const newSetNum = current.length + 1;
+      const toAdd = [
+        { set_number: newSetNum, reps: '', weight_kg: '', weight_display: '', rpe: '', set_type: 'normal', completed: false },
+      ];
+      for (let d = 0; d < dropCount; d++) {
+        toAdd.push({ set_number: newSetNum + d + 1, reps: '', weight_kg: '', weight_display: '', rpe: '', set_type: 'dropset', completed: false });
+      }
+      return { ...prev, [exId]: [...current, ...toAdd] };
+    });
   };
 
   const totalSets = Object.values(sets).flat().length;
@@ -1105,6 +1133,18 @@ export default function ActiveWorkout() {
           onUpdateExercise={(exId, updates) => {
             const updated = activeExercises.map((e) => e.id === exId ? { ...e, ...updates } : e);
             setLocalExercises(updated);
+            // If dropset_count changed, rebuild sets for this exercise preserving normal set count
+            if ('dropset_count' in updates) {
+              const ex = activeExercises.find((e) => e.id === exId);
+              if (ex) {
+                const newEx = { ...ex, ...updates };
+                setSets((prev) => {
+                  const current = prev[exId] || [];
+                  const normalCount = current.filter((s) => s.set_type !== 'dropset').length || ex.target_sets || 3;
+                  return { ...prev, [exId]: buildSetsForExerciseEarly(newEx, normalCount) };
+                });
+              }
+            }
           }}
         />
       )}

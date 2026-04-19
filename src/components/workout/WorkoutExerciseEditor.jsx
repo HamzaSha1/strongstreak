@@ -86,6 +86,23 @@ export default function WorkoutExerciseEditor({ exercises, sessionType, onClose,
                 <div className="flex items-center gap-1">
                      {ex.exercise_type === 'strength' && (
                        <>
+                         {ex.dropset_count > 0 ? (
+                           <div className="flex items-center gap-1">
+                             <button
+                               onClick={() => onUpdateExercise && onUpdateExercise(ex.id, { dropset_count: Math.max(0, (ex.dropset_count || 1) - 1) })}
+                               className="w-7 h-7 rounded-lg bg-primary/20 text-primary font-bold text-base flex items-center justify-center"
+                             >
+                               −
+                             </button>
+                             <span className="text-xs font-bold text-primary min-w-[28px] text-center">×{ex.dropset_count}</span>
+                             <button
+                               onClick={() => onUpdateExercise && onUpdateExercise(ex.id, { dropset_count: (ex.dropset_count || 1) + 1 })}
+                               className="w-7 h-7 rounded-lg bg-primary/20 text-primary font-bold text-base flex items-center justify-center"
+                             >
+                               +
+                             </button>
+                           </div>
+                         ) : null}
                          <button
                            onClick={() => onUpdateExercise && onUpdateExercise(ex.id, { dropset_count: ex.dropset_count > 0 ? 0 : 1 })}
                            className={cn(
