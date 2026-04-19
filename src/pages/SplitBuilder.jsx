@@ -280,7 +280,7 @@ export default function SplitBuilder() {
   const restDays = activeSplit.days.filter((d) => d.session_type === 'Rest' || !d.session_type).length;
 
   return (
-    <div className="pb-36 min-h-screen bg-background" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+    <div className="pb-36 min-h-screen bg-background">
       {showImport && (
         <ImportSplitModal onImport={handleImport} onClose={() => setShowImport(false)} />
       )}
@@ -292,8 +292,8 @@ export default function SplitBuilder() {
         />
       )}
 
-      {/* Header */}
-      <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border">
+      {/* Header — paddingTop baked in so it always covers status bar even when sticky */}
+      <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <div className="px-4 py-3 flex items-center gap-3">
           <button onClick={() => navigate('/')} className="text-muted-foreground">
             <ArrowLeft size={20} />

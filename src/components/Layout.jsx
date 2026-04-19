@@ -104,8 +104,13 @@ export default function Layout() {
   return (
     <>
       {dynamicCssVars && <style>{dynamicCssVars}</style>}
-      <div className="min-h-screen flex flex-col items-center" style={dynamicStyle}>
-        <div className="w-full max-w-[512px] flex flex-col min-h-screen relative" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+      {/* Permanent status bar cover — always sits on top, prevents any content bleeding behind iOS status bar */}
+      <div
+        className="fixed top-0 left-0 right-0 z-[999] bg-background"
+        style={{ height: 'env(safe-area-inset-top)' }}
+      />
+      <div className="flex flex-col items-center" style={{ height: '100dvh', ...dynamicStyle }}>
+        <div className="w-full max-w-[512px] flex flex-col h-full" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
           <main ref={mainRef} className="flex-1 pb-24 overflow-y-auto" onScroll={handleMainScroll}>
             <Outlet />
           </main>
