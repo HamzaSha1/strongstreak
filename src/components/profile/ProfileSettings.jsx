@@ -16,12 +16,7 @@ export default function ProfileSettings({ user, profile, setProfile }) {
   const { get: getRestGame, set: setRestGame } = useRestGame();
   const [restGame, setRestGameState] = useState(() => getRestGame());
 
-  const cycleRestGame = () => {
-    const options = ['snake', 'flappy', 'breathing'];
-    const next = options[(options.indexOf(restGame) + 1) % options.length];
-    setRestGame(next);
-    setRestGameState(next);
-  };
+
 
   const { data: blocks = [] } = useQuery({
     queryKey: ['blocks', user?.email],
@@ -286,17 +281,31 @@ export default function ProfileSettings({ user, profile, setProfile }) {
       </div>
 
       {/* Rest game */}
-      <div className="bg-card border border-border rounded-2xl p-4 flex items-center justify-between">
+      <div className="bg-card border border-border rounded-2xl p-4 flex flex-col gap-3">
         <div>
-          <p className="font-semibold text-sm">Rest Timer Game</p>
-          <p className="text-xs text-muted-foreground">Mini-game during rest breaks</p>
+          <p className="font-semibold text-sm">Rest Timer Activity</p>
+          <p className="text-xs text-muted-foreground">What to do during rest breaks</p>
         </div>
-        <button
-          onClick={cycleRestGame}
-          className="flex items-center gap-1 px-4 py-2 rounded-xl border border-primary text-primary font-heading font-bold text-sm"
-        >
-          {restGame === 'snake' ? '🐍 Snake' : restGame === 'flappy' ? '🐦 Flappy' : '🫁 Breathing'}
-        </button>
+        <div className="grid grid-cols-3 gap-2">
+          {[
+            { key: 'snake', emoji: '🐍', label: 'Snake' },
+            { key: 'flappy', emoji: '🐦', label: 'Flappy' },
+            { key: 'breathing', emoji: '🫁', label: 'Breathing' },
+          ].map((opt) => (
+            <button
+              key={opt.key}
+              onClick={() => { setRestGame(opt.key); setRestGameState(opt.key); }}
+              className={`flex flex-col items-center gap-1 py-3 rounded-xl border text-xs font-heading font-bold transition-all ${
+                restGame === opt.key
+                  ? 'border-primary bg-primary/10 text-primary'
+                  : 'border-border text-muted-foreground hover:border-primary/50'
+              }`}
+            >
+              <span className="text-xl">{opt.emoji}</span>
+              {opt.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Weight unit */}
