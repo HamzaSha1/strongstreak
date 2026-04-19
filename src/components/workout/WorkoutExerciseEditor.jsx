@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, ArrowUp, ArrowDown, Trash2, Plus, Clock, Target } from 'lucide-react';
+import { X, ArrowUp, ArrowDown, Trash2, Plus, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SESSION_MUSCLE_GROUPS, EXERCISES_BY_MUSCLE } from '@/components/splitbuilder/exerciseData';
 import { useExerciseLibrary } from '@/hooks/useExerciseLibrary';
@@ -10,7 +10,6 @@ export default function WorkoutExerciseEditor({ exercises, sessionType, onClose,
   const [customName, setCustomName] = useState('');
   const [editingSupersetId, setEditingSupersetId] = useState(null);
   const [editingRestId, setEditingRestId] = useState(null);
-  const [editingRepRangeId, setEditingRepRangeId] = useState(null);
 
   const muscleGroups = SESSION_MUSCLE_GROUPS[sessionType] ||
     SESSION_MUSCLE_GROUPS['Custom'] || [];
@@ -88,14 +87,19 @@ export default function WorkoutExerciseEditor({ exercises, sessionType, onClose,
                      {ex.exercise_type === 'strength' && (
                        <>
                          <button
-                           onClick={() => { setEditingRepRangeId(editingRepRangeId === ex.id ? null : ex.id); setEditingRestId(null); }}
-                           className="p-2 rounded-lg bg-secondary flex items-center justify-center hover:bg-secondary/80 touch-target-44"
-                           title="Edit rep range"
+                           onClick={() => onUpdateExercise && onUpdateExercise(ex.id, { dropset_count: ex.dropset_count > 0 ? 0 : 1 })}
+                           className={cn(
+                             'px-2 py-1.5 rounded-lg text-[10px] font-bold whitespace-nowrap touch-target-44 transition-colors',
+                             ex.dropset_count > 0
+                               ? 'bg-primary text-primary-foreground'
+                               : 'bg-secondary text-muted-foreground hover:bg-secondary/80'
+                           )}
+                           title="Toggle drop set"
                          >
-                           <Target size={13} />
+                           DROP SET
                          </button>
                          <button
-                           onClick={() => { setEditingRestId(editingRestId === ex.id ? null : ex.id); setEditingRepRangeId(null); }}
+                           onClick={() => setEditingRestId(editingRestId === ex.id ? null : ex.id)}
                            className="p-2 rounded-lg bg-secondary flex items-center justify-center hover:bg-secondary/80 touch-target-44"
                            title="Edit rest time"
                          >
@@ -126,41 +130,7 @@ export default function WorkoutExerciseEditor({ exercises, sessionType, onClose,
                    </div>
                 </div>
 
-              {/* Rep range editor */}
-              {editingRepRangeId === ex.id && onUpdateExercise && ex.exercise_type === 'strength' && (() => {
-                const parts = (ex.target_reps || '').split('-');
-                const minVal = parts[0] || '';
-                const maxVal = parts[1] || '';
-                const update = (min, max) => {
-                  const minN = parseInt(min);
-                  const maxN = parseInt(max);
-                  if (max && !isNaN(minN) && !isNaN(maxN) && minN > maxN) return;
-                  onUpdateExercise(ex.id, { target_reps: max ? `${min}-${max}` : min });
-                };
-                return (
-                  <div className="bg-primary/10 border border-primary/30 rounded-xl mt-2 p-3 flex items-center gap-2">
-                    <span className="text-xs text-primary font-semibold shrink-0">Rep range:</span>
-                    <input
-                      type="number"
-                      value={minVal}
-                      onChange={(e) => update(e.target.value, maxVal)}
-                      placeholder="Min"
-                      className="w-14 h-8 bg-input border border-primary rounded-lg px-2 text-sm text-center"
-                      min="1"
-                    />
-                    <span className="text-xs text-muted-foreground">–</span>
-                    <input
-                      type="number"
-                      value={maxVal}
-                      onChange={(e) => update(minVal, e.target.value)}
-                      placeholder="Max"
-                      className="w-14 h-8 bg-input border border-primary rounded-lg px-2 text-sm text-center"
-                      min="1"
-                    />
-                    <span className="text-xs text-muted-foreground">reps</span>
-                  </div>
-                );
-              })()}
+
 
               {/* Rest time editor */}
               {editingRestId === ex.id && onUpdateExercise && ex.exercise_type === 'strength' && (
