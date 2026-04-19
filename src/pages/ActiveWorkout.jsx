@@ -975,9 +975,9 @@ export default function ActiveWorkout() {
   };
 
   return (
-    <div style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'calc(7rem + env(safe-area-inset-bottom))' }}>
+    <div style={{ paddingBottom: 'calc(7rem + env(safe-area-inset-bottom))' }}>
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border px-4 py-3">
+      <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border px-4 pb-3" style={{ paddingTop: 'calc(0.75rem + env(safe-area-inset-top))' }}>
         <div className="flex items-center justify-between mb-2">
           <button onClick={() => navigate('/')} className="text-muted-foreground">
             <ArrowLeft size={20} />
