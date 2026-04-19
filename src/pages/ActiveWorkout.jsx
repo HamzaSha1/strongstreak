@@ -245,10 +245,13 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
                 <input
                   type="number"
                   inputMode="decimal"
-                  placeholder={prevSets[normalIdx]?.reps?.toString() || '—'}
-                  value={s.reps}
+                  placeholder={prevSets[normalIdx]?.weight_kg != null ? toDisplay(prevSets[normalIdx].weight_kg).toString() : '—'}
+                  value={s.weight_display ?? ''}
                   min="0"
-                  onChange={(e) => onUpdateSet(ex.id, actualIdx, { reps: e.target.value === '' ? '' : String(Math.max(0, parseFloat(e.target.value) || 0)) })}
+                  onChange={(e) => {
+                    const displayVal = e.target.value === '' ? '' : String(Math.max(0, parseFloat(e.target.value) || 0));
+                    onUpdateSet(ex.id, actualIdx, { weight_display: displayVal, weight_kg: toKg(displayVal) });
+                  }}
                   onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
                   disabled={s.completed}
                   className="flex-1 h-10 text-center bg-background border border-border rounded-xl text-sm font-bold outline-none focus:border-primary transition-colors disabled:opacity-50 min-w-0 placeholder:text-muted-foreground/40 placeholder:font-normal"
@@ -257,13 +260,10 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
                 <input
                   type="number"
                   inputMode="decimal"
-                  placeholder={prevSets[normalIdx]?.weight_kg != null ? toDisplay(prevSets[normalIdx].weight_kg).toString() : '—'}
-                  value={s.weight_display ?? ''}
+                  placeholder={prevSets[normalIdx]?.reps?.toString() || '—'}
+                  value={s.reps}
                   min="0"
-                  onChange={(e) => {
-                    const displayVal = e.target.value === '' ? '' : String(Math.max(0, parseFloat(e.target.value) || 0));
-                    onUpdateSet(ex.id, actualIdx, { weight_display: displayVal, weight_kg: toKg(displayVal) });
-                  }}
+                  onChange={(e) => onUpdateSet(ex.id, actualIdx, { reps: e.target.value === '' ? '' : String(Math.max(0, parseFloat(e.target.value) || 0)) })}
                   onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
                   disabled={s.completed}
                   className="flex-1 h-10 text-center bg-background border border-border rounded-xl text-sm font-bold outline-none focus:border-primary transition-colors disabled:opacity-50 min-w-0 placeholder:text-muted-foreground/40 placeholder:font-normal"
