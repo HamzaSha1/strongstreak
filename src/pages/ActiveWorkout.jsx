@@ -454,7 +454,8 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
 
         </div>
       </div>
-      <div className="border-t border-border px-4 pb-4 pt-3">
+      {isOpen && (
+        <div className="border-t border-border px-4 pb-4 pt-3">
           <ExerciseNotes ex={ex} onUpdateSet={onUpdateSet} onNotesChange={onNotesChange} />
           <ExerciseHistory exerciseName={ex.name} userId={userId} weightUnit={weightUnit} toDisplay={toDisplay} />
 
@@ -475,6 +476,7 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
             <Plus size={12} /> Add set
           </button>
         </div>
+      )}
     </>
   );
 }
@@ -499,6 +501,7 @@ export default function ActiveWorkout() {
   const [localExercises, setLocalExercises] = useState(null);
   const [notification, setNotification] = useState(null);
   const [isReordering, setIsReordering] = useState(false);
+  const [pressingHandle, setPressingHandle] = useState(false);
   const [summaryImageUrl, setSummaryImageUrl] = useState(null);
   const [showImportDay, setShowImportDay] = useState(false);
   const [showStreakCelebration, setShowStreakCelebration] = useState(false);
@@ -802,6 +805,7 @@ export default function ActiveWorkout() {
   };
 
   const handleDragEnd = (result) => {
+    setPressingHandle(false); // always restore on release
     setIsReordering(false);
     if (!result.destination) return;
     const orderedExercises = exerciseOrder.length
@@ -1095,7 +1099,7 @@ export default function ActiveWorkout() {
         </div>
       )}
 
-      <DragDropContext onDragEnd={handleDragEnd} onDragStart={() => { setIsReordering(true); setExpanded({}); }}>
+      <DragDropContext onDragEnd={handleDragEnd} onDragStart={() => { setIsReordering(true); }}>
         <Droppable droppableId="exercises">
           {(provided) => (
             <div
@@ -1120,18 +1124,27 @@ export default function ActiveWorkout() {
                         )}
                       >
                         <div className="flex items-center">
+                          {/* Outer div: press state + haptic feedback */}
                           <div
-                            {...drag.dragHandleProps}
-                            className="px-3 py-4 text-muted-foreground touch-none flex items-center self-stretch"
-                            onTouchStart={() => setExpanded({})}
+                            className="px-3 py-4 text-muted-foreground touch-none flex items-center self-stretch cursor-grab active:cursor-grabbing select-none"
+                            onPointerDown={() => {
+                              setPressingHandle(true);
+                              try { navigator.vibrate?.(40); } catch (_) {}
+                            }}
+                            onPointerUp={() => setPressingHandle(false)}
+                            onPointerLeave={() => setPressingHandle(false)}
+                            onPointerCancel={() => setPressingHandle(false)}
                           >
-                            <GripVertical size={16} />
+                            {/* Inner div: dnd drag handle */}
+                            <div {...drag.dragHandleProps} className="flex items-center">
+                              <GripVertical size={16} />
+                            </div>
                           </div>
                           <div className="flex-1 min-w-0">
                             <ExerciseCard
                               ex={ex}
                               exSets={sets[ex.id] || []}
-                              isOpen={!isReordering}
+                              isOpen={!pressingHandle && !isReordering && !!expanded[ex.id]}
                               prevSets={getPrevSets(ex.name)}
                               onToggle={() => !isReordering && setExpanded((p) => ({ ...p, [ex.id]: !p[ex.id] }))}
                               onUpdateSet={updateSet}
