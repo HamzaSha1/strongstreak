@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Check, Plus, Trash2, ImagePlus, ScanLine, Share2 } from 'lucide-react';
+import { ArrowLeft, Check, Plus, Trash2, ImagePlus, ScanLine, Share2, ArrowUpDown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -11,6 +11,8 @@ import DayCard from '@/components/splitbuilder/DayCard';
 import { cn } from '@/lib/utils';
 import ImportSplitModal from '@/components/splitbuilder/ImportSplitModal';
 import ImportWorkoutModal from '@/components/import/ImportWorkoutModal';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+import { GripVertical } from 'lucide-react';
 
 const initialDays = () =>
   DAYS.map((d, i) => ({
@@ -33,6 +35,7 @@ export default function SplitBuilder() {
   );
   const [showImport, setShowImport] = useState(false);
   const [showAIImport, setShowAIImport] = useState(false);
+  const [isReordering, setIsReordering] = useState(false);
   const { ensureExercise } = useExerciseLibrary();
 
   useEffect(() => {
@@ -276,6 +279,28 @@ export default function SplitBuilder() {
     toast.success(`"${activeSplit.name}" exported!`);
   };
 
+  const handleDaysReorder = (result) => {
+    if (!result.destination) return;
+    const srcIdx = result.source.index;
+    const dstIdx = result.destination.index;
+    if (srcIdx === dstIdx) return;
+    // Swap only session_type and exercises between the two day slots
+    setSplits((prev) =>
+      prev.map((s, si) => {
+        if (si !== activeTab) return s;
+        const days = s.days.map((d) => ({ ...d }));
+        // Move the session payload (session_type + exercises) from srcIdx to dstIdx
+        const sessions = days.map((d) => ({ session_type: d.session_type, exercises: d.exercises }));
+        const [moved] = sessions.splice(srcIdx, 1);
+        sessions.splice(dstIdx, 0, moved);
+        return {
+          ...s,
+          days: days.map((d, i) => ({ ...d, session_type: sessions[i].session_type, exercises: sessions[i].exercises })),
+        };
+      })
+    );
+  };
+
   const trainingDays = activeSplit.days.filter((d) => d.session_type && d.session_type !== 'Rest').length;
   const restDays = activeSplit.days.filter((d) => d.session_type === 'Rest' || !d.session_type).length;
 
@@ -306,6 +331,18 @@ export default function SplitBuilder() {
               placeholder="Name this split"
             />
           </div>
+          <button
+            onClick={() => setIsReordering((v) => !v)}
+            className={cn(
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium border',
+              isReordering
+                ? 'bg-primary text-primary-foreground border-primary'
+                : 'bg-secondary text-secondary-foreground border-transparent'
+            )}
+          >
+            <ArrowUpDown size={15} />
+            Reorder
+          </button>
           <button
             onClick={handleShareSplit}
             className="flex items-center gap-1.5 bg-secondary text-secondary-foreground border border-transparent px-3 py-1.5 rounded-xl text-sm font-medium"
@@ -375,17 +412,57 @@ export default function SplitBuilder() {
         </div>
       </div>
 
+      {/* Reorder hint */}
+      {isReordering && (
+        <div className="mx-4 mt-4 px-4 py-2 bg-primary/10 border border-primary/30 rounded-xl text-xs text-primary font-semibold text-center">
+          Drag the handles to move sessions between days
+        </div>
+      )}
+
       {/* Day cards */}
-      <div className="px-4 pt-4 flex flex-col gap-3">
-        {activeSplit.days.map((day, i) => (
-          <DayCard
-            key={`${activeTab}-${day.day}`}
-            day={day}
-            dayIndex={i}
-            onUpdate={(patch) => updateDay(i, patch)}
-          />
-        ))}
-      </div>
+      <DragDropContext onDragEnd={handleDaysReorder}>
+        <Droppable droppableId="split-days">
+          {(provided) => (
+            <div
+              className="px-4 pt-4 flex flex-col gap-3"
+              ref={provided.innerRef}
+              {...provided.droppableProps}
+            >
+              {activeSplit.days.map((day, i) => (
+                <Draggable key={`${activeTab}-${day.day}`} draggableId={`${activeTab}-${day.day}`} index={i} isDragDisabled={!isReordering}>
+                  {(drag, snapshot) => (
+                    <div
+                      ref={drag.innerRef}
+                      {...drag.draggableProps}
+                      className={cn(
+                        'flex items-center gap-2 rounded-2xl transition-shadow',
+                        snapshot.isDragging && 'shadow-2xl'
+                      )}
+                    >
+                      {isReordering && (
+                        <div
+                          {...drag.dragHandleProps}
+                          className="pl-1 pr-1 py-4 text-muted-foreground touch-none cursor-grab active:cursor-grabbing"
+                        >
+                          <GripVertical size={18} />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <DayCard
+                          day={day}
+                          dayIndex={i}
+                          onUpdate={(patch) => updateDay(i, patch)}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </Draggable>
+              ))}
+              {provided.placeholder}
+            </div>
+          )}
+        </Droppable>
+      </DragDropContext>
 
       {/* Summary bar */}
       <div className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur border-t border-border px-4 py-3 flex justify-around text-center text-xs z-10" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 0.75rem)' }}>
