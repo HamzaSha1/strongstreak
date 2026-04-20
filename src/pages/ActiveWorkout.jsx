@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import html2canvas from 'html2canvas';
 import { useParams, useNavigate } from 'react-router-dom';
+import { format, startOfDay, differenceInCalendarDays, subDays, parseISO } from 'date-fns';
+
+const parseLocalDate = (dateStr) => parseISO(dateStr);
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, ArrowLeftRight, Plus, Check, Flag, Pencil, GripVertical, ScanLine, Trash2, X, Camera } from 'lucide-react';
