@@ -905,7 +905,8 @@ export default function ActiveWorkout() {
             setCurrentStreak(newStreak);
             if (member) await base44.entities.GroupMember.update(member.id, { streak: newStreak });
           } else {
-            // Gap > 1 day — check if missed days were all Rest days
+            // Gap > 1 day — check each gap day to see if it was a scheduled Rest day
+            // or simply not in the split at all (treat as a free day, don't break streak)
             const allSplitDays = await base44.entities.SplitDay.filter({ user_id: user.email });
             const loggedDays = new Set(
               allLogs
@@ -915,12 +916,18 @@ export default function ActiveWorkout() {
             let streakBroken = false;
             for (let d = 1; d < daysSinceLast; d++) {
               const gapDate = startOfDay(subDays(today, daysSinceLast - d));
-              if (loggedDays.has(gapDate.getTime())) continue;
+              if (loggedDays.has(gapDate.getTime())) continue; // they trained that day
               const dayName = format(gapDate, 'EEEE');
-              const splitDay = allSplitDays.find((sd) => sd.day_of_week === dayName);
-              if (!splitDay || splitDay.session_type !== 'Rest') { streakBroken = true; break; }
+              // Get ALL split days for this day of week (user may have multiple splits)
+              const splitDaysForDay = allSplitDays.filter((sd) => sd.day_of_week === dayName);
+              // If the day isn't configured in ANY split, treat it as a free day (no break)
+              if (splitDaysForDay.length === 0) continue;
+              // Only break if EVERY split has this day as a training day (not Rest)
+              const hasAnyRest = splitDaysForDay.some((sd) => !sd.session_type || sd.session_type === 'Rest');
+              if (!hasAnyRest) { streakBroken = true; break; }
             }
-            const newStreak = streakBroken ? 1 : prevStreak + daysSinceLast;
+            // Always increment by 1 (you trained once today regardless of gap size)
+            const newStreak = streakBroken ? 1 : prevStreak + 1;
             streakIncreased.current = newStreak > prevStreak;
             setCurrentStreak(newStreak);
             if (member) await base44.entities.GroupMember.update(member.id, { streak: newStreak });
