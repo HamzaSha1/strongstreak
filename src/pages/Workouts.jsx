@@ -142,7 +142,10 @@ export default function Workouts() {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-heading font-bold text-foreground">StrongStreak</h1>
+            <div className="flex items-center gap-2">
+              <img src="https://media.base44.com/images/public/69c726762a424892bc419135/effec1bd5_NoBG1.png" alt="StrongStreak logo" className="w-8 h-8 object-contain" />
+              <h1 className="text-2xl font-heading font-bold text-foreground">StrongStreak</h1>
+            </div>
             <p className="text-muted-foreground text-sm mt-0.5">
               {user ? `Hey, ${user.full_name?.split(' ')[0] || 'Athlete'} 👋` : 'Loading...'}
             </p>
