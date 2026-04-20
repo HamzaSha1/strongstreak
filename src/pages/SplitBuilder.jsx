@@ -331,51 +331,53 @@ export default function SplitBuilder() {
               placeholder="Name this split"
             />
           </div>
-          <button
-            onClick={() => setIsReordering((v) => !v)}
-            className={cn(
-              'flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium border',
-              isReordering
-                ? 'bg-primary text-primary-foreground border-primary'
-                : 'bg-secondary text-secondary-foreground border-transparent'
-            )}
-          >
-            <ArrowUpDown size={15} />
-            Reorder
-          </button>
-          <button
-            onClick={handleShareSplit}
-            className="flex items-center gap-1.5 bg-secondary text-secondary-foreground border border-transparent px-3 py-1.5 rounded-xl text-sm font-medium"
-          >
-            <Share2 size={15} />
-            Share
-          </button>
-          <button
-            onClick={() => setShowImport(true)}
-            className="flex items-center gap-1.5 bg-secondary text-secondary-foreground border border-transparent px-3 py-1.5 rounded-xl text-sm font-medium"
-          >
-            <ImagePlus size={15} />
-            Import
-          </button>
-          <button
-            onClick={() => setShowAIImport(true)}
-            className="flex items-center gap-1.5 bg-primary/10 text-primary border border-primary/30 px-3 py-1.5 rounded-xl text-sm font-medium"
-          >
-            <ScanLine size={15} />
-            AI Scan
-          </button>
-          <button
-            onClick={() => saveMutation.mutate()}
-            disabled={saveMutation.isPending}
-            className="flex items-center gap-1.5 bg-secondary text-secondary-foreground border border-transparent px-3 py-1.5 rounded-xl text-sm font-medium"
-          >
-            {saveMutation.isPending ? (
-              <div className="w-4 h-4 border-2 border-foreground/30 border-t-foreground rounded-full animate-spin" />
-            ) : (
-              <Check size={15} />
-            )}
-            Save All
-          </button>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setIsReordering((v) => !v)}
+              className={cn(
+                'p-2 rounded-xl border',
+                isReordering
+                  ? 'bg-primary text-primary-foreground border-primary'
+                  : 'bg-secondary text-secondary-foreground border-transparent'
+              )}
+              title="Reorder days"
+            >
+              <ArrowUpDown size={16} />
+            </button>
+            <button
+              onClick={handleShareSplit}
+              className="p-2 rounded-xl bg-secondary text-secondary-foreground border border-transparent"
+              title="Share split"
+            >
+              <Share2 size={16} />
+            </button>
+            <button
+              onClick={() => setShowImport(true)}
+              className="p-2 rounded-xl bg-secondary text-secondary-foreground border border-transparent"
+              title="Import split"
+            >
+              <ImagePlus size={16} />
+            </button>
+            <button
+              onClick={() => setShowAIImport(true)}
+              className="p-2 rounded-xl bg-primary/10 text-primary border border-primary/30"
+              title="AI Scan"
+            >
+              <ScanLine size={16} />
+            </button>
+            <button
+              onClick={() => saveMutation.mutate()}
+              disabled={saveMutation.isPending}
+              className="flex items-center gap-1.5 bg-secondary text-secondary-foreground border border-transparent px-3 py-1.5 rounded-xl text-sm font-medium"
+            >
+              {saveMutation.isPending ? (
+                <div className="w-4 h-4 border-2 border-foreground/30 border-t-foreground rounded-full animate-spin" />
+              ) : (
+                <Check size={15} />
+              )}
+              Save
+            </button>
+          </div>
         </div>
 
         {/* Tabs */}
