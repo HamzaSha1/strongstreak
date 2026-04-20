@@ -319,65 +319,63 @@ export default function SplitBuilder() {
 
       {/* Header — paddingTop baked in so it always covers status bar even when sticky */}
       <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-        <div className="px-4 py-3 flex items-center gap-3">
-          <button onClick={() => navigate('/')} className="text-muted-foreground">
+        <div className="px-4 pt-3 pb-2 flex items-center gap-3">
+          <button onClick={() => navigate('/')} className="text-muted-foreground shrink-0">
             <ArrowLeft size={20} />
           </button>
-          <div className="flex-1">
-            <Input
-              value={activeSplit.name}
-              onChange={(e) => renameSplit(e.target.value)}
-              className="bg-transparent border-none text-base font-heading font-bold p-0 h-auto focus-visible:ring-0"
-              placeholder="Name this split"
-            />
-          </div>
-          <div className="flex items-center gap-1.5">
-            <button
-              onClick={() => setIsReordering((v) => !v)}
-              className={cn(
-                'p-2 rounded-xl border',
-                isReordering
-                  ? 'bg-primary text-primary-foreground border-primary'
-                  : 'bg-secondary text-secondary-foreground border-transparent'
-              )}
-              title="Reorder days"
-            >
-              <ArrowUpDown size={16} />
-            </button>
-            <button
-              onClick={handleShareSplit}
-              className="p-2 rounded-xl bg-secondary text-secondary-foreground border border-transparent"
-              title="Share split"
-            >
-              <Share2 size={16} />
-            </button>
-            <button
-              onClick={() => setShowImport(true)}
-              className="p-2 rounded-xl bg-secondary text-secondary-foreground border border-transparent"
-              title="Import split"
-            >
-              <ImagePlus size={16} />
-            </button>
-            <button
-              onClick={() => setShowAIImport(true)}
-              className="p-2 rounded-xl bg-primary/10 text-primary border border-primary/30"
-              title="AI Scan"
-            >
-              <ScanLine size={16} />
-            </button>
-            <button
-              onClick={() => saveMutation.mutate()}
-              disabled={saveMutation.isPending}
-              className="flex items-center gap-1.5 bg-secondary text-secondary-foreground border border-transparent px-3 py-1.5 rounded-xl text-sm font-medium"
-            >
-              {saveMutation.isPending ? (
-                <div className="w-4 h-4 border-2 border-foreground/30 border-t-foreground rounded-full animate-spin" />
-              ) : (
-                <Check size={15} />
-              )}
-              Save
-            </button>
-          </div>
+          <Input
+            value={activeSplit.name}
+            onChange={(e) => renameSplit(e.target.value)}
+            className="flex-1 bg-transparent border-none text-base font-heading font-bold p-0 h-auto focus-visible:ring-0"
+            placeholder="Name this split"
+          />
+        </div>
+        <div className="flex items-center gap-1.5 px-4 pb-2 overflow-x-auto">
+          <button
+            onClick={() => setIsReordering((v) => !v)}
+            className={cn(
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium border shrink-0',
+              isReordering
+                ? 'bg-primary text-primary-foreground border-primary'
+                : 'bg-secondary text-secondary-foreground border-transparent'
+            )}
+          >
+            <ArrowUpDown size={14} />
+            Reorder
+          </button>
+          <button
+            onClick={handleShareSplit}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium bg-secondary text-secondary-foreground shrink-0"
+          >
+            <Share2 size={14} />
+            Share
+          </button>
+          <button
+            onClick={() => setShowImport(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium bg-secondary text-secondary-foreground shrink-0"
+          >
+            <ImagePlus size={14} />
+            Import
+          </button>
+          <button
+            onClick={() => setShowAIImport(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium bg-primary/10 text-primary border border-primary/30 shrink-0"
+          >
+            <ScanLine size={14} />
+            AI Scan
+          </button>
+          <button
+            onClick={() => saveMutation.mutate()}
+            disabled={saveMutation.isPending}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium bg-secondary text-secondary-foreground shrink-0"
+          >
+            {saveMutation.isPending ? (
+              <div className="w-4 h-4 border-2 border-foreground/30 border-t-foreground rounded-full animate-spin" />
+            ) : (
+              <Check size={14} />
+            )}
+            Save
+          </button>
         </div>
 
         {/* Tabs */}
