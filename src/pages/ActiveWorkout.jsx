@@ -1124,21 +1124,24 @@ export default function ActiveWorkout() {
                         )}
                       >
                         <div className="flex items-center">
-                          {/* Outer div: press state + haptic feedback */}
+                          {/* Single div: dnd handle props + our press/haptic handlers chained together */}
                           <div
+                            {...drag.dragHandleProps}
                             className="px-3 py-4 text-muted-foreground touch-none flex items-center self-stretch cursor-grab active:cursor-grabbing select-none"
-                            onPointerDown={() => {
+                            onMouseDown={(e) => {
+                              drag.dragHandleProps?.onMouseDown?.(e);
+                              setPressingHandle(true);
+                            }}
+                            onTouchStart={(e) => {
+                              drag.dragHandleProps?.onTouchStart?.(e);
                               setPressingHandle(true);
                               try { navigator.vibrate?.(40); } catch (_) {}
                             }}
-                            onPointerUp={() => setPressingHandle(false)}
-                            onPointerLeave={() => setPressingHandle(false)}
-                            onPointerCancel={() => setPressingHandle(false)}
+                            onTouchEnd={() => setPressingHandle(false)}
+                            onMouseUp={() => setPressingHandle(false)}
+                            onTouchCancel={() => setPressingHandle(false)}
                           >
-                            {/* Inner div: dnd drag handle */}
-                            <div {...drag.dragHandleProps} className="flex items-center">
-                              <GripVertical size={16} />
-                            </div>
+                            <GripVertical size={16} />
                           </div>
                           <div className="flex-1 min-w-0">
                             <ExerciseCard
