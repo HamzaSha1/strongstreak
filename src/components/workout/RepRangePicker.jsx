@@ -50,13 +50,18 @@ export default function RepRangePicker({ exId, repMode, targetReps, onRepRangeCh
     }
   };
 
-  const isInRange = (value) => {
+  const isInRange = (value, hoverValue = null) => {
     if (!isNumeric(value)) return false;
     const v = parseInt(value);
     if (rangeStart !== null) {
-      // Hover/preview highlight between rangeStart and value
+      // Highlight all values between rangeStart and the hoverValue (last tapped)
+      // Since we don't have hover state on mobile, just show rangeStart as endpoint only
       const a = parseInt(rangeStart);
-      return v >= Math.min(a, v) && v <= Math.max(a, v);
+      if (hoverValue !== null) {
+        const h = parseInt(hoverValue);
+        return v > Math.min(a, h) && v < Math.max(a, h);
+      }
+      return false; // no second value yet — don't highlight anything except the start (handled by isEndpoint)
     }
     if (currentFrom && currentTo && isNumeric(currentFrom) && isNumeric(currentTo)) {
       const f = parseInt(currentFrom);

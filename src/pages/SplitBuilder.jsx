@@ -42,13 +42,13 @@ export default function SplitBuilder() {
     base44.auth.me().then(setUser).catch(() => {});
   }, []);
 
-  const { data: existingSplitDays = [] } = useQuery({
+  const { data: existingSplitDays = [], isSuccess: daysLoaded } = useQuery({
     queryKey: ['splitDays', user?.email],
     queryFn: () => base44.entities.SplitDay.filter({ user_id: user.email }, 'order_index'),
     enabled: !!user,
   });
 
-  const { data: existingExercises = [] } = useQuery({
+  const { data: existingExercises = [], isSuccess: exercisesLoaded } = useQuery({
     queryKey: ['splitExercises', user?.email],
     queryFn: () => base44.entities.SplitExercise.filter({ user_id: user.email }),
     enabled: !!user,
@@ -57,13 +57,8 @@ export default function SplitBuilder() {
   useEffect(() => {
     if (initialized) return;
     if (!user) return;
-
-    // Data still loading
-    if (existingSplitDays.length === 0 && existingExercises.length === 0) {
-      // Could be empty or still loading — wait for user query to be enabled
-      // We mark initialized only after we know data has settled
-      // Use a small trick: if queries are enabled and returned empty, treat as no data
-    }
+    // Wait until BOTH queries have actually resolved (not just returned empty defaults)
+    if (!daysLoaded || !exercisesLoaded) return;
 
     const grouped = {};
     for (const d of existingSplitDays) {
@@ -104,7 +99,7 @@ export default function SplitBuilder() {
       setSplits(loadedSplits);
     }
     setInitialized(true);
-  }, [existingSplitDays, existingExercises, initialized, user]);
+  }, [existingSplitDays, existingExercises, initialized, user, daysLoaded, exercisesLoaded]);
 
   const activeSplit = splits[activeTab] || splits[0];
 
@@ -157,6 +152,11 @@ export default function SplitBuilder() {
       queryClient.invalidateQueries({ queryKey: ['splitExercises'] });
       toast.success('All splits saved!');
       navigate('/');
+    },
+    onError: () => {
+      queryClient.invalidateQueries({ queryKey: ['splitDays'] });
+      queryClient.invalidateQueries({ queryKey: ['splitExercises'] });
+      toast.error('Save failed — please check your connection and try again.');
     },
   });
 

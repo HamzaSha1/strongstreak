@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { SkipForward, ChevronDown, ChevronUp, Edit2, Check, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import SnakeGame from './SnakeGame';
@@ -26,11 +26,22 @@ export default function RestTimer({ seconds, total, onDone, onSkip, isMinimized,
     return () => clearTimeout(t);
   }, [notification]);
 
+  const endTimeRef = useRef(Date.now() + remaining * 1000);
   useEffect(() => {
-    if (remaining <= 0) { onDone(); return; }
-    const t = setTimeout(() => setRemaining((r) => r - 1), 1000);
-    return () => clearTimeout(t);
-  }, [remaining]);
+    endTimeRef.current = Date.now() + remaining * 1000;
+    const interval = setInterval(() => {
+      const left = Math.round((endTimeRef.current - Date.now()) / 1000);
+      if (left <= 0) {
+        clearInterval(interval);
+        setRemaining(0);
+        onDone();
+      } else {
+        setRemaining(left);
+      }
+    }, 500); // tick every 500ms so display is always accurate to within half a second
+    return () => clearInterval(interval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // only runs once on mount
 
   const progress = remaining / total;
   const dashoffset = CIRCUMFERENCE * (1 - progress);

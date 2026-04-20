@@ -82,7 +82,9 @@ export default function Groups() {
 
   const joinMutation = useMutation({
     mutationFn: async () => {
-      const group = allGroups.find((g) => g.invite_code === joinCode.toUpperCase());
+      // Query directly so we're not limited to the 100 most recent groups in memory
+      const results = await base44.entities.Group.filter({ invite_code: joinCode.toUpperCase() });
+      const group = results[0];
       if (!group) throw new Error('Invalid invite code');
       await base44.entities.GroupMember.create({
         group_id: group.id,

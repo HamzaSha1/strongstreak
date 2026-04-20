@@ -869,10 +869,13 @@ export default function ActiveWorkout() {
         );
         const today = startOfDay(new Date());
 
-        // Check if already logged a workout today
+        // Use finished_at date (not created_date) so midnight workouts count on the right day
+        const finishDateOf = (l) => startOfDay(parseLocalDate((l.finished_at || l.created_date).slice(0, 10)));
+
+        // Check if already logged a finished workout today
         const alreadyLoggedToday = allLogs.some((l) => {
           if (l.id === workoutLog?.id || l.is_rest_day) return false;
-          return differenceInCalendarDays(today, startOfDay(parseLocalDate(l.created_date))) === 0 && l.finished_at;
+          return l.finished_at && differenceInCalendarDays(today, finishDateOf(l)) === 0;
         });
 
         if (alreadyLoggedToday) {
@@ -883,7 +886,7 @@ export default function ActiveWorkout() {
 
         const pastLogs = allLogs
           .filter((l) => l.id !== workoutLog?.id && l.finished_at && !l.is_rest_day)
-          .sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
+          .sort((a, b) => new Date(b.finished_at) - new Date(a.finished_at));
 
         const lastLog = pastLogs[0];
 
@@ -893,7 +896,7 @@ export default function ActiveWorkout() {
           setCurrentStreak(newStreak);
           if (member) await base44.entities.GroupMember.update(member.id, { streak: newStreak });
         } else {
-          const lastDay = startOfDay(parseLocalDate(lastLog.created_date));
+          const lastDay = finishDateOf(lastLog);
           const daysSinceLast = differenceInCalendarDays(today, lastDay);
 
           if (daysSinceLast === 0) {
@@ -911,7 +914,7 @@ export default function ActiveWorkout() {
             const loggedDays = new Set(
               allLogs
                 .filter((l) => l.finished_at && !l.is_rest_day)
-                .map((l) => startOfDay(parseLocalDate(l.created_date)).getTime())
+                .map((l) => finishDateOf(l).getTime())
             );
             let streakBroken = false;
             for (let d = 1; d < daysSinceLast; d++) {
@@ -1308,12 +1311,7 @@ export default function ActiveWorkout() {
         <Button
           variant="outline"
           className="border-destructive text-destructive hover:bg-destructive/10 font-heading font-bold py-5 px-4 touch-target-44 shrink-0"
-          onClick={() => {
-            if (confirm('Discard this workout? All progress will be lost.')) {
-              if (workoutLog) base44.entities.WorkoutLog.delete(workoutLog.id).catch(() => {});
-              navigate('/');
-            }
-          }}
+          onClick={() => setShowDiscardConfirm(true)}
         >
           Discard
         </Button>
