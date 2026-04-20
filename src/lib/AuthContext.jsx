@@ -130,7 +130,7 @@ export const AuthProvider = ({ children }) => {
     base44.auth.redirectToLogin(window.location.href);
   };
 
-  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(null); // null = unknown, true/false = known
   const [handle, setHandle] = useState(null); // null = unknown, '' = no handle, string = has handle
   const [handleLoading, setHandleLoading] = useState(false);
 
@@ -171,7 +171,7 @@ export const AuthProvider = ({ children }) => {
       navigateToLogin,
       checkAppState
     }}>
-      {user && !termsAccepted && (
+      {user && termsAccepted === false && (
         <TermsModal
           onAccepted={() => {
             setTermsAccepted(true);
