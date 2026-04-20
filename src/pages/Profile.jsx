@@ -41,7 +41,7 @@ export default function Profile() {
   ];
 
   return (
-    <div className="pb-24">
+    <div className="overflow-y-auto h-full" style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom))' }}>
       {/* Header */}
       <div className="px-4 pb-2" style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top))' }}>
         <h1 className="font-heading font-bold text-2xl">Profile</h1>
