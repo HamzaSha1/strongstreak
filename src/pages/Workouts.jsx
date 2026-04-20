@@ -125,9 +125,64 @@ export default function Workouts() {
   });
 
   const streak = useMemo(() => {
-    if (groupMembers.length > 0) return groupMembers[0].streak || 0;
-    return 0;
-  }, [groupMembers]);
+    // Calculate live from actual workout history so it's always accurate
+    // regardless of what's stored in GroupMember.streak
+    if (!workoutLogs.length && !splitDays.length) return 0;
+
+    // Set of timestamps (midnight) that have a finished workout
+    const completedDayTimestamps = new Set(
+      workoutLogs
+        .filter((l) => l.finished_at && !l.is_rest_day)
+        .map((l) => {
+          const d = new Date(l.created_date || l.started_at);
+          d.setHours(0, 0, 0, 0);
+          return d.getTime();
+        })
+    );
+
+    // Day names that are Rest in ANY of the user's splits
+    const restDayNames = new Set(
+      splitDays
+        .filter((d) => !d.session_type || d.session_type === 'Rest')
+        .map((d) => d.day_of_week)
+    );
+
+    // Day names that have at least one training day in any split
+    const trainingDayNames = new Set(
+      splitDays
+        .filter((d) => d.session_type && d.session_type !== 'Rest')
+        .map((d) => d.day_of_week)
+    );
+
+    const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+    let count = 0;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    for (let i = 0; i < 365; i++) {
+      const d = new Date(today.getTime() - i * 86400000);
+      const ts = d.getTime();
+      const dayName = DAY_NAMES[d.getDay()];
+
+      if (completedDayTimestamps.has(ts)) {
+        // Trained this day — streak continues
+        count++;
+      } else if (restDayNames.has(dayName) && !trainingDayNames.has(dayName)) {
+        // Scheduled rest-only day — skip (don't break, don't count)
+        if (i === 0) continue; // today is rest, start counting from yesterday
+        continue;
+      } else if (i === 0) {
+        // Today — no workout yet but day isn't over, just skip to yesterday
+        continue;
+      } else {
+        // A training day with no logged workout → streak broken
+        break;
+      }
+    }
+
+    return count;
+  }, [workoutLogs, splitDays]);
 
   const splitNames = [...new Set(splitDays.map((d) => d.split_name).filter(Boolean))];
   const activeSplitName = splitNames[activeTab] || splitNames[0];
