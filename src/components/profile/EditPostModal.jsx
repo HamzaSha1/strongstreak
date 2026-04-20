@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import { useQueryClient } from '@tanstack/react-query';
 import { X, Trash2, Save, Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
 export default function EditPostModal({ post, onClose, onUpdated, onDeleted }) {
+  const queryClient = useQueryClient();
   const [caption, setCaption] = useState(post.caption || '');
   const [visibility, setVisibility] = useState(post.visibility || 'public');
   const [imageUrl, setImageUrl] = useState(post.image_url || '');
@@ -26,6 +28,8 @@ export default function EditPostModal({ post, onClose, onUpdated, onDeleted }) {
     setSaving(true);
     try {
       await base44.entities.Post.update(post.id, { caption, visibility, image_url: imageUrl });
+      // Invalidate the global feed so private posts disappear immediately from the feed
+      queryClient.invalidateQueries({ queryKey: ['posts'] });
       toast.success('Post updated');
       onUpdated({ ...post, caption, visibility, image_url: imageUrl });
       onClose();
@@ -40,6 +44,7 @@ export default function EditPostModal({ post, onClose, onUpdated, onDeleted }) {
     setDeleting(true);
     try {
       await base44.entities.Post.delete(post.id);
+      queryClient.invalidateQueries({ queryKey: ['posts'] });
       toast.success('Post deleted');
       onDeleted(post.id);
       onClose();
