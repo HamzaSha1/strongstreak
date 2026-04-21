@@ -753,18 +753,38 @@ function ExerciseCard({ ex, exSets, isOpen, isCollapsed, prevSets, onToggle, onU
                 className="flex-1 h-10 text-center bg-background border border-border rounded-xl text-sm font-bold outline-none focus:border-primary transition-colors disabled:opacity-50 min-w-0 placeholder:text-muted-foreground/40 placeholder:font-normal"
               />
 
-              {ex.rep_mode === 'time' ? (
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  placeholder={prevSet?.reps || '0:00'}
-                  value={s.reps}
-                  onChange={(e) => onUpdateSet(ex.id, actualIdx, { reps: e.target.value })}
-                  onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
-                  disabled={s.completed}
-                  className="flex-1 h-10 text-center bg-background border border-border rounded-xl text-sm font-bold outline-none focus:border-primary transition-colors disabled:opacity-50 min-w-0 placeholder:text-muted-foreground/40 placeholder:font-normal"
-                />
-              ) : (
+              {ex.rep_mode === 'time' ? (() => {
+                // Convert stored value (plain seconds or mm:ss) to mm:ss display
+                const toMmSs = (val) => {
+                  if (!val) return '';
+                  const s = String(val);
+                  if (s.includes(':')) return s;
+                  const secs = parseInt(s) || 0;
+                  return `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`;
+                };
+                const formatMmSs = (raw) => {
+                  let v = raw.replace(/[^0-9:]/g, '');
+                  const parts = v.split(':');
+                  if (parts.length > 2) v = parts[0] + ':' + parts.slice(1).join('');
+                  if (v.split(':').length === 2) {
+                    const [m, sec] = v.split(':');
+                    v = m + ':' + sec.slice(0, 2);
+                  }
+                  return v;
+                };
+                return (
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="0:00"
+                    value={toMmSs(s.reps)}
+                    onChange={(e) => onUpdateSet(ex.id, actualIdx, { reps: formatMmSs(e.target.value) })}
+                    onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
+                    disabled={s.completed}
+                    className="flex-1 h-10 text-center bg-background border border-border rounded-xl text-sm font-bold outline-none focus:border-primary transition-colors disabled:opacity-50 min-w-0 placeholder:text-muted-foreground/40 placeholder:font-normal"
+                  />
+                );
+              })() : (
                 <input
                   type="number"
                   inputMode="decimal"
