@@ -6,7 +6,7 @@ import { format, startOfDay, differenceInCalendarDays, subDays, parseISO } from 
 const parseLocalDate = (dateStr) => parseISO(dateStr);
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, ArrowLeftRight, Plus, Check, Flag, Pencil, GripVertical, ScanLine, Trash2, X, Camera } from 'lucide-react';
+import { ArrowLeft, ArrowLeftRight, Plus, Check, Flag, Pencil, ScanLine, Trash2, X, Camera } from 'lucide-react';
 import { EXERCISES_BY_MUSCLE, SESSION_MUSCLE_GROUPS } from '@/components/splitbuilder/exerciseData';
 import ImportWorkoutModal from '@/components/import/ImportWorkoutModal';
 import { Button } from '@/components/ui/button';
@@ -27,6 +27,149 @@ import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 
 
 const CARDIO_UNITS = { distance: 'km', time: 'min', calories: 'kcal' };
+
+// ── Long-press drag sensor ───────────────────────────────────────────────────
+// Replaces the grip-handle dots. The user holds any exercise card header for
+// 2 seconds to activate drag; moving or releasing before that cancels it.
+const LONG_PRESS_MS = 2000;
+const MOVE_CANCEL_PX = 8;
+
+function makeLongPressDragSensor(callbacksRef) {
+  return function useLongPressDragSensor(api) {
+    useEffect(() => {
+      let pressTimer = null;
+      let pressStart = null; // { x, y, draggableId }
+      let activeDrag = null;
+
+      const cancel = () => {
+        if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+        if (pressStart) { callbacksRef.current?.onPressCancel?.(); pressStart = null; }
+      };
+
+      // ── Touch ────────────────────────────────────────────────────────────
+      const onTouchStart = (event) => {
+        if (pressTimer || activeDrag) return;
+        if (event.touches.length !== 1) return;
+        // Don't intercept taps on interactive elements
+        if (event.target.closest('button, input, textarea, select, a')) return;
+        // Only start from the designated drag-handle area (exercise card header)
+        if (!event.target.closest('[data-drag-handle]')) return;
+        const el = event.target.closest('[data-rfd-draggable-id]');
+        if (!el) return;
+        const draggableId = el.getAttribute('data-rfd-draggable-id');
+        if (!draggableId) return;
+
+        const { clientX: x, clientY: y } = event.touches[0];
+        pressStart = { x, y, draggableId };
+        callbacksRef.current?.onPressStart?.(draggableId);
+        try { navigator.vibrate?.(15); } catch (_) {} // subtle buzz: "timer started"
+
+        pressTimer = setTimeout(() => {
+          pressTimer = null;
+          if (!pressStart) return;
+          const preDrag = api.tryGetLock(pressStart.draggableId);
+          if (!preDrag) { cancel(); return; }
+
+          try { navigator.vibrate?.([40, 20, 40]); } catch (_) {} // double buzz: "drag active"
+          callbacksRef.current?.onPressActivate?.();
+          const { x: sx, y: sy } = pressStart;
+          pressStart = null;
+
+          const drag = preDrag.fluidLift({ x: sx, y: sy });
+          activeDrag = drag;
+
+          const onMove = (e) => {
+            if (!drag.isActive()) return;
+            if (e.touches.length !== 1) return;
+            e.preventDefault();
+            drag.move({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+          };
+          const onEnd = () => {
+            if (drag.isActive()) drag.drop();
+            activeDrag = null;
+            document.removeEventListener('touchmove', onMove);
+            document.removeEventListener('touchend', onEnd);
+            document.removeEventListener('touchcancel', onEnd);
+          };
+          document.addEventListener('touchmove', onMove, { passive: false });
+          document.addEventListener('touchend', onEnd);
+          document.addEventListener('touchcancel', onEnd);
+        }, LONG_PRESS_MS);
+      };
+
+      const onTouchMove = (e) => {
+        if (!pressStart || !pressTimer) return;
+        const { clientX: x, clientY: y } = e.touches[0];
+        if (Math.abs(x - pressStart.x) > MOVE_CANCEL_PX || Math.abs(y - pressStart.y) > MOVE_CANCEL_PX) cancel();
+      };
+      const onTouchEnd = () => cancel();
+
+      // ── Mouse (desktop) ──────────────────────────────────────────────────
+      const onMouseDown = (event) => {
+        if (event.button !== 0 || pressTimer || activeDrag) return;
+        if (event.target.closest('button, input, textarea, select, a')) return;
+        if (!event.target.closest('[data-drag-handle]')) return;
+        const el = event.target.closest('[data-rfd-draggable-id]');
+        if (!el) return;
+        const draggableId = el.getAttribute('data-rfd-draggable-id');
+        if (!draggableId) return;
+
+        pressStart = { x: event.clientX, y: event.clientY, draggableId };
+        callbacksRef.current?.onPressStart?.(draggableId);
+
+        pressTimer = setTimeout(() => {
+          pressTimer = null;
+          if (!pressStart) return;
+          const preDrag = api.tryGetLock(pressStart.draggableId);
+          if (!preDrag) { cancel(); return; }
+          callbacksRef.current?.onPressActivate?.();
+          const { x: sx, y: sy } = pressStart;
+          pressStart = null;
+
+          const drag = preDrag.fluidLift({ x: sx, y: sy });
+          activeDrag = drag;
+
+          const onMove = (e) => { if (drag.isActive()) drag.move({ x: e.clientX, y: e.clientY }); };
+          const onEnd = () => {
+            if (drag.isActive()) drag.drop();
+            activeDrag = null;
+            document.removeEventListener('mousemove', onMove);
+            document.removeEventListener('mouseup', onEnd);
+          };
+          document.addEventListener('mousemove', onMove);
+          document.addEventListener('mouseup', onEnd);
+        }, LONG_PRESS_MS);
+      };
+
+      const onMouseMove = (e) => {
+        if (!pressStart || !pressTimer) return;
+        if (Math.abs(e.clientX - pressStart.x) > MOVE_CANCEL_PX || Math.abs(e.clientY - pressStart.y) > MOVE_CANCEL_PX) cancel();
+      };
+      const onMouseUp = () => cancel();
+
+      document.addEventListener('touchstart', onTouchStart, { capture: true, passive: true });
+      document.addEventListener('touchmove', onTouchMove, { passive: true });
+      document.addEventListener('touchend', onTouchEnd);
+      document.addEventListener('touchcancel', onTouchEnd);
+      document.addEventListener('mousedown', onMouseDown, { capture: true });
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+
+      return () => {
+        cancel();
+        if (activeDrag?.isActive()) activeDrag.cancel();
+        document.removeEventListener('touchstart', onTouchStart, { capture: true });
+        document.removeEventListener('touchmove', onTouchMove);
+        document.removeEventListener('touchend', onTouchEnd);
+        document.removeEventListener('touchcancel', onTouchEnd);
+        document.removeEventListener('mousedown', onMouseDown, { capture: true });
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+      };
+    }, [api]);
+  };
+}
+// ────────────────────────────────────────────────────────────────────────────
 
 function SwapExerciseModal({ ex, sessionType, onSwap, onClose }) {
   const [query, setQuery] = useState('');
@@ -399,6 +542,7 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
       />
       <div
         className="w-full flex items-center justify-between px-4 py-3 min-h-11"
+        data-drag-handle="true"
       >
         <div className="flex items-center gap-3 min-w-0">
           {/* Exercise thumbnail */}
@@ -501,7 +645,14 @@ export default function ActiveWorkout() {
   const [localExercises, setLocalExercises] = useState(null);
   const [notification, setNotification] = useState(null);
   const [isReordering, setIsReordering] = useState(false);
-  const [pressingHandle, setPressingHandle] = useState(false);
+  const [longPressId, setLongPressId] = useState(null);
+  const longPressCallbacksRef = useRef(null);
+  longPressCallbacksRef.current = {
+    onPressStart: (id) => setLongPressId(id),
+    onPressActivate: () => setLongPressId(null),
+    onPressCancel: () => setLongPressId(null),
+  };
+  const sensors = useMemo(() => [makeLongPressDragSensor(longPressCallbacksRef)], []);
   const [summaryImageUrl, setSummaryImageUrl] = useState(null);
   const [showImportDay, setShowImportDay] = useState(false);
   const [showStreakCelebration, setShowStreakCelebration] = useState(false);
@@ -805,7 +956,6 @@ export default function ActiveWorkout() {
   };
 
   const handleDragEnd = (result) => {
-    setPressingHandle(false); // always restore on release
     setIsReordering(false);
     if (!result.destination) return;
     const orderedExercises = exerciseOrder.length
@@ -1103,13 +1253,22 @@ export default function ActiveWorkout() {
         </div>
       </div>
 
-      {isReordering && (
+      {isReordering ? (
         <div className="mx-4 mt-3 px-4 py-2 bg-primary/10 border border-primary/30 rounded-xl text-xs text-primary font-semibold text-center">
           Drag to reorder · release to confirm
         </div>
+      ) : activeExercises.length > 1 && (
+        <p className="text-center text-xs text-muted-foreground/50 mt-3 select-none">
+          Hold an exercise name for 2s to reorder
+        </p>
       )}
 
-      <DragDropContext onDragEnd={handleDragEnd} onDragStart={() => { setIsReordering(true); }}>
+      <DragDropContext
+        onDragEnd={handleDragEnd}
+        onDragStart={() => setIsReordering(true)}
+        enableDefaultSensors={false}
+        sensors={sensors}
+      >
         <Droppable droppableId="exercises">
           {(provided) => (
             <div
@@ -1128,54 +1287,35 @@ export default function ActiveWorkout() {
                       <div
                         ref={drag.innerRef}
                         {...drag.draggableProps}
+                        {...drag.dragHandleProps}
+                        tabIndex={-1}
                         className={cn(
                           'bg-card border border-border rounded-2xl overflow-hidden transition-shadow',
-                          snapshot.isDragging && 'shadow-2xl border-primary/50 scale-[1.02]'
+                          snapshot.isDragging && 'shadow-2xl border-primary/50 scale-[1.02]',
+                          longPressId === ex.id && !snapshot.isDragging &&
+                            'border-primary/50 shadow-[0_0_0_3px_hsl(var(--primary)/0.15)]'
                         )}
                       >
-                        <div className="flex items-center">
-                          {/* Single div: dnd handle props + our press/haptic handlers chained together */}
-                          <div
-                            {...drag.dragHandleProps}
-                            className="px-3 py-4 text-muted-foreground touch-none flex items-center self-stretch cursor-grab active:cursor-grabbing select-none"
-                            onMouseDown={(e) => {
-                              drag.dragHandleProps?.onMouseDown?.(e);
-                              setPressingHandle(true);
-                            }}
-                            onTouchStart={(e) => {
-                              drag.dragHandleProps?.onTouchStart?.(e);
-                              setPressingHandle(true);
-                              try { navigator.vibrate?.(40); } catch (_) {}
-                            }}
-                            onTouchEnd={() => setPressingHandle(false)}
-                            onMouseUp={() => setPressingHandle(false)}
-                            onTouchCancel={() => setPressingHandle(false)}
-                          >
-                            <GripVertical size={16} />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <ExerciseCard
-                              ex={ex}
-                              exSets={sets[ex.id] || []}
-                              isOpen={!pressingHandle && !isReordering && !!expanded[ex.id]}
-                              prevSets={getPrevSets(ex.name)}
-                              onToggle={() => !isReordering && setExpanded((p) => ({ ...p, [ex.id]: !p[ex.id] }))}
-                              onUpdateSet={updateSet}
-                              onCompleteSet={completeSet}
-                              onUncompleteSet={uncompleteSet}
-                              onAddSet={addSet}
-                              onNotesChange={updateExerciseNotes}
-                              onRepRangeChange={updateRepRange}
-                              onRepModeChange={updateRepMode}
-                              onDeleteSet={deleteSet}
-                              onSwapExercise={swapExercise}
-                              onImageChange={updateExerciseImage}
-                              sessionType={day?.session_type}
-                              divider={false}
-                              userId={user?.email}
-                            />
-                          </div>
-                        </div>
+                        <ExerciseCard
+                          ex={ex}
+                          exSets={sets[ex.id] || []}
+                          isOpen={!isReordering && !!expanded[ex.id]}
+                          prevSets={getPrevSets(ex.name)}
+                          onToggle={() => !isReordering && setExpanded((p) => ({ ...p, [ex.id]: !p[ex.id] }))}
+                          onUpdateSet={updateSet}
+                          onCompleteSet={completeSet}
+                          onUncompleteSet={uncompleteSet}
+                          onAddSet={addSet}
+                          onNotesChange={updateExerciseNotes}
+                          onRepRangeChange={updateRepRange}
+                          onRepModeChange={updateRepMode}
+                          onDeleteSet={deleteSet}
+                          onSwapExercise={swapExercise}
+                          onImageChange={updateExerciseImage}
+                          sessionType={day?.session_type}
+                          divider={false}
+                          userId={user?.email}
+                        />
                       </div>
                     )}
                   </Draggable>
