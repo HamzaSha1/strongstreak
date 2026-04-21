@@ -27,6 +27,7 @@ export default function WorkoutExerciseEditor({ exercises, sessionType, onClose,
   const [viewingImageEx, setViewingImageEx] = useState(null);
   const [uploadingId, setUploadingId] = useState(null);
   const [changingPhoto, setChangingPhoto] = useState(false);
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState(null);
 
   const muscleGroups = SESSION_MUSCLE_GROUPS[sessionType] ||
     SESSION_MUSCLE_GROUPS['Custom'] || [];
@@ -173,12 +174,29 @@ export default function WorkoutExerciseEditor({ exercises, sessionType, onClose,
                               </p>
                             </div>
 
-                            <button
-                              onClick={() => onRemove(ex.id)}
-                              className="p-2 rounded-lg bg-destructive/10 text-destructive flex items-center justify-center shrink-0"
-                            >
-                              <Trash2 size={13} />
-                            </button>
+                            {confirmingDeleteId === ex.id ? (
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                <button
+                                  onClick={() => setConfirmingDeleteId(null)}
+                                  className="px-2.5 py-1 rounded-lg bg-secondary text-muted-foreground text-xs font-semibold"
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  onClick={() => { onRemove(ex.id); setConfirmingDeleteId(null); }}
+                                  className="px-2.5 py-1 rounded-lg bg-destructive text-white text-xs font-semibold"
+                                >
+                                  Remove
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => setConfirmingDeleteId(ex.id)}
+                                className="p-2 rounded-lg bg-destructive/10 text-destructive flex items-center justify-center shrink-0"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            )}
                           </div>
 
                           {/* Row 2: reorder + secondary actions */}
