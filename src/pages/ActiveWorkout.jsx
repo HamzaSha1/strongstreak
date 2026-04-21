@@ -49,20 +49,36 @@ function makeLongPressDragSensor(callbacksRef) {
         if (pressStart) { callbacksRef.current?.onPressCancel?.(); pressStart = null; }
       };
 
-      // Shared lift logic — called after React has had time to collapse the card
-      const liftAfterCollapse = (preDrag, sx, sy, isTouchDrag) => {
+      // Shared lift logic — called after React has had time to collapse the card.
+      // Uses snapLift so the card snaps between list positions (like iOS native
+      // list reorder). As the finger crosses a ~44px threshold the card swaps
+      // with its neighbour and other cards animate out of the way.
+      const SNAP_THRESHOLD = 44; // ≈ collapsed card height
+      const liftAfterCollapse = (preDrag, anchorY, isTouchDrag) => {
         if (!preDrag) return; // was aborted during rAF wait
         preDragPending = null;
 
-        const drag = preDrag.fluidLift({ x: sx, y: sy });
+        const drag = preDrag.snapLift();
         activeDrag = drag;
+        let currentAnchor = anchorY;
+
+        const handleMove = (y) => {
+          if (!drag.isActive()) return;
+          const delta = y - currentAnchor;
+          if (delta > SNAP_THRESHOLD) {
+            drag.moveDown();
+            currentAnchor = y;
+          } else if (delta < -SNAP_THRESHOLD) {
+            drag.moveUp();
+            currentAnchor = y;
+          }
+        };
 
         if (isTouchDrag) {
           const onMove = (e) => {
-            if (!drag.isActive()) return;
             if (e.touches.length !== 1) return;
             e.preventDefault();
-            drag.move({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+            handleMove(e.touches[0].clientY);
           };
           const onEnd = () => {
             if (drag.isActive()) drag.drop();
@@ -75,7 +91,7 @@ function makeLongPressDragSensor(callbacksRef) {
           document.addEventListener('touchend', onEnd);
           document.addEventListener('touchcancel', onEnd);
         } else {
-          const onMove = (e) => { if (drag.isActive()) drag.move({ x: e.clientX, y: e.clientY }); };
+          const onMove = (e) => handleMove(e.clientY);
           const onEnd = () => {
             if (drag.isActive()) drag.drop();
             activeDrag = null;
@@ -112,14 +128,14 @@ function makeLongPressDragSensor(callbacksRef) {
           try { navigator.vibrate?.([40, 20, 40]); } catch (_) {}
           // Tell React to collapse this card NOW, before we lift
           callbacksRef.current?.onPressActivate?.(pressStart.draggableId);
-          const { x: sx, y: sy } = pressStart;
+          const { y: sy } = pressStart;
           pressStart = null;
           preDragPending = preDrag;
 
-          // Wait 2 frames so React can re-render the collapsed card,
-          // then capture the smaller dimensions for the drag ghost
+          // Wait 2 frames so React re-renders the card in collapsed state,
+          // then snap-lift it (snapLift is position-based, not pixel-position)
           requestAnimationFrame(() => requestAnimationFrame(() => {
-            liftAfterCollapse(preDragPending, sx, sy, true);
+            liftAfterCollapse(preDragPending, sy, true);
           }));
         }, LONG_PRESS_MS);
       };
@@ -150,12 +166,12 @@ function makeLongPressDragSensor(callbacksRef) {
           const preDrag = api.tryGetLock(pressStart.draggableId);
           if (!preDrag) { cancel(); return; }
           callbacksRef.current?.onPressActivate?.(pressStart.draggableId);
-          const { x: sx, y: sy } = pressStart;
+          const { y: sy } = pressStart;
           pressStart = null;
           preDragPending = preDrag;
 
           requestAnimationFrame(() => requestAnimationFrame(() => {
-            liftAfterCollapse(preDragPending, sx, sy, false);
+            liftAfterCollapse(preDragPending, sy, false);
           }));
         }, LONG_PRESS_MS);
       };
