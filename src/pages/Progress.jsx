@@ -72,40 +72,47 @@ export default function Progress() {
   const weightChange = currentWeight && previousWeight ? (currentWeight - previousWeight).toFixed(1) : null;
 
   return (
-    <div className="pb-24 px-4" style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top))' }}>
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="font-heading font-bold text-2xl mb-1">Progress</h1>
-        <p className="text-muted-foreground text-sm">Track your weight journey</p>
+    <div className="flex flex-col h-full" style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top))' }}>
+
+      {/* ── Static top section ── */}
+      <div className="px-4 shrink-0">
+        {/* Header */}
+        <div className="mb-6">
+          <h1 className="font-heading font-bold text-2xl mb-1">Progress</h1>
+          <p className="text-muted-foreground text-sm">Track your weight journey</p>
+        </div>
+
+        {/* Current weight card */}
+        {currentWeight && (
+          <div className="bg-card border border-border rounded-2xl p-4 mb-6">
+            <div className="flex items-end justify-between">
+              <div>
+                <p className="text-muted-foreground text-xs uppercase tracking-wide">Current Weight</p>
+                <p className="font-heading font-bold text-3xl text-primary">{currentWeight} kg</p>
+              </div>
+              {weightChange !== null && (
+                <div className={cn('flex items-center gap-1', weightChange > 0 ? 'text-destructive' : 'text-green-500')}>
+                  <TrendingUp size={16} style={{ transform: weightChange < 0 ? 'rotate(180deg)' : 'none' }} />
+                  <span className="text-sm font-semibold">{Math.abs(weightChange)} kg</span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Log Weight button */}
+        {!showForm && (
+          <Button onClick={() => setShowForm(true)} className="w-full gap-2 mb-4">
+            <Plus size={16} /> Log Weight
+          </Button>
+        )}
       </div>
 
-      {/* Current weight card */}
-      {currentWeight && (
-        <div className="bg-card border border-border rounded-2xl p-4 mb-6">
-          <div className="flex items-end justify-between">
-            <div>
-              <p className="text-muted-foreground text-xs uppercase tracking-wide">Current Weight</p>
-              <p className="font-heading font-bold text-3xl text-primary">{currentWeight} kg</p>
-            </div>
-            {weightChange !== null && (
-              <div className={cn('flex items-center gap-1', weightChange > 0 ? 'text-destructive' : 'text-green-500')}>
-                <TrendingUp size={16} style={{ transform: weightChange < 0 ? 'rotate(180deg)' : 'none' }} />
-                <span className="text-sm font-semibold">{Math.abs(weightChange)} kg</span>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      {/* ── Scrollable bottom section ── */}
+      <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-24">
 
-      {/* Add weight button/form */}
-      {!showForm ? (
-        <Button
-          onClick={() => setShowForm(true)}
-          className="w-full gap-2 mb-6"
-        >
-          <Plus size={16} /> Log Weight
-        </Button>
-      ) : (
+        {/* Add weight form (inside scroll area so keyboard doesn't clip it) */}
+        {showForm && (
         <div className="bg-card border border-border rounded-2xl p-4 mb-6">
           <input
             type="date"
@@ -269,6 +276,8 @@ export default function Progress() {
           </div>
         </div>
       )}
+
+      </div>{/* end scrollable section */}
     </div>
   );
 }
