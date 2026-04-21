@@ -129,9 +129,23 @@ function makeLongPressDragSensor(callbacksRef) {
           pressStart = null;
           preDragPending = preDrag;
 
+          // Safety: if the finger lifts during the rAF collapse window, abort
+          const earlyTouchEnd = () => {
+            if (preDragPending) {
+              try { preDragPending.abort(); } catch (_) {}
+              preDragPending = null;
+              callbacksRef.current?.onPressCancel?.();
+            }
+          };
+          document.addEventListener('touchend', earlyTouchEnd, { once: true });
+          document.addEventListener('touchcancel', earlyTouchEnd, { once: true });
+
           // Wait 2 frames so React re-renders the card in collapsed state,
           // then read the collapsed card's center and fluid-lift from there
           requestAnimationFrame(() => requestAnimationFrame(() => {
+            // Clean up the early-abort listeners before lifting
+            document.removeEventListener('touchend', earlyTouchEnd);
+            document.removeEventListener('touchcancel', earlyTouchEnd);
             liftAfterCollapse(preDragPending, liftId, true);
           }));
         }, LONG_PRESS_MS);
@@ -167,7 +181,17 @@ function makeLongPressDragSensor(callbacksRef) {
           pressStart = null;
           preDragPending = preDrag;
 
+          const earlyMouseUp = () => {
+            if (preDragPending) {
+              try { preDragPending.abort(); } catch (_) {}
+              preDragPending = null;
+              callbacksRef.current?.onPressCancel?.();
+            }
+          };
+          document.addEventListener('mouseup', earlyMouseUp, { once: true });
+
           requestAnimationFrame(() => requestAnimationFrame(() => {
+            document.removeEventListener('mouseup', earlyMouseUp);
             liftAfterCollapse(preDragPending, liftId, false);
           }));
         }, LONG_PRESS_MS);
@@ -1308,7 +1332,7 @@ export default function ActiveWorkout() {
         </div>
       ) : activeExercises.length > 1 && (
         <p className="text-center text-xs text-muted-foreground/50 mt-3 select-none">
-          Hold an exercise name for 2s to reorder
+          Hold an exercise to reorder
         </p>
       )}
 
