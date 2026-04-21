@@ -1325,6 +1325,14 @@ export default function ActiveWorkout() {
                         {...drag.draggableProps}
                         {...drag.dragHandleProps}
                         tabIndex={-1}
+                        // Merge styles: draggableProps.style carries the displacement
+                        // transform; dragHandleProps.style carries userSelect/tap styles.
+                        // Spreading dragHandleProps last normally overwrites the transform,
+                        // so we merge both explicitly to keep displacement working.
+                        style={{
+                          ...(drag.draggableProps?.style ?? {}),
+                          ...(drag.dragHandleProps?.style ?? {}),
+                        }}
                         className={cn(
                           'bg-card border border-border rounded-2xl overflow-hidden transition-shadow',
                           snapshot.isDragging && 'shadow-2xl border-primary/50 scale-[1.02]',
