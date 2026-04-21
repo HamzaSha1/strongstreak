@@ -30,10 +30,12 @@ export default function ExercisePicker({ sessionType, addedNames, onAdd, onCusto
   const handleAddBuiltIn = async (ex) => {
     await ensureExercise({ display_name: ex.name, exercise_type: 'strength', muscle_group: selectedGroup || '' });
     onAdd({ ...ex, muscle: selectedGroup });
+    setSearchQuery('');
   };
 
   const handleAddLibrary = (libEx) => {
     onAdd({ name: libEx.display_name, exercise_type: libEx.exercise_type || 'strength', muscle: libEx.muscle_group });
+    setSearchQuery('');
   };
 
   const handleCustomAdd = async () => {
