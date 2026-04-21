@@ -133,106 +133,115 @@ export default function WorkoutExerciseEditor({ exercises, sessionType, onClose,
                           snapshot.isDragging && "shadow-2xl z-50 bg-card scale-[1.02] border border-primary/50 relative"
                         )}
                       >
-                        <div className="flex items-center gap-2 bg-secondary/50 rounded-2xl px-3 py-2.5">
-                          {/* Drag handle — touch-none prevents mobile scroll conflicts */}
-                          <div
-                            {...drag.dragHandleProps}
-                            className="text-muted-foreground touch-none cursor-grab active:cursor-grabbing shrink-0 p-1"
-                          >
-                            <GripVertical size={16} />
+                        <div className="bg-secondary/50 rounded-2xl px-3 py-2.5 flex flex-col gap-2">
+                          {/* Row 1: drag handle + photo + full name + delete */}
+                          <div className="flex items-center gap-2">
+                            <div
+                              {...drag.dragHandleProps}
+                              className="text-muted-foreground touch-none cursor-grab active:cursor-grabbing shrink-0 p-1"
+                            >
+                              <GripVertical size={16} />
+                            </div>
+
+                            {/* Photo thumbnail */}
+                            <button
+                              onClick={() => { setViewingImageEx(ex); setChangingPhoto(false); }}
+                              className="relative shrink-0 w-9 h-9 rounded-xl overflow-hidden bg-secondary border border-border flex items-center justify-center"
+                            >
+                              {ex.image_url ? (
+                                <img src={ex.image_url} alt={ex.name} className="w-full h-full object-cover" />
+                              ) : (
+                                <Camera size={14} className="text-muted-foreground" />
+                              )}
+                              {uploadingId === ex.id && (
+                                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                </div>
+                              )}
+                            </button>
+
+                            {/* Name — now has all the space it needs */}
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold text-sm leading-tight">{ex.name}</p>
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                {ex.exercise_type === 'cardio'
+                                  ? ex.cardio_metric || 'cardio'
+                                  : `${ex.target_sets} × ${ex.target_reps}`}
+                              </p>
+                            </div>
+
+                            <button
+                              onClick={() => onRemove(ex.id)}
+                              className="p-2 rounded-lg bg-destructive/10 text-destructive flex items-center justify-center shrink-0"
+                            >
+                              <Trash2 size={13} />
+                            </button>
                           </div>
 
-                          {/* Photo thumbnail */}
-                          <button
-                            onClick={() => { setViewingImageEx(ex); setChangingPhoto(false); }}
-                            className="relative shrink-0 w-10 h-10 rounded-xl overflow-hidden bg-secondary border border-border flex items-center justify-center"
-                          >
-                            {ex.image_url ? (
-                              <img src={ex.image_url} alt={ex.name} className="w-full h-full object-cover" />
-                            ) : (
-                              <Camera size={16} className="text-muted-foreground" />
-                            )}
-                            {uploadingId === ex.id && (
-                              <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                              </div>
-                            )}
-                          </button>
-
-                          <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-sm truncate">{ex.name}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {ex.exercise_type === 'cardio'
-                                ? ex.cardio_metric || 'cardio'
-                                : `${ex.target_sets} × ${ex.target_reps}`}
-                            </p>
-                          </div>
-
-                          <div className="flex items-center gap-1">
-                            {/* Arrow buttons — manual reorder fallback */}
+                          {/* Row 2: reorder + secondary actions */}
+                          <div className="flex items-center gap-1.5 pl-7">
                             <button
                               onClick={() => idx > 0 && onReorder(idx, idx - 1)}
                               disabled={idx === 0}
-                              className="p-1.5 rounded-lg bg-secondary text-muted-foreground disabled:opacity-30 hover:bg-secondary/80 touch-target-44"
+                              className="p-1.5 rounded-lg bg-secondary text-muted-foreground disabled:opacity-30"
                               title="Move up"
                             >
-                              <ArrowUp size={13} />
+                              <ArrowUp size={12} />
                             </button>
                             <button
                               onClick={() => idx < exercises.length - 1 && onReorder(idx, idx + 1)}
                               disabled={idx === exercises.length - 1}
-                              className="p-1.5 rounded-lg bg-secondary text-muted-foreground disabled:opacity-30 hover:bg-secondary/80 touch-target-44"
+                              className="p-1.5 rounded-lg bg-secondary text-muted-foreground disabled:opacity-30"
                               title="Move down"
                             >
-                              <ArrowDown size={13} />
+                              <ArrowDown size={12} />
                             </button>
 
                             {ex.exercise_type === 'strength' && (
                               <>
-                                {ex.dropset_count > 0 ? (
+                                <button
+                                  onClick={() => onUpdateExercise && onUpdateExercise(ex.id, { dropset_count: ex.dropset_count > 0 ? 0 : 1 })}
+                                  className={cn(
+                                    'px-2.5 py-1 rounded-lg text-[10px] font-bold whitespace-nowrap transition-colors',
+                                    ex.dropset_count > 0
+                                      ? 'bg-primary text-primary-foreground'
+                                      : 'bg-secondary text-muted-foreground'
+                                  )}
+                                >
+                                  Drop Set
+                                </button>
+                                {ex.dropset_count > 0 && (
                                   <div className="flex items-center gap-1">
                                     <button
                                       onClick={() => onUpdateExercise && onUpdateExercise(ex.id, { dropset_count: Math.max(0, (ex.dropset_count || 1) - 1) })}
-                                      className="w-7 h-7 rounded-lg bg-primary/20 text-primary font-bold text-base flex items-center justify-center"
+                                      className="w-6 h-6 rounded-lg bg-primary/20 text-primary font-bold text-sm flex items-center justify-center"
                                     >
                                       −
                                     </button>
-                                    <span className="text-xs font-bold text-primary min-w-[28px] text-center">×{ex.dropset_count}</span>
+                                    <span className="text-xs font-bold text-primary min-w-[22px] text-center">×{ex.dropset_count}</span>
                                     <button
                                       onClick={() => onUpdateExercise && onUpdateExercise(ex.id, { dropset_count: (ex.dropset_count || 1) + 1 })}
-                                      className="w-7 h-7 rounded-lg bg-primary/20 text-primary font-bold text-base flex items-center justify-center"
+                                      className="w-6 h-6 rounded-lg bg-primary/20 text-primary font-bold text-sm flex items-center justify-center"
                                     >
                                       +
                                     </button>
                                   </div>
-                                ) : null}
-                                <button
-                                  onClick={() => onUpdateExercise && onUpdateExercise(ex.id, { dropset_count: ex.dropset_count > 0 ? 0 : 1 })}
-                                  className={cn(
-                                    'px-2 py-1.5 rounded-lg text-[10px] font-bold whitespace-nowrap touch-target-44 transition-colors',
-                                    ex.dropset_count > 0
-                                      ? 'bg-primary text-primary-foreground'
-                                      : 'bg-secondary text-muted-foreground hover:bg-secondary/80'
-                                  )}
-                                  title="Toggle drop set"
-                                >
-                                  DROP SET
-                                </button>
+                                )}
                                 <button
                                   onClick={() => setEditingRestId(editingRestId === ex.id ? null : ex.id)}
-                                  className="p-2 rounded-lg bg-secondary flex items-center justify-center hover:bg-secondary/80 touch-target-44"
+                                  className={cn(
+                                    'flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold transition-colors',
+                                    editingRestId === ex.id
+                                      ? 'bg-primary/20 text-primary'
+                                      : 'bg-secondary text-muted-foreground'
+                                  )}
                                   title="Edit rest time"
                                 >
-                                  <Clock size={13} />
+                                  <Clock size={11} />
+                                  {ex.rest_seconds ? `${ex.rest_seconds}s` : 'Rest'}
                                 </button>
                               </>
                             )}
-                            <button
-                              onClick={() => onRemove(ex.id)}
-                              className="p-2 rounded-lg bg-destructive/10 text-destructive flex items-center justify-center touch-target-44"
-                            >
-                              <Trash2 size={13} />
-                            </button>
                           </div>
                         </div>
 
