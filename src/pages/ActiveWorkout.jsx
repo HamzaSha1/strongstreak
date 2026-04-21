@@ -1593,7 +1593,7 @@ export default function ActiveWorkout() {
   return (
     <div style={{ paddingBottom: 'calc(7rem + env(safe-area-inset-bottom))' }}>
       {/* Header — padded to sit below the iOS status bar */}
-      <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border px-4 pb-3" style={{ paddingTop: 'calc(0.75rem + env(safe-area-inset-top))' }}>
+      <div className="sticky top-0 z-10 bg-background border-b border-border px-4 pb-3" style={{ paddingTop: 'calc(0.75rem + env(safe-area-inset-top))' }}>
         <div className="flex items-center justify-between mb-2">
           <button onClick={() => setShowDiscardConfirm(true)} className="text-muted-foreground">
             <ArrowLeft size={20} />
@@ -1879,7 +1879,7 @@ export default function ActiveWorkout() {
         </div>
       )}
 
-      <div className="fixed bottom-0 left-0 right-0 flex gap-2 px-4 pt-3 bg-background/90 backdrop-blur-md border-t border-border" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
+      <div className="fixed bottom-0 left-0 right-0 flex gap-2 px-4 pt-3 bg-background border-t border-border" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
         <Button
           variant="outline"
           className="border-destructive text-destructive hover:bg-destructive/10 font-heading font-bold py-5 px-4 touch-target-44 shrink-0"

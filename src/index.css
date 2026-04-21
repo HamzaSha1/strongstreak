@@ -67,6 +67,8 @@
     overflow-x: hidden;
     overscroll-behavior: none;
     height: 100%;
+    /* Fill any area iOS exposes when the keyboard opens — prevents white flash */
+    background-color: hsl(228 46% 13%);
   }
   body {
     @apply bg-background text-foreground font-body;
@@ -77,12 +79,15 @@
     -webkit-text-size-adjust: 100%;
     position: fixed;
     width: 100%;
+    /* Ensure body background also covers any exposed area */
+    background-color: hsl(228 46% 13%);
   }
   #root {
     height: 100dvh;
     overflow-y: auto;
     overflow-x: hidden;
     overscroll-behavior: none;
+    background-color: hsl(228 46% 13%);
   }
 
   /* Prevent iOS zoom on input focus — font-size must be >= 16px */
