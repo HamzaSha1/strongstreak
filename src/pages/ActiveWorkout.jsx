@@ -38,46 +38,26 @@ function makeLongPressDragSensor(callbacksRef) {
   return function useLongPressDragSensor(api) {
     useEffect(() => {
       let pressTimer = null;
-      let pressStart = null; // { x, y, draggableId }
+      let pressStart = null;     // { x, y, draggableId }
+      let preDragPending = null; // lock held while waiting for rAF collapse
       let activeDrag = null;
 
       const cancel = () => {
         if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+        // Abort lock if we got it but haven't lifted yet
+        if (preDragPending) { try { preDragPending.abort(); } catch (_) {} preDragPending = null; }
         if (pressStart) { callbacksRef.current?.onPressCancel?.(); pressStart = null; }
       };
 
-      // ── Touch ────────────────────────────────────────────────────────────
-      const onTouchStart = (event) => {
-        if (pressTimer || activeDrag) return;
-        if (event.touches.length !== 1) return;
-        // Don't intercept taps on interactive elements
-        if (event.target.closest('button, input, textarea, select, a')) return;
-        // Only start from the designated drag-handle area (exercise card header)
-        if (!event.target.closest('[data-drag-handle]')) return;
-        const el = event.target.closest('[data-rfd-draggable-id]');
-        if (!el) return;
-        const draggableId = el.getAttribute('data-rfd-draggable-id');
-        if (!draggableId) return;
+      // Shared lift logic — called after React has had time to collapse the card
+      const liftAfterCollapse = (preDrag, sx, sy, isTouchDrag) => {
+        if (!preDrag) return; // was aborted during rAF wait
+        preDragPending = null;
 
-        const { clientX: x, clientY: y } = event.touches[0];
-        pressStart = { x, y, draggableId };
-        callbacksRef.current?.onPressStart?.(draggableId);
-        try { navigator.vibrate?.(15); } catch (_) {} // subtle buzz: "timer started"
+        const drag = preDrag.fluidLift({ x: sx, y: sy });
+        activeDrag = drag;
 
-        pressTimer = setTimeout(() => {
-          pressTimer = null;
-          if (!pressStart) return;
-          const preDrag = api.tryGetLock(pressStart.draggableId);
-          if (!preDrag) { cancel(); return; }
-
-          try { navigator.vibrate?.([40, 20, 40]); } catch (_) {} // double buzz: "drag active"
-          callbacksRef.current?.onPressActivate?.();
-          const { x: sx, y: sy } = pressStart;
-          pressStart = null;
-
-          const drag = preDrag.fluidLift({ x: sx, y: sy });
-          activeDrag = drag;
-
+        if (isTouchDrag) {
           const onMove = (e) => {
             if (!drag.isActive()) return;
             if (e.touches.length !== 1) return;
@@ -94,6 +74,53 @@ function makeLongPressDragSensor(callbacksRef) {
           document.addEventListener('touchmove', onMove, { passive: false });
           document.addEventListener('touchend', onEnd);
           document.addEventListener('touchcancel', onEnd);
+        } else {
+          const onMove = (e) => { if (drag.isActive()) drag.move({ x: e.clientX, y: e.clientY }); };
+          const onEnd = () => {
+            if (drag.isActive()) drag.drop();
+            activeDrag = null;
+            document.removeEventListener('mousemove', onMove);
+            document.removeEventListener('mouseup', onEnd);
+          };
+          document.addEventListener('mousemove', onMove);
+          document.addEventListener('mouseup', onEnd);
+        }
+      };
+
+      // ── Touch ────────────────────────────────────────────────────────────
+      const onTouchStart = (event) => {
+        if (pressTimer || activeDrag) return;
+        if (event.touches.length !== 1) return;
+        if (event.target.closest('button, input, textarea, select, a')) return;
+        if (!event.target.closest('[data-drag-handle]')) return;
+        const el = event.target.closest('[data-rfd-draggable-id]');
+        if (!el) return;
+        const draggableId = el.getAttribute('data-rfd-draggable-id');
+        if (!draggableId) return;
+
+        const { clientX: x, clientY: y } = event.touches[0];
+        pressStart = { x, y, draggableId };
+        callbacksRef.current?.onPressStart?.(draggableId);
+        try { navigator.vibrate?.(15); } catch (_) {}
+
+        pressTimer = setTimeout(() => {
+          pressTimer = null;
+          if (!pressStart) return;
+          const preDrag = api.tryGetLock(pressStart.draggableId);
+          if (!preDrag) { cancel(); return; }
+
+          try { navigator.vibrate?.([40, 20, 40]); } catch (_) {}
+          // Tell React to collapse this card NOW, before we lift
+          callbacksRef.current?.onPressActivate?.(pressStart.draggableId);
+          const { x: sx, y: sy } = pressStart;
+          pressStart = null;
+          preDragPending = preDrag;
+
+          // Wait 2 frames so React can re-render the collapsed card,
+          // then capture the smaller dimensions for the drag ghost
+          requestAnimationFrame(() => requestAnimationFrame(() => {
+            liftAfterCollapse(preDragPending, sx, sy, true);
+          }));
         }, LONG_PRESS_MS);
       };
 
@@ -122,22 +149,14 @@ function makeLongPressDragSensor(callbacksRef) {
           if (!pressStart) return;
           const preDrag = api.tryGetLock(pressStart.draggableId);
           if (!preDrag) { cancel(); return; }
-          callbacksRef.current?.onPressActivate?.();
+          callbacksRef.current?.onPressActivate?.(pressStart.draggableId);
           const { x: sx, y: sy } = pressStart;
           pressStart = null;
+          preDragPending = preDrag;
 
-          const drag = preDrag.fluidLift({ x: sx, y: sy });
-          activeDrag = drag;
-
-          const onMove = (e) => { if (drag.isActive()) drag.move({ x: e.clientX, y: e.clientY }); };
-          const onEnd = () => {
-            if (drag.isActive()) drag.drop();
-            activeDrag = null;
-            document.removeEventListener('mousemove', onMove);
-            document.removeEventListener('mouseup', onEnd);
-          };
-          document.addEventListener('mousemove', onMove);
-          document.addEventListener('mouseup', onEnd);
+          requestAnimationFrame(() => requestAnimationFrame(() => {
+            liftAfterCollapse(preDragPending, sx, sy, false);
+          }));
         }, LONG_PRESS_MS);
       };
 
@@ -660,11 +679,13 @@ export default function ActiveWorkout() {
   const [notification, setNotification] = useState(null);
   const [isReordering, setIsReordering] = useState(false);
   const [longPressId, setLongPressId] = useState(null);
+  const [collapsingId, setCollapsingId] = useState(null); // card collapsing before lift
   const longPressCallbacksRef = useRef(null);
   longPressCallbacksRef.current = {
     onPressStart: (id) => setLongPressId(id),
-    onPressActivate: () => setLongPressId(null),
-    onPressCancel: () => setLongPressId(null),
+    // onPressActivate fires just before fluidLift — collapse the card first
+    onPressActivate: (id) => { setLongPressId(null); setCollapsingId(id); },
+    onPressCancel: () => { setLongPressId(null); setCollapsingId(null); },
   };
   const sensors = useMemo(() => [makeLongPressDragSensor(longPressCallbacksRef)], []);
   const [summaryImageUrl, setSummaryImageUrl] = useState(null);
@@ -971,6 +992,7 @@ export default function ActiveWorkout() {
 
   const handleDragEnd = (result) => {
     setIsReordering(false);
+    setCollapsingId(null);
     if (!result.destination) return;
     const orderedExercises = exerciseOrder.length
       ? exerciseOrder.map((id) => activeExercises.find((e) => e.id === id)).filter(Boolean)
@@ -1313,7 +1335,7 @@ export default function ActiveWorkout() {
                         <ExerciseCard
                           ex={ex}
                           exSets={sets[ex.id] || []}
-                          isCollapsed={isReordering || snapshot.isDragging}
+                          isCollapsed={isReordering || snapshot.isDragging || collapsingId === ex.id}
                           isOpen={!isReordering && !snapshot.isDragging && !!expanded[ex.id]}
                           prevSets={getPrevSets(ex.name)}
                           onToggle={() => !isReordering && setExpanded((p) => ({ ...p, [ex.id]: !p[ex.id] }))}
