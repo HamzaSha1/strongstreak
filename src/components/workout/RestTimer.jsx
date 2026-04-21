@@ -6,6 +6,7 @@ import FlappyBirdGame from './FlappyBirdGame';
 import BoxBreathingExercise from './BoxBreathingExercise';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRestGame } from '@/hooks/useRestGame';
+import { playBell, requestNotificationPermission, showTimerNotification } from '@/lib/bellSound';
 
 const RADIUS = 45;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
@@ -27,6 +28,11 @@ export default function RestTimer({ seconds, total, onDone, onSkip, isMinimized,
     return () => clearTimeout(t);
   }, [notification]);
 
+  // Ask for notification permission as soon as the timer appears
+  useEffect(() => {
+    requestNotificationPermission();
+  }, []);
+
   const adjustTime = (delta) => {
     const newEnd = endTimeRef.current + delta * 1000;
     const minEnd = Date.now() + 1000; // at least 1 second left
@@ -42,6 +48,10 @@ export default function RestTimer({ seconds, total, onDone, onSkip, isMinimized,
       if (left <= 0) {
         clearInterval(interval);
         setRemaining(0);
+        // Fire bell sound + system notification, then call onDone
+        playBell();
+        showTimerNotification();
+        try { navigator.vibrate?.([200, 80, 200, 80, 200]); } catch (_) {}
         onDone();
       } else {
         setRemaining(left);
