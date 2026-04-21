@@ -81,6 +81,7 @@ export default function Workouts() {
           split_name: newSplitName,
           day_of_week: day.day_of_week,
           session_type: day.session_type,
+          custom_name: day.custom_name || '',
           order_index: day.order_index,
         });
         const dayExercises = exercises.filter((e) => e.split_day_id === day.id);
@@ -297,7 +298,7 @@ export default function Workouts() {
                       variant="outline"
                       className={cn('text-xs border', SESSION_COLORS[day.session_type] || SESSION_COLORS.Custom)}
                     >
-                      {day.session_type || 'Unset'}
+                      {day.custom_name || day.session_type || 'Unset'}
                     </Badge>
                   </div>
 

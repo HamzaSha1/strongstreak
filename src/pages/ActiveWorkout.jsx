@@ -650,7 +650,7 @@ export default function ActiveWorkout() {
         const log = await base44.entities.WorkoutLog.create({
           user_id: user.email,
           split_day_id: dayId,
-          split_day_name: `${day.day_of_week} — ${day.session_type}`,
+          split_day_name: `${day.day_of_week} — ${day.custom_name || day.session_type}`,
           started_at: startTime.current.toISOString(),
           is_rest_day: false,
         });
@@ -1074,7 +1074,7 @@ export default function ActiveWorkout() {
             <ArrowLeft size={20} />
           </button>
           <div className="text-center">
-            <p className="font-heading font-semibold text-sm">{day?.day_of_week} — {day?.session_type}</p>
+            <p className="font-heading font-semibold text-sm">{day?.day_of_week} — {day?.custom_name || day?.session_type}</p>
             <p className="text-primary font-mono text-lg font-bold">{formatTime(elapsed)}</p>
           </div>
           <div className="flex items-center gap-2">
