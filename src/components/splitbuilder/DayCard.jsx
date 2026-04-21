@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState } from 'react';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, Pencil, Check as CheckIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SESSION_TYPES } from './exerciseData';
 import ExercisePicker from './ExercisePicker';
@@ -9,7 +9,19 @@ export default function DayCard({ day, dayIndex, onUpdate }) {
   const isRest = day.session_type === 'Rest';
   const hasSessionType = !!day.session_type && day.session_type !== '';
   const [lastAddedIdx, setLastAddedIdx] = useState(null);
+  const [editingName, setEditingName] = useState(false);
+  const [nameValue, setNameValue] = useState(day.custom_name || '');
   const newExerciseRef = useRef(null);
+  const nameInputRef = useRef(null);
+
+  useEffect(() => {
+    if (editingName && nameInputRef.current) nameInputRef.current.focus();
+  }, [editingName]);
+
+  const commitName = () => {
+    setEditingName(false);
+    onUpdate({ custom_name: nameValue.trim() || undefined });
+  };
 
   useEffect(() => {
     if (lastAddedIdx !== null && newExerciseRef.current) {
@@ -77,18 +89,18 @@ export default function DayCard({ day, dayIndex, onUpdate }) {
         className="w-full flex items-center justify-between px-4 py-3.5"
         onClick={() => onUpdate({ open: !day.open })}
       >
-        <div className="flex items-center gap-2.5">
-          <span className="font-heading font-bold text-base">{day.day}</span>
+        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+          <span className="font-heading font-bold text-base shrink-0">{day.day}</span>
           {hasSessionType && (
             <span className={cn(
-              'text-xs px-2.5 py-1 rounded-full font-medium',
-              isRest ? 'bg-muted text-muted-foreground' : 'bg-primary text-primary-foreground'
+              'text-xs px-2.5 py-1 rounded-full font-medium shrink-0',
+              isRest ? 'bg-muted text-muted-foreground' : 'bg-primary/20 text-primary'
             )}>
-              {day.session_type}
+              {day.custom_name || day.session_type}
             </span>
           )}
           {day.exercises.length > 0 && (
-            <span className="text-xs text-muted-foreground">
+            <span className="text-xs text-muted-foreground shrink-0">
               {day.exercises.length} exercise{day.exercises.length !== 1 ? 's' : ''}
             </span>
           )}
@@ -102,6 +114,35 @@ export default function DayCard({ day, dayIndex, onUpdate }) {
       {/* Body */}
       {day.open && (
         <div className="border-t border-border px-4 pb-5 pt-4">
+          {/* Custom name */}
+          <p className="text-xs text-muted-foreground mb-2">Custom Name (optional)</p>
+          <div className="flex items-center gap-2 mb-4">
+            {editingName ? (
+              <>
+                <input
+                  ref={nameInputRef}
+                  value={nameValue}
+                  onChange={(e) => setNameValue(e.target.value)}
+                  onBlur={commitName}
+                  onKeyDown={(e) => { if (e.key === 'Enter') commitName(); }}
+                  placeholder={day.session_type || 'e.g. Full Body'}
+                  className="flex-1 h-9 rounded-xl bg-input border border-primary px-3 text-sm outline-none"
+                />
+                <button onClick={commitName} className="p-2 rounded-xl bg-primary text-primary-foreground">
+                  <CheckIcon size={14} />
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={(e) => { e.stopPropagation(); setEditingName(true); }}
+                className="flex items-center gap-2 h-9 px-3 rounded-xl border border-dashed border-border text-sm text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors w-full text-left"
+              >
+                <Pencil size={13} />
+                {nameValue || <span className="italic opacity-60">Tap to add custom name...</span>}
+              </button>
+            )}
+          </div>
+
           {/* Session type picker */}
           <p className="text-xs text-muted-foreground mb-2">Session Type</p>
           <div className="flex flex-wrap gap-2 mb-4">

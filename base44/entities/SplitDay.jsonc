@@ -34,6 +34,10 @@
         "Custom"
       ]
     },
+    "custom_name": {
+      "type": "string",
+      "description": "Optional custom label for this day (overrides session_type display)"
+    },
     "order_index": {
       "type": "number"
     }

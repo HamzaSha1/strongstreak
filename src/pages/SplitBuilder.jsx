@@ -82,6 +82,7 @@ export default function SplitBuilder() {
           return {
             day: dayName,
             session_type: dbDay.session_type || '',
+            custom_name: dbDay.custom_name || '',
             exercises: exs,
             open: false,
             order_index: dbDay.order_index ?? i,
@@ -118,6 +119,7 @@ export default function SplitBuilder() {
             split_name: split.name,
             day_of_week: d.day,
             session_type: effectiveType,
+            custom_name: d.custom_name || '',
             order_index: d.order_index,
           });
           for (let i = 0; i < d.exercises.length; i++) {
@@ -290,12 +292,12 @@ export default function SplitBuilder() {
         if (si !== activeTab) return s;
         const days = s.days.map((d) => ({ ...d }));
         // Move the session payload (session_type + exercises) from srcIdx to dstIdx
-        const sessions = days.map((d) => ({ session_type: d.session_type, exercises: d.exercises }));
+        const sessions = days.map((d) => ({ session_type: d.session_type, custom_name: d.custom_name, exercises: d.exercises }));
         const [moved] = sessions.splice(srcIdx, 1);
         sessions.splice(dstIdx, 0, moved);
         return {
           ...s,
-          days: days.map((d, i) => ({ ...d, session_type: sessions[i].session_type, exercises: sessions[i].exercises })),
+          days: days.map((d, i) => ({ ...d, session_type: sessions[i].session_type, custom_name: sessions[i].custom_name, exercises: sessions[i].exercises })),
         };
       })
     );
