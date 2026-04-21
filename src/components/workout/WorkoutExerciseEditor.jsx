@@ -1,9 +1,10 @@
-import { useState } from 'react';
-import { Trash2, Plus, Clock, GripVertical, ArrowUp, ArrowDown } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { Trash2, Plus, Clock, GripVertical, ArrowUp, ArrowDown, Camera, ImageIcon, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SESSION_MUSCLE_GROUPS, EXERCISES_BY_MUSCLE } from '@/components/splitbuilder/exerciseData';
 import { useExerciseLibrary } from '@/hooks/useExerciseLibrary';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+import { base44 } from '@/api/base44Client';
 
 // Parent usage: onReorder should do a splice-based move, not a swap:
 //   const handleReorder = (srcIndex, destIndex) => {
@@ -21,6 +22,11 @@ export default function WorkoutExerciseEditor({ exercises, sessionType, onClose,
   const [customName, setCustomName] = useState('');
   const [editingSupersetId, setEditingSupersetId] = useState(null);
   const [editingRestId, setEditingRestId] = useState(null);
+  const [viewingImageEx, setViewingImageEx] = useState(null);
+  const [uploadingId, setUploadingId] = useState(null);
+
+  const cameraInputRef = useRef(null);
+  const libraryInputRef = useRef(null);
 
   const muscleGroups = SESSION_MUSCLE_GROUPS[sessionType] ||
     SESSION_MUSCLE_GROUPS['Custom'] || [];
@@ -34,6 +40,19 @@ export default function WorkoutExerciseEditor({ exercises, sessionType, onClose,
     const src = result.source.index;
     const dst = result.destination.index;
     if (src !== dst) onReorder(src, dst);
+  };
+
+  const handleImageUpload = async (file, exId) => {
+    if (!file || !onUpdateExercise) return;
+    setUploadingId(exId);
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      onUpdateExercise(exId, { image_url: file_url });
+      // Keep viewer open but update its exercise reference with new image
+      setViewingImageEx((prev) => prev ? { ...prev, image_url: file_url } : null);
+    } finally {
+      setUploadingId(null);
+    }
   };
 
   const handleAdd = async (name, isCardio = false, muscleGroup = '') => {
@@ -64,6 +83,11 @@ export default function WorkoutExerciseEditor({ exercises, sessionType, onClose,
   const libraryMatches = isSearching
     ? libraryExercises.filter((e) => e.name.includes(searchLower) && !existingNames.has(e.display_name))
     : [];
+
+  // Sync viewingImageEx with latest exercise data so image_url updates are reflected
+  const viewingExLive = viewingImageEx
+    ? (exercises.find((e) => e.id === viewingImageEx.id) ?? viewingImageEx)
+    : null;
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col justify-end">
@@ -119,6 +143,23 @@ export default function WorkoutExerciseEditor({ exercises, sessionType, onClose,
                           >
                             <GripVertical size={16} />
                           </div>
+
+                          {/* Photo thumbnail */}
+                          <button
+                            onClick={() => setViewingImageEx(ex)}
+                            className="relative shrink-0 w-10 h-10 rounded-xl overflow-hidden bg-secondary border border-border flex items-center justify-center"
+                          >
+                            {ex.image_url ? (
+                              <img src={ex.image_url} alt={ex.name} className="w-full h-full object-cover" />
+                            ) : (
+                              <Camera size={16} className="text-muted-foreground" />
+                            )}
+                            {uploadingId === ex.id && (
+                              <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                              </div>
+                            )}
+                          </button>
 
                           <div className="flex-1 min-w-0">
                             <p className="font-semibold text-sm truncate">{ex.name}</p>
@@ -375,6 +416,88 @@ export default function WorkoutExerciseEditor({ exercises, sessionType, onClose,
           </Droppable>
         </DragDropContext>
       </div>
+
+      {/* Image viewer modal */}
+      {viewingExLive && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center p-6 bg-black/80">
+          <div className="relative w-full max-w-sm bg-card rounded-3xl overflow-hidden flex flex-col">
+            {/* Close */}
+            <button
+              onClick={() => setViewingImageEx(null)}
+              className="absolute top-3 right-3 z-10 p-2 rounded-full bg-black/50 text-white"
+            >
+              <X size={18} />
+            </button>
+
+            {/* Image area */}
+            <div className="relative w-full aspect-square bg-secondary flex items-center justify-center">
+              {viewingExLive.image_url ? (
+                <img
+                  src={viewingExLive.image_url}
+                  alt={viewingExLive.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                  <Camera size={40} />
+                  <span className="text-sm">No photo yet</span>
+                </div>
+              )}
+              {uploadingId === viewingExLive.id && (
+                <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                  <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                </div>
+              )}
+            </div>
+
+            {/* Exercise name */}
+            <div className="px-5 pt-4 pb-2">
+              <p className="font-heading font-bold text-base truncate">{viewingExLive.name}</p>
+              <p className="text-xs text-muted-foreground">
+                {viewingExLive.exercise_type === 'cardio'
+                  ? viewingExLive.cardio_metric || 'cardio'
+                  : `${viewingExLive.target_sets} × ${viewingExLive.target_reps}`}
+              </p>
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex gap-3 px-5 pb-5 pt-3">
+              {/* Take Photo — opens native camera */}
+              <label className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-primary text-primary-foreground text-sm font-semibold cursor-pointer">
+                <Camera size={16} />
+                Take Photo
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleImageUpload(file, viewingExLive.id);
+                    e.target.value = '';
+                  }}
+                />
+              </label>
+
+              {/* Upload from Library */}
+              <label className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-secondary text-foreground text-sm font-semibold cursor-pointer">
+                <ImageIcon size={16} />
+                Library
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleImageUpload(file, viewingExLive.id);
+                    e.target.value = '';
+                  }}
+                />
+              </label>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
