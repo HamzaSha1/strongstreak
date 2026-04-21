@@ -262,7 +262,7 @@ function ExerciseNotes({ ex, onNotesChange }) {
   );
 }
 
-function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onCompleteSet, onUncompleteSet, onAddSet, onNotesChange, onRepRangeChange, onRepModeChange, onDeleteSet, onSwapExercise, onImageChange, sessionType, divider, userId }) {
+function ExerciseCard({ ex, exSets, isOpen, isCollapsed, prevSets, onToggle, onUpdateSet, onCompleteSet, onUncompleteSet, onAddSet, onNotesChange, onRepRangeChange, onRepModeChange, onDeleteSet, onSwapExercise, onImageChange, sessionType, divider, userId }) {
   const { unit: weightUnit, toggle: toggleUnit, toDisplay, toKg } = useWeightUnit();
   const isCardio = ex.exercise_type === 'cardio';
   const cardioUnit = CARDIO_UNITS[ex.cardio_metric] || 'km';
@@ -540,86 +540,100 @@ function ExerciseCard({ ex, exSets, isOpen, prevSets, onToggle, onUpdateSet, onC
         className="hidden"
         onChange={handlePhotoChange}
       />
-      <div
-        className="w-full flex items-center justify-between px-4 py-3 min-h-11"
-        data-drag-handle="true"
-      >
-        <div className="flex items-center gap-3 min-w-0">
-          {/* Exercise thumbnail */}
-          {ex.image_url ? (
-            <button
-              onClick={(e) => { e.stopPropagation(); photoInputRef.current?.click(); }}
-              className="w-10 h-10 rounded-xl overflow-hidden border border-border shrink-0"
-            >
-              <img src={ex.image_url} alt={ex.name} className="w-full h-full object-cover" />
-            </button>
-          ) : (
-            <button
-              onClick={(e) => { e.stopPropagation(); photoInputRef.current?.click(); }}
-              className="w-10 h-10 rounded-xl border border-dashed border-border flex items-center justify-center shrink-0 text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors"
-              title="Add photo"
-            >
-              {uploadingImage ? (
-                <div className="w-3 h-3 border-2 border-muted border-t-primary rounded-full animate-spin" />
-              ) : (
-                <Camera size={14} />
-              )}
-            </button>
-          )}
-          <div className="min-w-0">
-            <p className="font-heading font-semibold text-sm text-left">{ex.name}</p>
-            <p className="text-muted-foreground text-xs">
-              {isCardio
-                ? `${ex.cardio_metric || 'distance'} · target: ${ex.target_reps || '—'} ${cardioUnit}`
-                : `${ex.target_sets} × ${ex.target_reps} · ${ex.rest_seconds}s rest`}
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          {/* Swap exercise button */}
-          <button
-            onClick={(e) => { e.stopPropagation(); setShowSwap(true); }}
-            className="p-1.5 rounded-lg border border-border text-muted-foreground hover:text-primary hover:border-primary/50 transition-colors"
-            title="Swap exercise"
-          >
-            <ArrowLeftRight size={13} />
-          </button>
-          {!isCardio && (
-            <button
-              onClick={(e) => { e.stopPropagation(); toggleUnit(); }}
-              className="text-[10px] px-2 py-0.5 rounded-lg border border-border font-bold text-primary"
-            >
-              {weightUnit.toUpperCase()}
-            </button>
-          )}
-          <span className="text-xs text-muted-foreground">
+      {isCollapsed ? (
+        /* ── Reorder mode: compact name-only strip ── */
+        <div
+          className="px-4 py-3 flex items-center gap-3"
+          data-drag-handle="true"
+        >
+          <p className="font-heading font-semibold text-sm flex-1 min-w-0 truncate">{ex.name}</p>
+          <span className="text-xs text-muted-foreground shrink-0">
             {exSets.filter((s) => s.completed).length}/{exSets.length}
           </span>
-
         </div>
-      </div>
-      {isOpen && (
-        <div className="border-t border-border px-4 pb-4 pt-3">
-          <ExerciseNotes ex={ex} onUpdateSet={onUpdateSet} onNotesChange={onNotesChange} />
-          <ExerciseHistory exerciseName={ex.name} userId={userId} weightUnit={weightUnit} toDisplay={toDisplay} />
-
-          {!isCardio && (
-            <RepRangePicker
-              exId={ex.id}
-              repMode={ex.rep_mode}
-              targetReps={ex.target_reps}
-              onRepRangeChange={onRepRangeChange}
-              onRepModeChange={onRepModeChange}
-            />
-          )}
-          <div className="flex flex-col gap-1.5">{renderSets()}</div>
-          <button
-            onClick={() => onAddSet(ex.id)}
-            className="w-full mt-2 flex items-center justify-center gap-1 py-2 text-xs text-muted-foreground hover:text-primary border border-dashed border-border rounded-xl transition-colors min-h-11"
+      ) : (
+        <>
+          {/* ── Full card header ── */}
+          <div
+            className="w-full flex items-center justify-between px-4 py-3 min-h-11"
+            data-drag-handle="true"
           >
-            <Plus size={12} /> Add set
-          </button>
-        </div>
+            <div className="flex items-center gap-3 min-w-0">
+              {/* Exercise thumbnail */}
+              {ex.image_url ? (
+                <button
+                  onClick={(e) => { e.stopPropagation(); photoInputRef.current?.click(); }}
+                  className="w-10 h-10 rounded-xl overflow-hidden border border-border shrink-0"
+                >
+                  <img src={ex.image_url} alt={ex.name} className="w-full h-full object-cover" />
+                </button>
+              ) : (
+                <button
+                  onClick={(e) => { e.stopPropagation(); photoInputRef.current?.click(); }}
+                  className="w-10 h-10 rounded-xl border border-dashed border-border flex items-center justify-center shrink-0 text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors"
+                  title="Add photo"
+                >
+                  {uploadingImage ? (
+                    <div className="w-3 h-3 border-2 border-muted border-t-primary rounded-full animate-spin" />
+                  ) : (
+                    <Camera size={14} />
+                  )}
+                </button>
+              )}
+              <div className="min-w-0">
+                <p className="font-heading font-semibold text-sm text-left">{ex.name}</p>
+                <p className="text-muted-foreground text-xs">
+                  {isCardio
+                    ? `${ex.cardio_metric || 'distance'} · target: ${ex.target_reps || '—'} ${cardioUnit}`
+                    : `${ex.target_sets} × ${ex.target_reps} · ${ex.rest_seconds}s rest`}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={(e) => { e.stopPropagation(); setShowSwap(true); }}
+                className="p-1.5 rounded-lg border border-border text-muted-foreground hover:text-primary hover:border-primary/50 transition-colors"
+                title="Swap exercise"
+              >
+                <ArrowLeftRight size={13} />
+              </button>
+              {!isCardio && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); toggleUnit(); }}
+                  className="text-[10px] px-2 py-0.5 rounded-lg border border-border font-bold text-primary"
+                >
+                  {weightUnit.toUpperCase()}
+                </button>
+              )}
+              <span className="text-xs text-muted-foreground">
+                {exSets.filter((s) => s.completed).length}/{exSets.length}
+              </span>
+            </div>
+          </div>
+          {/* ── Sets / notes body ── */}
+          {isOpen && (
+            <div className="border-t border-border px-4 pb-4 pt-3">
+              <ExerciseNotes ex={ex} onUpdateSet={onUpdateSet} onNotesChange={onNotesChange} />
+              <ExerciseHistory exerciseName={ex.name} userId={userId} weightUnit={weightUnit} toDisplay={toDisplay} />
+              {!isCardio && (
+                <RepRangePicker
+                  exId={ex.id}
+                  repMode={ex.rep_mode}
+                  targetReps={ex.target_reps}
+                  onRepRangeChange={onRepRangeChange}
+                  onRepModeChange={onRepModeChange}
+                />
+              )}
+              <div className="flex flex-col gap-1.5">{renderSets()}</div>
+              <button
+                onClick={() => onAddSet(ex.id)}
+                className="w-full mt-2 flex items-center justify-center gap-1 py-2 text-xs text-muted-foreground hover:text-primary border border-dashed border-border rounded-xl transition-colors min-h-11"
+              >
+                <Plus size={12} /> Add set
+              </button>
+            </div>
+          )}
+        </>
       )}
     </>
   );
@@ -1299,6 +1313,7 @@ export default function ActiveWorkout() {
                         <ExerciseCard
                           ex={ex}
                           exSets={sets[ex.id] || []}
+                          isCollapsed={isReordering || snapshot.isDragging}
                           isOpen={!isReordering && !snapshot.isDragging && !!expanded[ex.id]}
                           prevSets={getPrevSets(ex.name)}
                           onToggle={() => !isReordering && setExpanded((p) => ({ ...p, [ex.id]: !p[ex.id] }))}
