@@ -47,6 +47,10 @@
     "notes": {
       "type": "string"
     },
+    "note_images": {
+      "type": "string",
+      "description": "JSON array of image URLs attached to the exercise note"
+    },
     "superset_group": {
       "type": "string"
     },
