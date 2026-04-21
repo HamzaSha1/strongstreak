@@ -71,7 +71,7 @@ export default function WorkoutExerciseEditor({ exercises, sessionType, onClose,
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
 
       {/* Panel */}
-      <div className="relative bg-card rounded-t-3xl border-t border-border max-h-[80vh] flex flex-col">
+      <div className="relative bg-card rounded-t-3xl border-t border-border max-h-[80vh] flex flex-col" style={{ transform: 'translate3d(0, 0, 0)' }}>
         {/* Handle */}
         <div className="flex justify-center pt-3 pb-1">
           <div className="w-10 h-1 bg-border rounded-full" />
@@ -88,21 +88,31 @@ export default function WorkoutExerciseEditor({ exercises, sessionType, onClose,
           </button>
         </div>
 
-        <div className="overflow-y-auto flex-1 p-4 flex flex-col gap-2">
-          {/* Exercise list */}
-          <DragDropContext onDragEnd={handleDragEnd}>
-            <Droppable droppableId="workout-exercises">
-              {(provided) => (
-                <div ref={provided.innerRef} {...provided.droppableProps} className="flex flex-col gap-2">
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <Droppable droppableId="workout-exercises">
+            {(provided) => (
+              <div
+                ref={provided.innerRef}
+                {...provided.droppableProps}
+                className="overflow-y-auto flex-1 p-4 flex flex-col gap-2"
+              >
+                {/* Exercise list */}
                   {exercises.map((ex, idx) => (
-                    <Draggable key={ex.name} draggableId={String(ex.name)} index={idx}>
-                      {(drag) => (
-                        <div ref={drag.innerRef} {...drag.draggableProps}>
+                    <Draggable key={ex.id} draggableId={String(ex.id)} index={idx}>
+                      {(drag, snapshot) => (
+                        <div
+                          ref={drag.innerRef}
+                          {...drag.draggableProps}
+                          className={cn(
+                            "rounded-2xl transition-all",
+                            snapshot.isDragging && "shadow-2xl z-50 bg-card scale-[1.02] border border-primary/50 relative"
+                          )}
+                        >
                           <div className="flex items-center gap-2 bg-secondary/50 rounded-2xl px-3 py-2.5">
                             {/* Drag handle */}
                             <div
                               {...drag.dragHandleProps}
-                              className="text-muted-foreground touch-none cursor-grab active:cursor-grabbing shrink-0"
+                              className="text-muted-foreground touch-none cursor-grab active:cursor-grabbing shrink-0 p-1"
                             >
                               <GripVertical size={16} />
                             </div>
@@ -120,14 +130,14 @@ export default function WorkoutExerciseEditor({ exercises, sessionType, onClose,
                                   {ex.dropset_count > 0 ? (
                                     <div className="flex items-center gap-1">
                                       <button
-                                        onClick={() => onUpdateExercise && onUpdateExercise(ex.id ?? ex.name, { dropset_count: Math.max(0, (ex.dropset_count || 1) - 1) })}
+                                        onClick={() => onUpdateExercise && onUpdateExercise(ex.id, { dropset_count: Math.max(0, (ex.dropset_count || 1) - 1) })}
                                         className="w-7 h-7 rounded-lg bg-primary/20 text-primary font-bold text-base flex items-center justify-center"
                                       >
                                         −
                                       </button>
                                       <span className="text-xs font-bold text-primary min-w-[28px] text-center">×{ex.dropset_count}</span>
                                       <button
-                                        onClick={() => onUpdateExercise && onUpdateExercise(ex.id ?? ex.name, { dropset_count: (ex.dropset_count || 1) + 1 })}
+                                        onClick={() => onUpdateExercise && onUpdateExercise(ex.id, { dropset_count: (ex.dropset_count || 1) + 1 })}
                                         className="w-7 h-7 rounded-lg bg-primary/20 text-primary font-bold text-base flex items-center justify-center"
                                       >
                                         +
@@ -135,7 +145,7 @@ export default function WorkoutExerciseEditor({ exercises, sessionType, onClose,
                                     </div>
                                   ) : null}
                                   <button
-                                    onClick={() => onUpdateExercise && onUpdateExercise(ex.id ?? ex.name, { dropset_count: ex.dropset_count > 0 ? 0 : 1 })}
+                                    onClick={() => onUpdateExercise && onUpdateExercise(ex.id, { dropset_count: ex.dropset_count > 0 ? 0 : 1 })}
                                     className={cn(
                                       'px-2 py-1.5 rounded-lg text-[10px] font-bold whitespace-nowrap touch-target-44 transition-colors',
                                       ex.dropset_count > 0
@@ -147,7 +157,7 @@ export default function WorkoutExerciseEditor({ exercises, sessionType, onClose,
                                     DROP SET
                                   </button>
                                   <button
-                                    onClick={() => setEditingRestId(editingRestId === (ex.id ?? ex.name) ? null : (ex.id ?? ex.name))}
+                                    onClick={() => setEditingRestId(editingRestId === ex.id ? null : ex.id)}
                                     className="p-2 rounded-lg bg-secondary flex items-center justify-center hover:bg-secondary/80 touch-target-44"
                                     title="Edit rest time"
                                   >
@@ -156,7 +166,7 @@ export default function WorkoutExerciseEditor({ exercises, sessionType, onClose,
                                 </>
                               )}
                               <button
-                                onClick={() => onRemove(ex.id ?? ex.name)}
+                                onClick={() => onRemove(ex.id)}
                                 className="p-2 rounded-lg bg-destructive/10 text-destructive flex items-center justify-center touch-target-44"
                               >
                                 <Trash2 size={13} />
@@ -167,13 +177,13 @@ export default function WorkoutExerciseEditor({ exercises, sessionType, onClose,
 
 
               {/* Rest time editor */}
-              {editingRestId === (ex.id ?? ex.name) && onUpdateExercise && ex.exercise_type === 'strength' && (
+              {editingRestId === ex.id && onUpdateExercise && ex.exercise_type === 'strength' && (
                 <div className="bg-primary/10 border border-primary/30 rounded-xl mt-2 p-3 flex items-center gap-2">
                   <span className="text-xs text-primary font-semibold">Rest:</span>
                   <input
                     type="number"
                     value={ex.rest_seconds || 90}
-                    onChange={(e) => onUpdateExercise(ex.id ?? ex.name, { rest_seconds: Math.max(0, parseInt(e.target.value) || 0) })}
+                    onChange={(e) => onUpdateExercise(ex.id, { rest_seconds: Math.max(0, parseInt(e.target.value) || 0) })}
                     className="w-16 h-8 bg-input border border-primary rounded-lg px-2 text-sm text-center"
                     min="0"
                     step="5"
@@ -183,13 +193,13 @@ export default function WorkoutExerciseEditor({ exercises, sessionType, onClose,
               )}
 
               {/* Superset config */}
-               {editingSupersetId === (ex.id ?? ex.name) && onUpdateExercise && (
+               {editingSupersetId === ex.id && onUpdateExercise && (
                 <div className="bg-primary/10 border border-primary/30 rounded-xl mt-2 p-3">
                   <p className="text-xs text-primary font-semibold mb-2">Superset with:</p>
                   <div className="flex flex-col gap-1">
                     <button
                       onClick={() => { 
-                       onUpdateExercise(ex.id ?? ex.name, { superset_group: '' });
+                       onUpdateExercise(ex.id, { superset_group: '' });
                        setEditingSupersetId(null);
                       }}
                       className={cn(
@@ -210,7 +220,7 @@ export default function WorkoutExerciseEditor({ exercises, sessionType, onClose,
                           <button
                             key={e.name}
                             onClick={() => {
-                              onUpdateExercise(ex.id ?? ex.name, { superset_group: isSelected ? '' : groupId });
+                              onUpdateExercise(ex.id, { superset_group: isSelected ? '' : groupId });
                               setEditingSupersetId(null);
                             }}
                             className={cn(
@@ -231,7 +241,7 @@ export default function WorkoutExerciseEditor({ exercises, sessionType, onClose,
               {/* Superset button */}
                {ex.exercise_type === 'strength' && (
                 <button
-                  onClick={() => setEditingSupersetId(editingSupersetId === (ex.id ?? ex.name) ? null : (ex.id ?? ex.name))}
+                  onClick={() => setEditingSupersetId(editingSupersetId === ex.id ? null : ex.id)}
                   className="w-full mt-1 text-xs py-1.5 rounded-lg border border-border text-muted-foreground hover:border-primary/50 transition-colors"
                 >
                   {ex.superset_group ? '✓ Superset' : 'Add Superset'}
@@ -242,12 +252,8 @@ export default function WorkoutExerciseEditor({ exercises, sessionType, onClose,
                     </Draggable>
                   ))}
                   {provided.placeholder}
-                </div>
-              )}
-              </Droppable>
-              </DragDropContext>
 
-          {/* Add exercise */}
+                {/* Add exercise */}
           {!showPicker ? (
             <button
               onClick={() => setShowPicker(true)}
@@ -343,7 +349,10 @@ export default function WorkoutExerciseEditor({ exercises, sessionType, onClose,
               </button>
             </div>
           )}
-        </div>
+              </div>
+            )}
+          </Droppable>
+        </DragDropContext>
       </div>
     </div>
   );
