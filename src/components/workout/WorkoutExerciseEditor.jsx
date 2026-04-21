@@ -95,7 +95,7 @@ export default function WorkoutExerciseEditor({ exercises, sessionType, onClose,
               {(provided) => (
                 <div ref={provided.innerRef} {...provided.droppableProps} className="flex flex-col gap-2">
                   {exercises.map((ex, idx) => (
-                    <Draggable key={ex.id} draggableId={ex.id} index={idx}>
+                    <Draggable key={ex.name} draggableId={String(ex.name)} index={idx}>
                       {(drag) => (
                         <div ref={drag.innerRef} {...drag.draggableProps}>
                           <div className="flex items-center gap-2 bg-secondary/50 rounded-2xl px-3 py-2.5">
@@ -120,14 +120,14 @@ export default function WorkoutExerciseEditor({ exercises, sessionType, onClose,
                                   {ex.dropset_count > 0 ? (
                                     <div className="flex items-center gap-1">
                                       <button
-                                        onClick={() => onUpdateExercise && onUpdateExercise(ex.id, { dropset_count: Math.max(0, (ex.dropset_count || 1) - 1) })}
+                                        onClick={() => onUpdateExercise && onUpdateExercise(ex.id ?? ex.name, { dropset_count: Math.max(0, (ex.dropset_count || 1) - 1) })}
                                         className="w-7 h-7 rounded-lg bg-primary/20 text-primary font-bold text-base flex items-center justify-center"
                                       >
                                         −
                                       </button>
                                       <span className="text-xs font-bold text-primary min-w-[28px] text-center">×{ex.dropset_count}</span>
                                       <button
-                                        onClick={() => onUpdateExercise && onUpdateExercise(ex.id, { dropset_count: (ex.dropset_count || 1) + 1 })}
+                                        onClick={() => onUpdateExercise && onUpdateExercise(ex.id ?? ex.name, { dropset_count: (ex.dropset_count || 1) + 1 })}
                                         className="w-7 h-7 rounded-lg bg-primary/20 text-primary font-bold text-base flex items-center justify-center"
                                       >
                                         +
@@ -135,7 +135,7 @@ export default function WorkoutExerciseEditor({ exercises, sessionType, onClose,
                                     </div>
                                   ) : null}
                                   <button
-                                    onClick={() => onUpdateExercise && onUpdateExercise(ex.id, { dropset_count: ex.dropset_count > 0 ? 0 : 1 })}
+                                    onClick={() => onUpdateExercise && onUpdateExercise(ex.id ?? ex.name, { dropset_count: ex.dropset_count > 0 ? 0 : 1 })}
                                     className={cn(
                                       'px-2 py-1.5 rounded-lg text-[10px] font-bold whitespace-nowrap touch-target-44 transition-colors',
                                       ex.dropset_count > 0
@@ -147,7 +147,7 @@ export default function WorkoutExerciseEditor({ exercises, sessionType, onClose,
                                     DROP SET
                                   </button>
                                   <button
-                                    onClick={() => setEditingRestId(editingRestId === ex.id ? null : ex.id)}
+                                    onClick={() => setEditingRestId(editingRestId === (ex.id ?? ex.name) ? null : (ex.id ?? ex.name))}
                                     className="p-2 rounded-lg bg-secondary flex items-center justify-center hover:bg-secondary/80 touch-target-44"
                                     title="Edit rest time"
                                   >
@@ -156,7 +156,7 @@ export default function WorkoutExerciseEditor({ exercises, sessionType, onClose,
                                 </>
                               )}
                               <button
-                                onClick={() => onRemove(ex.id)}
+                                onClick={() => onRemove(ex.id ?? ex.name)}
                                 className="p-2 rounded-lg bg-destructive/10 text-destructive flex items-center justify-center touch-target-44"
                               >
                                 <Trash2 size={13} />
@@ -167,13 +167,13 @@ export default function WorkoutExerciseEditor({ exercises, sessionType, onClose,
 
 
               {/* Rest time editor */}
-              {editingRestId === ex.id && onUpdateExercise && ex.exercise_type === 'strength' && (
+              {editingRestId === (ex.id ?? ex.name) && onUpdateExercise && ex.exercise_type === 'strength' && (
                 <div className="bg-primary/10 border border-primary/30 rounded-xl mt-2 p-3 flex items-center gap-2">
                   <span className="text-xs text-primary font-semibold">Rest:</span>
                   <input
                     type="number"
                     value={ex.rest_seconds || 90}
-                    onChange={(e) => onUpdateExercise(ex.id, { rest_seconds: Math.max(0, parseInt(e.target.value) || 0) })}
+                    onChange={(e) => onUpdateExercise(ex.id ?? ex.name, { rest_seconds: Math.max(0, parseInt(e.target.value) || 0) })}
                     className="w-16 h-8 bg-input border border-primary rounded-lg px-2 text-sm text-center"
                     min="0"
                     step="5"
@@ -183,14 +183,14 @@ export default function WorkoutExerciseEditor({ exercises, sessionType, onClose,
               )}
 
               {/* Superset config */}
-               {editingSupersetId === ex.id && onUpdateExercise && (
+               {editingSupersetId === (ex.id ?? ex.name) && onUpdateExercise && (
                 <div className="bg-primary/10 border border-primary/30 rounded-xl mt-2 p-3">
                   <p className="text-xs text-primary font-semibold mb-2">Superset with:</p>
                   <div className="flex flex-col gap-1">
                     <button
                       onClick={() => { 
-                        onUpdateExercise(ex.id, { superset_group: '' });
-                        setEditingSupersetId(null);
+                       onUpdateExercise(ex.id ?? ex.name, { superset_group: '' });
+                       setEditingSupersetId(null);
                       }}
                       className={cn(
                         'px-3 py-1.5 rounded-lg text-xs border text-left transition-colors',
@@ -210,7 +210,7 @@ export default function WorkoutExerciseEditor({ exercises, sessionType, onClose,
                           <button
                             key={e.name}
                             onClick={() => {
-                              onUpdateExercise(ex.id, { superset_group: isSelected ? '' : groupId });
+                              onUpdateExercise(ex.id ?? ex.name, { superset_group: isSelected ? '' : groupId });
                               setEditingSupersetId(null);
                             }}
                             className={cn(
@@ -231,7 +231,7 @@ export default function WorkoutExerciseEditor({ exercises, sessionType, onClose,
               {/* Superset button */}
                {ex.exercise_type === 'strength' && (
                 <button
-                  onClick={() => setEditingSupersetId(editingSupersetId === ex.id ? null : ex.id)}
+                  onClick={() => setEditingSupersetId(editingSupersetId === (ex.id ?? ex.name) ? null : (ex.id ?? ex.name))}
                   className="w-full mt-1 text-xs py-1.5 rounded-lg border border-border text-muted-foreground hover:border-primary/50 transition-colors"
                 >
                   {ex.superset_group ? '✓ Superset' : 'Add Superset'}
