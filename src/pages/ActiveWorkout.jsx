@@ -23,6 +23,7 @@ import RepRangePicker from '@/components/workout/RepRangePicker';
 import WorkoutSummaryScreen from '@/components/workout/WorkoutSummaryScreen';
 import StreakCelebration from '@/components/workout/StreakCelebration';
 import { useWeightUnit } from '@/hooks/useWeightUnit';
+import { useExerciseLibrary } from '@/hooks/useExerciseLibrary';
 import { Reorder, useDragControls } from 'framer-motion';
 import { calculateStreak } from '@/lib/streak';
 
@@ -1002,11 +1003,14 @@ export default function ActiveWorkout() {
   const [showImportDay, setShowImportDay] = useState(false);
   const [showStreakCelebration, setShowStreakCelebration] = useState(false);
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+  const [showSaveChangesPrompt, setShowSaveChangesPrompt] = useState(false);
+  const [savingChanges, setSavingChanges] = useState(false);
   const summaryRef = useRef(null);
   const startTime = useRef(new Date());
   const timerRef = useRef(null);
   const startingWorkout = useRef(false);
   const streakIncreased = useRef(false);
+  const { ensureExercise } = useExerciseLibrary();
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
@@ -1396,6 +1400,66 @@ export default function ActiveWorkout() {
     })();
   };
 
+  // True if the user added, removed, or reordered exercises during this session
+  const hasExerciseChanges = localExercises !== null;
+
+  const saveChangesToSplit = async () => {
+    if (!localExercises || !dayId || !user) return;
+    setSavingChanges(true);
+    try {
+      const existingExs = await base44.entities.SplitExercise.filter({ split_day_id: dayId });
+      const existingIds = new Set(existingExs.map((e) => e.id));
+
+      // IDs of exercises still present (excludes temp ai-import- ids)
+      const keptIds = new Set(
+        localExercises.filter((e) => e.id && !String(e.id).startsWith('ai-import-')).map((e) => e.id)
+      );
+
+      // Delete exercises that were removed
+      for (const ex of existingExs) {
+        if (!keptIds.has(ex.id)) {
+          await base44.entities.SplitExercise.delete(ex.id);
+        }
+      }
+
+      // Update order for existing exercises, create new ones
+      for (let i = 0; i < localExercises.length; i++) {
+        const ex = localExercises[i];
+        const isNew = !ex.id || String(ex.id).startsWith('ai-import-') || !existingIds.has(ex.id);
+        if (!isNew) {
+          await base44.entities.SplitExercise.update(ex.id, { order_index: i });
+        } else {
+          await ensureExercise({
+            display_name: ex.name,
+            exercise_type: ex.exercise_type || 'strength',
+            muscle_group: ex.muscle || '',
+          });
+          await base44.entities.SplitExercise.create({
+            split_day_id: dayId,
+            user_id: user.email,
+            name: ex.name,
+            exercise_type: ex.exercise_type || 'strength',
+            target_sets: ex.target_sets || 3,
+            target_reps: ex.target_reps || '8-12',
+            rpe: ex.rpe ?? null,
+            rest_seconds: ex.rest_seconds || 90,
+            cardio_metric: ex.cardio_metric || null,
+            image_url: ex.image_url || null,
+            order_index: i,
+            notes: ex.notes || '',
+            superset_group: ex.superset_group || '',
+            dropset_count: ex.dropset_count || 0,
+          });
+        }
+      }
+      queryClient.invalidateQueries({ queryKey: ['splitExercises'] });
+    } catch (err) {
+      toast.error('Could not save changes to split. Your workout was still recorded.');
+    } finally {
+      setSavingChanges(false);
+    }
+  };
+
   const finishMutation = useMutation({
     mutationFn: async () => {
       // 1. Persist the workout as finished
@@ -1724,6 +1788,45 @@ export default function ActiveWorkout() {
         />
       )}
 
+      {showSaveChangesPrompt && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-end">
+          <div className="w-full bg-card border-t border-border rounded-t-3xl p-6 flex flex-col gap-4" style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}>
+            <div className="text-center">
+              <p className="font-heading font-bold text-lg">Save Changes to Split?</p>
+              <p className="text-sm text-muted-foreground mt-1">You added or removed exercises during this workout. Do you want to update your split so these changes are there next time?</p>
+            </div>
+            <Button
+              className="w-full bg-primary text-primary-foreground font-heading font-bold py-5"
+              disabled={savingChanges}
+              onClick={async () => {
+                setShowSaveChangesPrompt(false);
+                await saveChangesToSplit();
+                finishMutation.mutate();
+              }}
+            >
+              {savingChanges ? 'Saving…' : 'Save to Split & Finish'}
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full font-heading font-bold py-5"
+              disabled={savingChanges}
+              onClick={() => {
+                setShowSaveChangesPrompt(false);
+                finishMutation.mutate();
+              }}
+            >
+              Just Finish (Don't Save Changes)
+            </Button>
+            <button
+              className="text-xs text-muted-foreground text-center py-1"
+              onClick={() => setShowSaveChangesPrompt(false)}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
       {showDiscardConfirm && (
         <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-end">
           <div className="w-full bg-card border-t border-border rounded-t-3xl p-6 flex flex-col gap-4" style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}>
@@ -1766,8 +1869,14 @@ export default function ActiveWorkout() {
               ? 'bg-primary text-primary-foreground shadow-[0_0_20px_hsl(35_96%_58%/0.5)]'
               : 'bg-secondary text-secondary-foreground'
           )}
-          onClick={() => finishMutation.mutate()}
-          disabled={finishMutation.isPending}
+          onClick={() => {
+            if (hasExerciseChanges) {
+              setShowSaveChangesPrompt(true);
+            } else {
+              finishMutation.mutate();
+            }
+          }}
+          disabled={finishMutation.isPending || savingChanges}
         >
           <Flag size={18} />
           {allDone ? 'Finish Workout!' : `Finish (${totalSets - completedSets} sets left)`}
