@@ -1688,7 +1688,14 @@ export default function ActiveWorkout() {
           exercises={activeExercises}
           streak={currentStreak}
           durationMinutes={Math.round(elapsed / 60)}
-          onSkip={() => navigate('/')}
+          onSkip={() => {
+            // Hard reload instead of React-Router navigate: the ActiveWorkout
+            // page has heavy framer-motion Reorder + overlays, and
+            // AnimatePresence's mode="wait" exit animation was getting stuck
+            // on the transition home — leaving a blank screen at `/`.
+            // A full navigation guarantees a clean Workouts page with fresh data.
+            window.location.href = '/';
+          }}
           weightSuggestions={activeExercises
             .map((ex) => getWeightSuggestion(ex.name, ex.target_reps, sets[ex.id] || []))
             .filter(Boolean)}
@@ -1713,7 +1720,7 @@ export default function ActiveWorkout() {
           workoutLog={workoutLog}
           user={user}
           summaryImageUrl={summaryImageUrl}
-          onClose={() => navigate('/')}
+          onClose={() => { window.location.href = '/'; }}
         />
       )}
 
@@ -1728,7 +1735,7 @@ export default function ActiveWorkout() {
               className="w-full bg-destructive text-destructive-foreground hover:bg-destructive/90 font-heading font-bold py-5"
               onClick={() => {
                 if (workoutLog) base44.entities.WorkoutLog.delete(workoutLog.id).catch(() => {});
-                navigate('/');
+                window.location.href = '/';
               }}
             >
               Discard Workout
