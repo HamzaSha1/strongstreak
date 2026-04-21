@@ -5,6 +5,8 @@ import { SESSION_MUSCLE_GROUPS, EXERCISES_BY_MUSCLE } from '@/components/splitbu
 import { useExerciseLibrary } from '@/hooks/useExerciseLibrary';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { base44 } from '@/api/base44Client';
+import { uploadImage } from '@/lib/uploadImage';
+import { toast } from 'sonner';
 
 // Parent usage: onReorder should do a splice-based move, not a swap:
 //   const handleReorder = (srcIndex, destIndex) => {
@@ -44,10 +46,11 @@ export default function WorkoutExerciseEditor({ exercises, sessionType, onClose,
     if (!file || !onUpdateExercise) return;
     setUploadingId(exId);
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const file_url = await uploadImage(file);
       onUpdateExercise(exId, { image_url: file_url });
-      // Keep viewer open but update its exercise reference with new image
       setViewingImageEx((prev) => prev ? { ...prev, image_url: file_url } : null);
+    } catch (err) {
+      toast.error(err?.message || 'Photo upload failed. Please try again.');
     } finally {
       setUploadingId(null);
     }

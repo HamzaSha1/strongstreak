@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import { uploadImage } from '@/lib/uploadImage';
+import { toast } from 'sonner';
 import { X, ChevronDown, ChevronUp, Minus, Plus, Camera } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { REST_OPTIONS } from './exerciseData';
@@ -23,9 +25,14 @@ export default function ExerciseConfig({ exercise, onChange, onDelete, allExerci
     const file = e.target.files[0];
     if (!file) return;
     setUploading(true);
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    onChange({ ...exercise, image_url: file_url });
-    setUploading(false);
+    try {
+      const file_url = await uploadImage(file);
+      onChange({ ...exercise, image_url: file_url });
+    } catch (err) {
+      toast.error(err?.message || 'Photo upload failed. Please try again.');
+    } finally {
+      setUploading(false);
+    }
   };
 
   const STEPS = isCardio(exercise)

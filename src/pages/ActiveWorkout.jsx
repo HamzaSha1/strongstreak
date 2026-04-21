@@ -24,6 +24,7 @@ import WorkoutSummaryScreen from '@/components/workout/WorkoutSummaryScreen';
 import StreakCelebration from '@/components/workout/StreakCelebration';
 import { useWeightUnit } from '@/hooks/useWeightUnit';
 import { useExerciseLibrary } from '@/hooks/useExerciseLibrary';
+import { uploadImage } from '@/lib/uploadImage';
 import { Reorder, useDragControls } from 'framer-motion';
 import { calculateStreak } from '@/lib/streak';
 
@@ -192,13 +193,18 @@ function ExerciseNotes({ ex, onNotesChange, onNoteImagesChange }) {
     setUploading(true);
     setReplacing(false);
     setShowAddOptions(false);
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    const updated = replaceIdx !== null
-      ? noteImages.map((url, i) => i === replaceIdx ? file_url : url)
-      : [...noteImages, file_url];
-    onNoteImagesChange(ex.id, updated);
-    if (replaceIdx !== null) setViewingIdx(replaceIdx);
-    setUploading(false);
+    try {
+      const file_url = await uploadImage(file);
+      const updated = replaceIdx !== null
+        ? noteImages.map((url, i) => i === replaceIdx ? file_url : url)
+        : [...noteImages, file_url];
+      onNoteImagesChange(ex.id, updated);
+      if (replaceIdx !== null) setViewingIdx(replaceIdx);
+    } catch (err) {
+      toast.error(err?.message || 'Photo upload failed. Please try again.');
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleDelete = (idx) => {
@@ -511,10 +517,15 @@ function ExerciseCard({ ex, exSets, isOpen, isCollapsed, prevSets, onToggle, onU
     setUploadingImage(true);
     setChangingPhoto(false);
     setShowPhotoOptions(false);
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    await base44.entities.SplitExercise.update(ex.id, { image_url: file_url });
-    onImageChange && onImageChange(ex.id, file_url);
-    setUploadingImage(false);
+    try {
+      const file_url = await uploadImage(file);
+      await base44.entities.SplitExercise.update(ex.id, { image_url: file_url });
+      onImageChange && onImageChange(ex.id, file_url);
+    } catch (err) {
+      toast.error(err?.message || 'Photo upload failed. Please try again.');
+    } finally {
+      setUploadingImage(false);
+    }
   };
 
   const handleSwipeTouchStart = (idx, e) => {
@@ -1770,7 +1781,7 @@ export default function ActiveWorkout() {
                 const canvas = await html2canvas(summaryRef.current, { backgroundColor: null, scale: 2 });
                 const blob = await new Promise((res) => canvas.toBlob(res, 'image/png'));
                 const file = new File([blob], 'workout-summary.png', { type: 'image/png' });
-                const { file_url } = await base44.integrations.Core.UploadFile({ file });
+                const file_url = await uploadImage(file);
                 setSummaryImageUrl(file_url);
               } catch (e) {}
             }
