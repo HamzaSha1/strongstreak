@@ -6,7 +6,7 @@ import { format, startOfDay, differenceInCalendarDays, subDays, parseISO } from 
 const parseLocalDate = (dateStr) => parseISO(dateStr);
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, ArrowLeftRight, Plus, Check, Flag, Pencil, ScanLine, Trash2, X, Camera } from 'lucide-react';
+import { ArrowLeft, ArrowLeftRight, Plus, Check, Flag, Pencil, ScanLine, Trash2, X, Camera, ImageIcon } from 'lucide-react';
 import { EXERCISES_BY_MUSCLE, SESSION_MUSCLE_GROUPS } from '@/components/splitbuilder/exerciseData';
 import ImportWorkoutModal from '@/components/import/ImportWorkoutModal';
 import { Button } from '@/components/ui/button';
@@ -326,13 +326,19 @@ function ExerciseCard({ ex, exSets, isOpen, isCollapsed, prevSets, onToggle, onU
   const [showSwap, setShowSwap] = useState(false);
   const [swipeOffsets, setSwipeOffsets] = useState({});
   const [uploadingImage, setUploadingImage] = useState(false);
-  const photoInputRef = useRef(null);
+  const [viewingPhoto, setViewingPhoto] = useState(false);
+  const [showPhotoOptions, setShowPhotoOptions] = useState(false);
+  const [changingPhoto, setChangingPhoto] = useState(false);
+  const cameraInputRef = useRef(null);
+  const libraryInputRef = useRef(null);
   const swipeTouchStart = useRef({});
 
   const handlePhotoChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploadingImage(true);
+    setChangingPhoto(false);
+    setShowPhotoOptions(false);
     const { file_url } = await base44.integrations.Core.UploadFile({ file });
     await base44.entities.SplitExercise.update(ex.id, { image_url: file_url });
     onImageChange && onImageChange(ex.id, file_url);
@@ -571,6 +577,77 @@ function ExerciseCard({ ex, exSets, isOpen, isCollapsed, prevSets, onToggle, onU
 
   return (
     <>
+      {/* Photo viewer modal — shown when exercise already has a photo */}
+      {viewingPhoto && ex.image_url && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-6 bg-black/80" onClick={() => { setViewingPhoto(false); setChangingPhoto(false); }}>
+          <div className="relative w-full max-w-sm bg-card rounded-3xl overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => { setViewingPhoto(false); setChangingPhoto(false); }}
+              className="absolute top-3 right-3 z-10 p-2 rounded-full bg-black/50 text-white"
+            >
+              <X size={18} />
+            </button>
+            <div className="relative w-full aspect-square bg-secondary">
+              <img src={ex.image_url} alt={ex.name} className="w-full h-full object-cover" />
+              {uploadingImage && (
+                <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                  <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                </div>
+              )}
+            </div>
+            <div className="px-5 pt-4 pb-2">
+              <p className="font-heading font-bold text-base truncate">{ex.name}</p>
+              <p className="text-xs text-muted-foreground">
+                {isCardio ? ex.cardio_metric || 'cardio' : `${ex.target_sets} × ${ex.target_reps}`}
+              </p>
+            </div>
+            <div className="px-5 pb-5 pt-2">
+              {!changingPhoto ? (
+                <button
+                  onClick={() => setChangingPhoto(true)}
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-secondary text-foreground text-sm font-semibold"
+                >
+                  <Camera size={16} /> Change Photo
+                </button>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  <div className="flex gap-3">
+                    <label className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-primary text-primary-foreground text-sm font-semibold cursor-pointer">
+                      <Camera size={16} /> Take Photo
+                      <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => { handlePhotoChange(e); setViewingPhoto(false); }} />
+                    </label>
+                    <label className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-secondary text-foreground text-sm font-semibold cursor-pointer">
+                      <ImageIcon size={16} /> Library
+                      <input type="file" accept="image/*" className="hidden" onChange={(e) => { handlePhotoChange(e); setViewingPhoto(false); }} />
+                    </label>
+                  </div>
+                  <button onClick={() => setChangingPhoto(false)} className="text-xs text-muted-foreground text-center py-1">Cancel</button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Photo options sheet — shown when exercise has no photo yet */}
+      {showPhotoOptions && (
+        <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/60" onClick={() => setShowPhotoOptions(false)}>
+          <div className="w-full max-w-sm bg-card rounded-t-3xl p-5 flex flex-col gap-3" onClick={(e) => e.stopPropagation()}>
+            <div className="w-10 h-1 bg-border rounded-full mx-auto mb-1" />
+            <p className="font-heading font-bold text-sm text-center">{ex.name}</p>
+            <label className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-primary text-primary-foreground text-sm font-semibold cursor-pointer">
+              <Camera size={16} /> Take Photo
+              <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => { handlePhotoChange(e); setShowPhotoOptions(false); }} />
+            </label>
+            <label className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-secondary text-foreground text-sm font-semibold cursor-pointer">
+              <ImageIcon size={16} /> Upload from Library
+              <input type="file" accept="image/*" className="hidden" onChange={(e) => { handlePhotoChange(e); setShowPhotoOptions(false); }} />
+            </label>
+            <button onClick={() => setShowPhotoOptions(false)} className="text-xs text-muted-foreground text-center py-1">Cancel</button>
+          </div>
+        </div>
+      )}
+
       {rirPickerFor && (
         <RIRPicker
           initialValue={exSets[rirPickerFor.setIdx]?.rpe}
@@ -587,15 +664,9 @@ function ExerciseCard({ ex, exSets, isOpen, isCollapsed, prevSets, onToggle, onU
         />
       )}
       {divider && <div className="border-t border-border/50" />}
-      {/* Hidden file input for photo */}
-      <input
-        ref={photoInputRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        className="hidden"
-        onChange={handlePhotoChange}
-      />
+      {/* Hidden file inputs */}
+      <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handlePhotoChange} />
+      <input ref={libraryInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
       {isCollapsed ? (
         /* ── Reorder mode: compact name-only strip ── */
         <div
@@ -618,14 +689,19 @@ function ExerciseCard({ ex, exSets, isOpen, isCollapsed, prevSets, onToggle, onU
               {/* Exercise thumbnail */}
               {ex.image_url ? (
                 <button
-                  onClick={(e) => { e.stopPropagation(); photoInputRef.current?.click(); }}
-                  className="w-10 h-10 rounded-xl overflow-hidden border border-border shrink-0"
+                  onClick={(e) => { e.stopPropagation(); setViewingPhoto(true); setChangingPhoto(false); }}
+                  className="w-10 h-10 rounded-xl overflow-hidden border border-border shrink-0 relative"
                 >
                   <img src={ex.image_url} alt={ex.name} className="w-full h-full object-cover" />
+                  {uploadingImage && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                      <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    </div>
+                  )}
                 </button>
               ) : (
                 <button
-                  onClick={(e) => { e.stopPropagation(); photoInputRef.current?.click(); }}
+                  onClick={(e) => { e.stopPropagation(); setShowPhotoOptions(true); }}
                   className="w-10 h-10 rounded-xl border border-dashed border-border flex items-center justify-center shrink-0 text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors"
                   title="Add photo"
                 >
