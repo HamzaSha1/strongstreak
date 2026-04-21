@@ -1,8 +1,19 @@
 import { useState } from 'react';
-import { X, ArrowUp, ArrowDown, Trash2, Plus, Clock } from 'lucide-react';
+import { Trash2, Plus, Clock, GripVertical } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SESSION_MUSCLE_GROUPS, EXERCISES_BY_MUSCLE } from '@/components/splitbuilder/exerciseData';
 import { useExerciseLibrary } from '@/hooks/useExerciseLibrary';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+
+// Parent usage: onReorder should do a splice-based move, not a swap:
+//   const handleReorder = (srcIndex, destIndex) => {
+//     setExercises(prev => {
+//       const next = [...prev];
+//       const [moved] = next.splice(srcIndex, 1);
+//       next.splice(destIndex, 0, moved);
+//       return next;
+//     });
+//   };
 
 export default function WorkoutExerciseEditor({ exercises, sessionType, onClose, onReorder, onRemove, onAdd, onUpdateExercise }) {
   const [showPicker, setShowPicker] = useState(false);
@@ -17,6 +28,13 @@ export default function WorkoutExerciseEditor({ exercises, sessionType, onClose,
   const existingNames = new Set(exercises.map((e) => e.name));
 
   const { libraryExercises, ensureExercise } = useExerciseLibrary();
+
+  const handleDragEnd = (result) => {
+    if (!result.destination) return;
+    const src = result.source.index;
+    const dst = result.destination.index;
+    if (src !== dst) onReorder(src, dst);
+  };
 
   const handleAdd = async (name, isCardio = false, muscleGroup = '') => {
     await ensureExercise({ display_name: name, exercise_type: isCardio ? 'cardio' : 'strength', muscle_group: muscleGroup });
@@ -72,80 +90,79 @@ export default function WorkoutExerciseEditor({ exercises, sessionType, onClose,
 
         <div className="overflow-y-auto flex-1 p-4 flex flex-col gap-2">
           {/* Exercise list */}
-          {exercises.map((ex, idx) => (
-            <div key={ex.id}>
-              <div className="flex items-center gap-3 bg-secondary/50 rounded-2xl px-3 py-2.5">
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-sm truncate">{ex.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {ex.exercise_type === 'cardio'
-                      ? ex.cardio_metric || 'cardio'
-                      : `${ex.target_sets} × ${ex.target_reps}`}
-                  </p>
-                </div>
-                <div className="flex items-center gap-1">
-                     {ex.exercise_type === 'strength' && (
-                       <>
-                         {ex.dropset_count > 0 ? (
-                           <div className="flex items-center gap-1">
-                             <button
-                               onClick={() => onUpdateExercise && onUpdateExercise(ex.id, { dropset_count: Math.max(0, (ex.dropset_count || 1) - 1) })}
-                               className="w-7 h-7 rounded-lg bg-primary/20 text-primary font-bold text-base flex items-center justify-center"
-                             >
-                               −
-                             </button>
-                             <span className="text-xs font-bold text-primary min-w-[28px] text-center">×{ex.dropset_count}</span>
-                             <button
-                               onClick={() => onUpdateExercise && onUpdateExercise(ex.id, { dropset_count: (ex.dropset_count || 1) + 1 })}
-                               className="w-7 h-7 rounded-lg bg-primary/20 text-primary font-bold text-base flex items-center justify-center"
-                             >
-                               +
-                             </button>
-                           </div>
-                         ) : null}
-                         <button
-                           onClick={() => onUpdateExercise && onUpdateExercise(ex.id, { dropset_count: ex.dropset_count > 0 ? 0 : 1 })}
-                           className={cn(
-                             'px-2 py-1.5 rounded-lg text-[10px] font-bold whitespace-nowrap touch-target-44 transition-colors',
-                             ex.dropset_count > 0
-                               ? 'bg-primary text-primary-foreground'
-                               : 'bg-secondary text-muted-foreground hover:bg-secondary/80'
-                           )}
-                           title="Toggle drop set"
-                         >
-                           DROP SET
-                         </button>
-                         <button
-                           onClick={() => setEditingRestId(editingRestId === ex.id ? null : ex.id)}
-                           className="p-2 rounded-lg bg-secondary flex items-center justify-center hover:bg-secondary/80 touch-target-44"
-                           title="Edit rest time"
-                         >
-                           <Clock size={13} />
-                         </button>
-                       </>
-                     )}
-                     <button
-                       onClick={() => onReorder(idx, idx - 1)}
-                       disabled={idx === 0}
-                       className="p-2 rounded-lg bg-secondary flex items-center justify-center disabled:opacity-30 touch-target-44"
-                     >
-                       <ArrowUp size={13} />
-                     </button>
-                     <button
-                       onClick={() => onReorder(idx, idx + 1)}
-                       disabled={idx === exercises.length - 1}
-                       className="p-2 rounded-lg bg-secondary flex items-center justify-center disabled:opacity-30 touch-target-44"
-                     >
-                       <ArrowDown size={13} />
-                     </button>
-                     <button
-                       onClick={() => onRemove(ex.id)}
-                       className="p-2 rounded-lg bg-destructive/10 text-destructive flex items-center justify-center touch-target-44"
-                     >
-                       <Trash2 size={13} />
-                     </button>
-                   </div>
-                </div>
+          <DragDropContext onDragEnd={handleDragEnd}>
+            <Droppable droppableId="workout-exercises">
+              {(provided) => (
+                <div ref={provided.innerRef} {...provided.droppableProps} className="flex flex-col gap-2">
+                  {exercises.map((ex, idx) => (
+                    <Draggable key={ex.id} draggableId={ex.id} index={idx}>
+                      {(drag) => (
+                        <div ref={drag.innerRef} {...drag.draggableProps}>
+                          <div className="flex items-center gap-2 bg-secondary/50 rounded-2xl px-3 py-2.5">
+                            {/* Drag handle */}
+                            <div
+                              {...drag.dragHandleProps}
+                              className="text-muted-foreground touch-none cursor-grab active:cursor-grabbing shrink-0"
+                            >
+                              <GripVertical size={16} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold text-sm truncate">{ex.name}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {ex.exercise_type === 'cardio'
+                                  ? ex.cardio_metric || 'cardio'
+                                  : `${ex.target_sets} × ${ex.target_reps}`}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              {ex.exercise_type === 'strength' && (
+                                <>
+                                  {ex.dropset_count > 0 ? (
+                                    <div className="flex items-center gap-1">
+                                      <button
+                                        onClick={() => onUpdateExercise && onUpdateExercise(ex.id, { dropset_count: Math.max(0, (ex.dropset_count || 1) - 1) })}
+                                        className="w-7 h-7 rounded-lg bg-primary/20 text-primary font-bold text-base flex items-center justify-center"
+                                      >
+                                        −
+                                      </button>
+                                      <span className="text-xs font-bold text-primary min-w-[28px] text-center">×{ex.dropset_count}</span>
+                                      <button
+                                        onClick={() => onUpdateExercise && onUpdateExercise(ex.id, { dropset_count: (ex.dropset_count || 1) + 1 })}
+                                        className="w-7 h-7 rounded-lg bg-primary/20 text-primary font-bold text-base flex items-center justify-center"
+                                      >
+                                        +
+                                      </button>
+                                    </div>
+                                  ) : null}
+                                  <button
+                                    onClick={() => onUpdateExercise && onUpdateExercise(ex.id, { dropset_count: ex.dropset_count > 0 ? 0 : 1 })}
+                                    className={cn(
+                                      'px-2 py-1.5 rounded-lg text-[10px] font-bold whitespace-nowrap touch-target-44 transition-colors',
+                                      ex.dropset_count > 0
+                                        ? 'bg-primary text-primary-foreground'
+                                        : 'bg-secondary text-muted-foreground hover:bg-secondary/80'
+                                    )}
+                                    title="Toggle drop set"
+                                  >
+                                    DROP SET
+                                  </button>
+                                  <button
+                                    onClick={() => setEditingRestId(editingRestId === ex.id ? null : ex.id)}
+                                    className="p-2 rounded-lg bg-secondary flex items-center justify-center hover:bg-secondary/80 touch-target-44"
+                                    title="Edit rest time"
+                                  >
+                                    <Clock size={13} />
+                                  </button>
+                                </>
+                              )}
+                              <button
+                                onClick={() => onRemove(ex.id)}
+                                className="p-2 rounded-lg bg-destructive/10 text-destructive flex items-center justify-center touch-target-44"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
+                          </div>
 
 
 
@@ -212,7 +229,7 @@ export default function WorkoutExerciseEditor({ exercises, sessionType, onClose,
               )}
 
               {/* Superset button */}
-              {ex.exercise_type === 'strength' && (
+               {ex.exercise_type === 'strength' && (
                 <button
                   onClick={() => setEditingSupersetId(editingSupersetId === ex.id ? null : ex.id)}
                   className="w-full mt-1 text-xs py-1.5 rounded-lg border border-border text-muted-foreground hover:border-primary/50 transition-colors"
@@ -220,8 +237,15 @@ export default function WorkoutExerciseEditor({ exercises, sessionType, onClose,
                   {ex.superset_group ? '✓ Superset' : 'Add Superset'}
                 </button>
               )}
-            </div>
-          ))}
+                        </div>
+                      )}
+                    </Draggable>
+                  ))}
+                  {provided.placeholder}
+                </div>
+              )}
+              </Droppable>
+              </DragDropContext>
 
           {/* Add exercise */}
           {!showPicker ? (
