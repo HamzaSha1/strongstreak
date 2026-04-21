@@ -26,6 +26,13 @@ export default function RestTimer({ seconds, total, onDone, onSkip, isMinimized,
     return () => clearTimeout(t);
   }, [notification]);
 
+  const adjustTime = (delta) => {
+    const newEnd = endTimeRef.current + delta * 1000;
+    const minEnd = Date.now() + 1000; // at least 1 second left
+    endTimeRef.current = Math.max(newEnd, minEnd);
+    setRemaining(Math.max(1, Math.round((endTimeRef.current - Date.now()) / 1000)));
+  };
+
   const endTimeRef = useRef(Date.now() + remaining * 1000);
   useEffect(() => {
     endTimeRef.current = Date.now() + remaining * 1000;
@@ -133,7 +140,7 @@ export default function RestTimer({ seconds, total, onDone, onSkip, isMinimized,
                 className="w-20 text-center text-2xl font-heading font-bold bg-muted border border-border rounded-lg px-3 py-2 text-foreground"
               />
               <span className="text-lg text-muted-foreground">s</span>
-              <button onClick={() => { setRemaining(editValue); setIsEditing(false); }} className="text-primary hover:text-primary/80 transition-colors p-1">
+              <button onClick={() => { endTimeRef.current = Date.now() + editValue * 1000; setRemaining(editValue); setIsEditing(false); }} className="text-primary hover:text-primary/80 transition-colors p-1">
                 <Check size={20} />
               </button>
             </motion.div>
@@ -171,7 +178,20 @@ export default function RestTimer({ seconds, total, onDone, onSkip, isMinimized,
           </p>
         )}
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => adjustTime(-10)}
+            className="px-3 py-1.5 rounded-xl bg-secondary text-secondary-foreground text-sm font-bold hover:bg-secondary/80 transition-colors"
+          >
+            −10s
+          </button>
+          <button
+            onClick={() => adjustTime(10)}
+            className="px-3 py-1.5 rounded-xl bg-secondary text-secondary-foreground text-sm font-bold hover:bg-secondary/80 transition-colors"
+          >
+            +10s
+          </button>
+          <div className="w-px h-5 bg-border mx-1" />
           <button
             onClick={() => { setIsEditing(true); setEditValue(remaining); }}
             className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground text-sm transition-colors"
