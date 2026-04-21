@@ -48,7 +48,8 @@ export default function WorkoutSummaryScreen({ sets, exercises, streak, duration
   }, []);
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background p-6 overflow-hidden">
+    <div className="fixed inset-0 z-50 bg-background overflow-y-auto">
+      <div className="flex flex-col items-center justify-center min-h-full p-6">
       {/* Capturable summary card */}
       <div ref={summaryRef} className="absolute opacity-0 pointer-events-none w-[340px] bg-background p-6 rounded-3xl border border-border flex flex-col items-center gap-4" style={{ left: -9999, top: -9999 }}>
         <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center">
@@ -206,6 +207,7 @@ export default function WorkoutSummaryScreen({ sets, exercises, streak, duration
           Done
         </Button>
       </motion.div>
+      </div>
     </div>
   );
 }
