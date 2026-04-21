@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { SkipForward, ChevronDown, ChevronUp, Edit2, Check, Star } from 'lucide-react';
+import { SkipForward, ChevronDown, ChevronUp, Edit2, Check, Star, Shuffle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import SnakeGame from './SnakeGame';
 import FlappyBirdGame from './FlappyBirdGame';
@@ -13,8 +13,9 @@ const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 export default function RestTimer({ seconds, total, onDone, onSkip, isMinimized, onToggleMinimize, gameState, onGameStateChange, notification }) {
   const [remaining, setRemaining] = useState(seconds);
   const [showGame, setShowGame] = useState(false);
-  const { get: getRestGame } = useRestGame();
-  const preferredGame = getRestGame();
+  const [showGamePicker, setShowGamePicker] = useState(false);
+  const { get: getRestGame, set: setRestGame } = useRestGame();
+  const [preferredGame, setPreferredGame] = useState(() => getRestGame());
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(seconds);
   const [showNotification, setShowNotification] = useState(!!notification);
@@ -64,17 +65,58 @@ export default function RestTimer({ seconds, total, onDone, onSkip, isMinimized,
     );
   }
 
+  const GAMES = [
+    { id: 'snake',     label: 'Snake' },
+    { id: 'flappy',    label: 'Flappy Bird' },
+    { id: 'breathing', label: 'Box Breathing' },
+  ];
+
+  const handleSelectGame = (id) => {
+    setRestGame(id);
+    setPreferredGame(id);
+    setShowGamePicker(false);
+  };
+
   if (showGame) {
-    const gameLabel = preferredGame === 'flappy' ? 'Play Flappy Bird' : preferredGame === 'breathing' ? 'Box Breathing' : 'Play Snake';
+    const gameLabel = GAMES.find((g) => g.id === preferredGame)?.label ?? 'Snake';
     return (
       <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm p-4">
         <div className="flex flex-col items-center gap-4 bg-card border border-border rounded-3xl p-6 w-full max-w-sm">
           <div className="flex items-center justify-between w-full">
             <p className="text-muted-foreground text-sm font-medium">{gameLabel}</p>
-            <button onClick={() => setShowGame(false)} className="text-muted-foreground hover:text-foreground transition-colors p-1">
-              <ChevronUp size={18} />
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowGamePicker((v) => !v)}
+                className="flex items-center gap-1 text-xs text-primary font-semibold px-2 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 transition-colors"
+                title="Change game"
+              >
+                <Shuffle size={13} /> Change
+              </button>
+              <button onClick={() => setShowGame(false)} className="text-muted-foreground hover:text-foreground transition-colors p-1">
+                <ChevronUp size={18} />
+              </button>
+            </div>
           </div>
+
+          {showGamePicker && (
+            <div className="w-full flex flex-col gap-2">
+              {GAMES.map((g) => (
+                <button
+                  key={g.id}
+                  onClick={() => handleSelectGame(g.id)}
+                  className={cn(
+                    'w-full py-2.5 rounded-2xl text-sm font-semibold border transition-colors',
+                    preferredGame === g.id
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : 'border-border text-muted-foreground hover:border-primary/50'
+                  )}
+                >
+                  {g.label}
+                </button>
+              ))}
+            </div>
+          )}
+
           <p className="text-lg font-heading font-bold text-primary">{remaining}s remaining</p>
           {preferredGame === 'flappy'
             ? <FlappyBirdGame isActive={true} />
