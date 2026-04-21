@@ -104,52 +104,91 @@ export default function SplitBuilder() {
 
   const activeSplit = splits[activeTab] || splits[0];
 
+  const [isDirty, setIsDirty] = useState(false);
+
+  // Mark dirty whenever splits change after initialization
+  useEffect(() => {
+    if (initialized) setIsDirty(true);
+  }, [splits]);
+  // Don't mark dirty on first load
+  useEffect(() => {
+    if (initialized) setIsDirty(false);
+  }, [initialized]);
+
+  const handleBack = () => {
+    if (isDirty) {
+      const confirmed = window.confirm('You have unsaved changes. Discard them and go back?');
+      if (!confirmed) return;
+    }
+    navigate('/');
+  };
+
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const existing = await base44.entities.SplitDay.filter({ user_id: user.email });
-      for (const d of existing) await base44.entities.SplitDay.delete(d.id);
-      const existingEx = await base44.entities.SplitExercise.filter({ user_id: user.email });
-      for (const e of existingEx) await base44.entities.SplitExercise.delete(e.id);
+      // Step 1: fetch existing records (do NOT delete yet)
+      const existingDays = await base44.entities.SplitDay.filter({ user_id: user.email });
+      const existingExs = await base44.entities.SplitExercise.filter({ user_id: user.email });
+
+      // Step 2: build the full set of new day+exercise records
+      const newDayRecords = [];
+      const newExerciseRecords = [];
 
       for (const split of splits) {
         for (const d of split.days) {
           const effectiveType = d.session_type || 'Rest';
-          const savedDay = await base44.entities.SplitDay.create({
-            user_id: user.email,
+          newDayRecords.push({
             split_name: split.name,
             day_of_week: d.day,
             session_type: effectiveType,
             custom_name: d.custom_name || '',
             order_index: d.order_index,
+            exercises: d.exercises, // temp, used below
           });
-          for (let i = 0; i < d.exercises.length; i++) {
-            const ex = d.exercises[i];
-            // Save to global exercise library
-            await ensureExercise({
-              display_name: ex.name,
-              exercise_type: ex.exercise_type || 'strength',
-              muscle_group: ex.muscle || '',
-            });
-            await base44.entities.SplitExercise.create({
-              split_day_id: savedDay.id,
-              user_id: user.email,
-              name: ex.name,
-              exercise_type: ex.exercise_type || 'strength',
-              target_sets: ex.target_sets,
-              target_reps: ex.target_reps,
-              rpe: ex.rpe,
-              rest_seconds: ex.rest_seconds,
-              cardio_metric: ex.cardio_metric,
-              image_url: ex.image_url,
-              order_index: i,
-              notes: ex.notes || '',
-              superset_group: ex.superset_group || '',
-            });
-          }
         }
       }
+
+      // Step 3: create new days first
+      const savedDays = [];
+      for (const dayRecord of newDayRecords) {
+        const { exercises, ...dayData } = dayRecord;
+        const saved = await base44.entities.SplitDay.create({ user_id: user.email, ...dayData });
+        savedDays.push({ saved, exercises });
+      }
+
+      // Step 4: create new exercises
+      for (const { saved: savedDay, exercises } of savedDays) {
+        for (let i = 0; i < exercises.length; i++) {
+          const ex = exercises[i];
+          await ensureExercise({
+            display_name: ex.name,
+            exercise_type: ex.exercise_type || 'strength',
+            muscle_group: ex.muscle || '',
+          });
+          await base44.entities.SplitExercise.create({
+            split_day_id: savedDay.id,
+            user_id: user.email,
+            name: ex.name,
+            exercise_type: ex.exercise_type || 'strength',
+            target_sets: ex.target_sets,
+            target_reps: ex.target_reps,
+            rpe: ex.rpe,
+            rest_seconds: ex.rest_seconds,
+            cardio_metric: ex.cardio_metric,
+            image_url: ex.image_url,
+            order_index: i,
+            notes: ex.notes || '',
+            superset_group: ex.superset_group || '',
+            dropset_count: ex.dropset_count || 0,
+          });
+        }
+      }
+
+      // Step 5: only NOW delete the old records (new ones are safely stored)
+      for (const e of existingExs) await base44.entities.SplitExercise.delete(e.id);
+      for (const d of existingDays) await base44.entities.SplitDay.delete(d.id);
     },
     onSuccess: () => {
+      setIsDirty(false);
       queryClient.invalidateQueries({ queryKey: ['splitDays'] });
       queryClient.invalidateQueries({ queryKey: ['splitExercises'] });
       toast.success('All splits saved!');
@@ -322,7 +361,7 @@ export default function SplitBuilder() {
       {/* Header — paddingTop baked in so it always covers status bar even when sticky */}
       <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <div className="px-4 pt-3 pb-2 flex items-center gap-3">
-          <button onClick={() => navigate('/')} className="text-muted-foreground shrink-0">
+          <button onClick={handleBack} className="text-muted-foreground shrink-0">
             <ArrowLeft size={20} />
           </button>
           <Input
