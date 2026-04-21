@@ -419,7 +419,7 @@ export default function WorkoutExerciseEditor({ exercises, sessionType, onClose,
 
       {/* Image viewer modal */}
       {viewingExLive && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center p-6 bg-black/80">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-6 bg-black/80">
           <div className="relative w-full max-w-sm bg-card rounded-3xl overflow-hidden flex flex-col">
             {/* Close */}
             <button
