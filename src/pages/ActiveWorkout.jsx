@@ -31,7 +31,7 @@ const CARDIO_UNITS = { distance: 'km', time: 'min', calories: 'kcal' };
 // ── Long-press drag sensor ───────────────────────────────────────────────────
 // Replaces the grip-handle dots. The user holds any exercise card header for
 // 2 seconds to activate drag; moving or releasing before that cancels it.
-const LONG_PRESS_MS = 2000;
+const LONG_PRESS_MS = 600;
 const MOVE_CANCEL_PX = 8;
 
 function makeLongPressDragSensor(callbacksRef) {
@@ -1299,7 +1299,7 @@ export default function ActiveWorkout() {
                         <ExerciseCard
                           ex={ex}
                           exSets={sets[ex.id] || []}
-                          isOpen={!isReordering && !!expanded[ex.id]}
+                          isOpen={!isReordering && !snapshot.isDragging && !!expanded[ex.id]}
                           prevSets={getPrevSets(ex.name)}
                           onToggle={() => !isReordering && setExpanded((p) => ({ ...p, [ex.id]: !p[ex.id] }))}
                           onUpdateSet={updateSet}
