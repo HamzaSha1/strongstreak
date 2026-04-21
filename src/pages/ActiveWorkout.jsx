@@ -23,207 +23,90 @@ import RepRangePicker from '@/components/workout/RepRangePicker';
 import WorkoutSummaryScreen from '@/components/workout/WorkoutSummaryScreen';
 import StreakCelebration from '@/components/workout/StreakCelebration';
 import { useWeightUnit } from '@/hooks/useWeightUnit';
-import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+import { Reorder, useDragControls } from 'framer-motion';
+import { calculateStreak } from '@/lib/streak';
 
 
 const CARDIO_UNITS = { distance: 'km', time: 'min', calories: 'kcal' };
 
-// ── Long-press drag sensor ───────────────────────────────────────────────────
-// Replaces the grip-handle dots. The user holds any exercise card header for
-// 2 seconds to activate drag; moving or releasing before that cancels it.
+// ── Long-press drag activation for framer-motion Reorder ─────────────────────
+// The user holds any exercise card header for 600ms to activate drag; moving
+// or releasing before that cancels it. Once active, framer-motion handles
+// pointer tracking, displacement, and drop via <Reorder.Item>.
 const LONG_PRESS_MS = 600;
 const MOVE_CANCEL_PX = 8;
 
-function makeLongPressDragSensor(callbacksRef) {
-  return function useLongPressDragSensor(api) {
-    useEffect(() => {
-      let pressTimer = null;
-      let pressStart = null;     // { x, y, draggableId }
-      let preDragPending = null; // lock held while waiting for rAF collapse
-      let activeDrag = null;
+// A card wrapper that activates drag after a 600ms hold on the header.
+// framer-motion's Reorder.Item takes over from there: it tracks the pointer
+// smoothly, shifts siblings to show the insertion point, and calls the
+// parent's onReorder on drop.
+function ReorderableCard({ ex, isActive, onLongPressStart, onLongPressEnd, onDragStart, onDragEnd, children }) {
+  const controls = useDragControls();
+  const timerRef = useRef(null);
+  const startRef = useRef(null);
+  const savedEventRef = useRef(null);
 
-      const cancel = () => {
-        if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
-        // Abort lock if we got it but haven't lifted yet
-        if (preDragPending) { try { preDragPending.abort(); } catch (_) {} preDragPending = null; }
-        if (pressStart) { callbacksRef.current?.onPressCancel?.(); pressStart = null; }
-      };
-
-      // Shared lift logic — called after React has re-rendered the collapsed card.
-      // Uses fluidLift so the card follows the finger smoothly, and other cards
-      // animate out of the way to show the insertion point (displacement).
-      //
-      // We pass the collapsed card's center as the fluidLift selection so the
-      // library's offset calculation is always valid (the original press coords
-      // could be outside the now-smaller card's bounds after collapse).
-      // The finger position is then fed into move() on every touchmove/mousemove.
-      const liftAfterCollapse = (preDrag, draggableId, isTouchDrag) => {
-        if (!preDrag) return; // was aborted during rAF wait
-        preDragPending = null;
-
-        // Read the collapsed card's center from the DOM
-        const el = document.querySelector(`[data-rfd-draggable-id="${draggableId}"]`);
-        const rect = el?.getBoundingClientRect();
-        // Fall back to middle of viewport if element not found (shouldn't happen)
-        const cx = rect ? rect.left + rect.width  / 2 : window.innerWidth  / 2;
-        const cy = rect ? rect.top  + rect.height / 2 : window.innerHeight / 2;
-
-        const drag = preDrag.fluidLift({ x: cx, y: cy });
-        activeDrag = drag;
-
-        if (isTouchDrag) {
-          const onMove = (e) => {
-            if (!drag.isActive() || e.touches.length !== 1) return;
-            e.preventDefault();
-            drag.move({ x: e.touches[0].clientX, y: e.touches[0].clientY });
-          };
-          const onEnd = () => {
-            if (drag.isActive()) drag.drop();
-            activeDrag = null;
-            document.removeEventListener('touchmove', onMove);
-            document.removeEventListener('touchend', onEnd);
-            document.removeEventListener('touchcancel', onEnd);
-          };
-          document.addEventListener('touchmove', onMove, { passive: false });
-          document.addEventListener('touchend', onEnd);
-          document.addEventListener('touchcancel', onEnd);
-        } else {
-          const onMove = (e) => { if (drag.isActive()) drag.move({ x: e.clientX, y: e.clientY }); };
-          const onEnd = () => {
-            if (drag.isActive()) drag.drop();
-            activeDrag = null;
-            document.removeEventListener('mousemove', onMove);
-            document.removeEventListener('mouseup', onEnd);
-          };
-          document.addEventListener('mousemove', onMove);
-          document.addEventListener('mouseup', onEnd);
-        }
-      };
-
-      // ── Touch ────────────────────────────────────────────────────────────
-      const onTouchStart = (event) => {
-        if (pressTimer || activeDrag) return;
-        if (event.touches.length !== 1) return;
-        if (event.target.closest('button, input, textarea, select, a')) return;
-        if (!event.target.closest('[data-drag-handle]')) return;
-        const el = event.target.closest('[data-rfd-draggable-id]');
-        if (!el) return;
-        const draggableId = el.getAttribute('data-rfd-draggable-id');
-        if (!draggableId) return;
-
-        const { clientX: x, clientY: y } = event.touches[0];
-        pressStart = { x, y, draggableId };
-        callbacksRef.current?.onPressStart?.(draggableId);
-        try { navigator.vibrate?.(15); } catch (_) {}
-
-        pressTimer = setTimeout(() => {
-          pressTimer = null;
-          if (!pressStart) return;
-          const preDrag = api.tryGetLock(pressStart.draggableId);
-          if (!preDrag) { cancel(); return; }
-
-          try { navigator.vibrate?.([40, 20, 40]); } catch (_) {}
-          // Tell React to collapse this card NOW, before we lift
-          const { draggableId: liftId } = pressStart;
-          callbacksRef.current?.onPressActivate?.(liftId);
-          pressStart = null;
-          preDragPending = preDrag;
-
-          // Safety: if the finger lifts during the rAF collapse window, abort
-          const earlyTouchEnd = () => {
-            if (preDragPending) {
-              try { preDragPending.abort(); } catch (_) {}
-              preDragPending = null;
-              callbacksRef.current?.onPressCancel?.();
-            }
-          };
-          document.addEventListener('touchend', earlyTouchEnd, { once: true });
-          document.addEventListener('touchcancel', earlyTouchEnd, { once: true });
-
-          // Wait 2 frames so React re-renders the card in collapsed state,
-          // then read the collapsed card's center and fluid-lift from there
-          requestAnimationFrame(() => requestAnimationFrame(() => {
-            // Clean up the early-abort listeners before lifting
-            document.removeEventListener('touchend', earlyTouchEnd);
-            document.removeEventListener('touchcancel', earlyTouchEnd);
-            liftAfterCollapse(preDragPending, liftId, true);
-          }));
-        }, LONG_PRESS_MS);
-      };
-
-      const onTouchMove = (e) => {
-        if (!pressStart || !pressTimer) return;
-        const { clientX: x, clientY: y } = e.touches[0];
-        if (Math.abs(x - pressStart.x) > MOVE_CANCEL_PX || Math.abs(y - pressStart.y) > MOVE_CANCEL_PX) cancel();
-      };
-      const onTouchEnd = () => cancel();
-
-      // ── Mouse (desktop) ──────────────────────────────────────────────────
-      const onMouseDown = (event) => {
-        if (event.button !== 0 || pressTimer || activeDrag) return;
-        if (event.target.closest('button, input, textarea, select, a')) return;
-        if (!event.target.closest('[data-drag-handle]')) return;
-        const el = event.target.closest('[data-rfd-draggable-id]');
-        if (!el) return;
-        const draggableId = el.getAttribute('data-rfd-draggable-id');
-        if (!draggableId) return;
-
-        pressStart = { x: event.clientX, y: event.clientY, draggableId };
-        callbacksRef.current?.onPressStart?.(draggableId);
-
-        pressTimer = setTimeout(() => {
-          pressTimer = null;
-          if (!pressStart) return;
-          const preDrag = api.tryGetLock(pressStart.draggableId);
-          if (!preDrag) { cancel(); return; }
-          const { draggableId: liftId } = pressStart;
-          callbacksRef.current?.onPressActivate?.(liftId);
-          pressStart = null;
-          preDragPending = preDrag;
-
-          const earlyMouseUp = () => {
-            if (preDragPending) {
-              try { preDragPending.abort(); } catch (_) {}
-              preDragPending = null;
-              callbacksRef.current?.onPressCancel?.();
-            }
-          };
-          document.addEventListener('mouseup', earlyMouseUp, { once: true });
-
-          requestAnimationFrame(() => requestAnimationFrame(() => {
-            document.removeEventListener('mouseup', earlyMouseUp);
-            liftAfterCollapse(preDragPending, liftId, false);
-          }));
-        }, LONG_PRESS_MS);
-      };
-
-      const onMouseMove = (e) => {
-        if (!pressStart || !pressTimer) return;
-        if (Math.abs(e.clientX - pressStart.x) > MOVE_CANCEL_PX || Math.abs(e.clientY - pressStart.y) > MOVE_CANCEL_PX) cancel();
-      };
-      const onMouseUp = () => cancel();
-
-      document.addEventListener('touchstart', onTouchStart, { capture: true, passive: true });
-      document.addEventListener('touchmove', onTouchMove, { passive: true });
-      document.addEventListener('touchend', onTouchEnd);
-      document.addEventListener('touchcancel', onTouchEnd);
-      document.addEventListener('mousedown', onMouseDown, { capture: true });
-      document.addEventListener('mousemove', onMouseMove);
-      document.addEventListener('mouseup', onMouseUp);
-
-      return () => {
-        cancel();
-        if (activeDrag?.isActive()) activeDrag.cancel();
-        document.removeEventListener('touchstart', onTouchStart, { capture: true });
-        document.removeEventListener('touchmove', onTouchMove);
-        document.removeEventListener('touchend', onTouchEnd);
-        document.removeEventListener('touchcancel', onTouchEnd);
-        document.removeEventListener('mousedown', onMouseDown, { capture: true });
-        document.removeEventListener('mousemove', onMouseMove);
-        document.removeEventListener('mouseup', onMouseUp);
-      };
-    }, [api]);
+  const clearTimer = () => {
+    if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
+    startRef.current = null;
+    savedEventRef.current = null;
   };
+
+  const handlePointerDown = (e) => {
+    // Don't hijack buttons, inputs, or anywhere outside the drag-handle area
+    if (e.target.closest('button, input, textarea, select, a')) return;
+    if (!e.target.closest('[data-drag-handle]')) return;
+
+    startRef.current = { x: e.clientX, y: e.clientY };
+    // Framer-motion's controls.start wants the original PointerEvent
+    savedEventRef.current = e;
+    try { navigator.vibrate?.(15); } catch (_) {}
+    onLongPressStart?.(ex.id);
+
+    timerRef.current = setTimeout(() => {
+      timerRef.current = null;
+      if (!startRef.current || !savedEventRef.current) return;
+      try { navigator.vibrate?.([40, 20, 40]); } catch (_) {}
+      onDragStart?.(ex.id);
+      controls.start(savedEventRef.current);
+    }, LONG_PRESS_MS);
+  };
+
+  const handlePointerMove = (e) => {
+    if (!startRef.current || !timerRef.current) return;
+    const dx = e.clientX - startRef.current.x;
+    const dy = e.clientY - startRef.current.y;
+    if (Math.hypot(dx, dy) > MOVE_CANCEL_PX) {
+      clearTimer();
+      onLongPressEnd?.(ex.id);
+    }
+  };
+
+  const handlePointerUp = () => {
+    clearTimer();
+    onLongPressEnd?.(ex.id);
+  };
+
+  return (
+    <Reorder.Item
+      value={ex}
+      dragListener={false}
+      dragControls={controls}
+      onDragEnd={() => onDragEnd?.(ex.id)}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
+      // Keep vertical scroll working when the user is NOT long-pressing
+      style={{ touchAction: isActive ? 'none' : 'pan-y' }}
+      // Smooth lift feedback
+      whileDrag={{ scale: 1.03, boxShadow: '0 20px 40px hsl(0 0% 0% / 0.4)' }}
+      layout
+      transition={{ type: 'spring', stiffness: 500, damping: 40 }}
+    >
+      {children}
+    </Reorder.Item>
+  );
 }
 // ────────────────────────────────────────────────────────────────────────────
 
@@ -1114,15 +997,7 @@ export default function ActiveWorkout() {
   const [notification, setNotification] = useState(null);
   const [isReordering, setIsReordering] = useState(false);
   const [longPressId, setLongPressId] = useState(null);
-  const [collapsingId, setCollapsingId] = useState(null); // card collapsing before lift
-  const longPressCallbacksRef = useRef(null);
-  longPressCallbacksRef.current = {
-    onPressStart: (id) => setLongPressId(id),
-    // onPressActivate fires just before fluidLift — collapse the card first
-    onPressActivate: (id) => { setLongPressId(null); setCollapsingId(id); },
-    onPressCancel: () => { setLongPressId(null); setCollapsingId(null); },
-  };
-  const sensors = useMemo(() => [makeLongPressDragSensor(longPressCallbacksRef)], []);
+  const [draggingId, setDraggingId] = useState(null);
   const [summaryImageUrl, setSummaryImageUrl] = useState(null);
   const [showImportDay, setShowImportDay] = useState(false);
   const [showStreakCelebration, setShowStreakCelebration] = useState(false);
@@ -1432,18 +1307,10 @@ export default function ActiveWorkout() {
     );
   };
 
-  const handleDragEnd = (result) => {
-    setIsReordering(false);
-    setCollapsingId(null);
-    if (!result.destination) return;
-    const orderedExercises = exerciseOrder.length
-      ? exerciseOrder.map((id) => activeExercises.find((e) => e.id === id)).filter(Boolean)
-      : activeExercises;
-    const next = [...orderedExercises];
-    const [moved] = next.splice(result.source.index, 1);
-    next.splice(result.destination.index, 0, moved);
-    setLocalExercises(next);
-    setExerciseOrder(next.map((e) => e.id));
+  // framer-motion Reorder hands us the NEW array order on every drop
+  const handleReorder = (nextOrderedExercises) => {
+    setLocalExercises(nextOrderedExercises);
+    setExerciseOrder(nextOrderedExercises.map((e) => e.id));
   };
 
   const addSet = (exId) => {
@@ -1467,120 +1334,27 @@ export default function ActiveWorkout() {
   const completedSets = Object.values(sets).flat().filter((s) => s.completed).length;
   const allDone = totalSets > 0 && completedSets === totalSets;
 
-  const finishMutation = useMutation({
-    mutationFn: async () => {
-      if (workoutLog) {
-        await base44.entities.WorkoutLog.update(workoutLog.id, {
-          finished_at: new Date().toISOString(),
-          duration_minutes: Math.round(elapsed / 60),
-        });
-      }
-
-      streakIncreased.current = false;
-
-      // Only count personal streak for real (non-Rest) workout days
-      if (!day || day.session_type === 'Rest') {
-        setCurrentStreak(0);
-        return;
-      }
-
-      if (user) {
-        const members = await base44.entities.GroupMember.filter({ user_id: user.email });
-        const member = members[0];
-        const prevStreak = member?.streak || 0;
-
-        // Fetch all past completed workout logs for this user
-        const allLogs = await base44.entities.WorkoutLog.filter(
-          { user_id: user.email },
-          '-created_date',
-          100
-        );
+  // Background-only: update the group streak without blocking the UI.
+  // Runs fire-and-forget after the celebration is already showing so a slow
+  // multi-member network fan-out can never freeze the "Finish Workout" tap.
+  const updateGroupStreaksInBackground = (currentUser) => {
+    if (!currentUser) return;
+    (async () => {
+      try {
         const today = startOfDay(new Date());
-
-        // Use finished_at date (not created_date) so midnight workouts count on the right day
-        const finishDateOf = (l) => startOfDay(parseLocalDate((l.finished_at || l.created_date).slice(0, 10)));
-
-        // Check if already logged a finished workout today
-        const alreadyLoggedToday = allLogs.some((l) => {
-          if (l.id === workoutLog?.id || l.is_rest_day) return false;
-          return l.finished_at && differenceInCalendarDays(today, finishDateOf(l)) === 0;
-        });
-
-        if (alreadyLoggedToday) {
-          setCurrentStreak(prevStreak);
-          if (member) await base44.entities.GroupMember.update(member.id, { streak: prevStreak });
-          return;
-        }
-
-        const pastLogs = allLogs
-          .filter((l) => l.id !== workoutLog?.id && l.finished_at && !l.is_rest_day)
-          .sort((a, b) => new Date(b.finished_at) - new Date(a.finished_at));
-
-        const lastLog = pastLogs[0];
-
-        if (!lastLog) {
-          const newStreak = 1;
-          streakIncreased.current = true;
-          setCurrentStreak(newStreak);
-          if (member) await base44.entities.GroupMember.update(member.id, { streak: newStreak });
-        } else {
-          const lastDay = finishDateOf(lastLog);
-          const daysSinceLast = differenceInCalendarDays(today, lastDay);
-
-          if (daysSinceLast === 0) {
-            setCurrentStreak(prevStreak);
-            if (member) await base44.entities.GroupMember.update(member.id, { streak: prevStreak });
-          } else if (daysSinceLast === 1) {
-            const newStreak = prevStreak + 1;
-            streakIncreased.current = true;
-            setCurrentStreak(newStreak);
-            if (member) await base44.entities.GroupMember.update(member.id, { streak: newStreak });
-          } else {
-            // Gap > 1 day — check each gap day to see if it was a scheduled Rest day
-            // or simply not in the split at all (treat as a free day, don't break streak)
-            const allSplitDays = await base44.entities.SplitDay.filter({ user_id: user.email });
-            const loggedDays = new Set(
-              allLogs
-                .filter((l) => l.finished_at && !l.is_rest_day)
-                .map((l) => finishDateOf(l).getTime())
-            );
-            let streakBroken = false;
-            for (let d = 1; d < daysSinceLast; d++) {
-              const gapDate = startOfDay(subDays(today, daysSinceLast - d));
-              if (loggedDays.has(gapDate.getTime())) continue; // they trained that day
-              const dayName = format(gapDate, 'EEEE');
-              // Get ALL split days for this day of week (user may have multiple splits)
-              const splitDaysForDay = allSplitDays.filter((sd) => sd.day_of_week === dayName);
-              // If the day isn't configured in ANY split, treat it as a free day (no break)
-              if (splitDaysForDay.length === 0) continue;
-              // Only break if EVERY split has this day as a training day (not Rest)
-              const hasAnyRest = splitDaysForDay.some((sd) => !sd.session_type || sd.session_type === 'Rest');
-              if (!hasAnyRest) { streakBroken = true; break; }
-            }
-            // Always increment by 1 (you trained once today regardless of gap size)
-            const newStreak = streakBroken ? 1 : prevStreak + 1;
-            streakIncreased.current = newStreak > prevStreak;
-            setCurrentStreak(newStreak);
-            if (member) await base44.entities.GroupMember.update(member.id, { streak: newStreak });
-          }
-        }
-
-        // ── Group streak logic ──────────────────────────────────────────
-        // Increments only when ALL members have completed their planned day
-        // (finished workout OR planned rest day). Stored on the Group entity.
         const todayStr = format(today, 'yyyy-MM-dd');
         const todayDayName = format(today, 'EEEE');
-        const userGroupMemberships = await base44.entities.GroupMember.filter({ user_id: user.email });
+        const yesterday = format(subDays(today, 1), 'yyyy-MM-dd');
 
-        for (const myMembership of userGroupMemberships) {
+        const memberships = await base44.entities.GroupMember.filter({ user_id: currentUser.email });
+        for (const myMembership of memberships) {
           try {
             const groupArr = await base44.entities.Group.filter({ id: myMembership.group_id });
             const groupData = groupArr[0];
             if (!groupData) continue;
-            if (groupData.group_streak_date === todayStr) continue; // Already updated today
+            if (groupData.group_streak_date === todayStr) continue;
 
             const allGroupMembers = await base44.entities.GroupMember.filter({ group_id: myMembership.group_id });
-
             const memberDone = await Promise.all(
               allGroupMembers.map(async (m) => {
                 const mLogs = await base44.entities.WorkoutLog.filter({ user_id: m.user_id }, '-created_date', 20);
@@ -1595,27 +1369,16 @@ export default function ActiveWorkout() {
 
             const difficulty = groupData.difficulty || 'medium';
             const prevGroupStreak = groupData.group_streak || 0;
-            const yesterday = format(subDays(today, 1), 'yyyy-MM-dd');
             const streakContinues = groupData.group_streak_date === yesterday || groupData.group_streak_date === todayStr;
 
             let newGroupStreak;
-
             if (difficulty === 'easy') {
-              // Easy: I worked out → streak grows. Never resets — just keeps climbing.
-              // (We only reach this code when the current user finishes a workout)
               newGroupStreak = streakContinues ? prevGroupStreak + 1 : 1;
-
             } else if (difficulty === 'medium') {
-              // Medium: At least ONE member finished a real workout today → streak continues.
-              // Everyone stopped → streak resets.
-              const anyoneFinished = memberDone.some(Boolean);
-              if (!anyoneFinished) continue; // nobody done yet, skip update
+              if (!memberDone.some(Boolean)) continue;
               newGroupStreak = streakContinues ? prevGroupStreak + 1 : 1;
-
             } else {
-              // Hard: ALL members must complete their day (workout OR rest day).
-              // A single miss → reset to 0.
-              if (!memberDone.every(Boolean)) continue; // not everyone done yet
+              if (!memberDone.every(Boolean)) continue;
               newGroupStreak = streakContinues ? prevGroupStreak + 1 : 1;
             }
 
@@ -1623,16 +1386,74 @@ export default function ActiveWorkout() {
               group_streak: newGroupStreak,
               group_streak_date: todayStr,
             });
-          } catch (_e) {
-            // Non-fatal
+          } catch (_) {
+            // Non-fatal — one bad group shouldn't stop the others
           }
         }
-        // ── End group streak logic ───────────────────────────────────────
+      } catch (_) {
+        // Non-fatal
       }
+    })();
+  };
+
+  const finishMutation = useMutation({
+    mutationFn: async () => {
+      // 1. Persist the workout as finished
+      if (workoutLog) {
+        await base44.entities.WorkoutLog.update(workoutLog.id, {
+          finished_at: new Date().toISOString(),
+          duration_minutes: Math.round(elapsed / 60),
+        });
+      }
+
+      streakIncreased.current = false;
+
+      // Rest days never touch personal streak
+      if (!day || day.session_type === 'Rest') {
+        setCurrentStreak(0);
+        return;
+      }
+
+      if (!user) return;
+
+      // 2. Compute newStreak the SAME way the Workouts page does — live from
+      //    WorkoutLog + SplitDay. This is the single source of truth so the
+      //    celebration and the main page always show identical numbers.
+      const [freshLogs, freshSplitDays] = await Promise.all([
+        base44.entities.WorkoutLog.filter({ user_id: user.email }, '-started_at', 200),
+        base44.entities.SplitDay.filter({ user_id: user.email }),
+      ]);
+
+      // Ensure the just-finished log is reflected even if the refetch races
+      // ahead of server write-consistency.
+      const todayMidnight = startOfDay(new Date()).getTime();
+      const mergedLogs = freshLogs.some(
+        (l) => l.finished_at && new Date(l.created_date || l.started_at).setHours(0, 0, 0, 0) === todayMidnight
+      )
+        ? freshLogs
+        : [
+            ...freshLogs,
+            { ...(workoutLog || {}), finished_at: new Date().toISOString(), is_rest_day: false, created_date: new Date().toISOString() },
+          ];
+
+      const newStreak = calculateStreak(mergedLogs, freshSplitDays);
+      setCurrentStreak(newStreak);
+
+      // Previous streak is one less — this workout is what bumped it up
+      streakIncreased.current = newStreak > 0;
+
+      // Keep GroupMember.streak in sync for legacy reads (non-blocking)
+      base44.entities.GroupMember.filter({ user_id: user.email })
+        .then((members) => {
+          if (members[0]) base44.entities.GroupMember.update(members[0].id, { streak: newStreak }).catch(() => {});
+        })
+        .catch(() => {});
+
+      // 3. Group streak — fire-and-forget, cannot block the UI
+      updateGroupStreaksInBackground(user);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['workoutLogs'] });
-      // If streak increased, show celebration first
       if (streakIncreased.current) {
         setShowStreakCelebration(true);
       } else {
@@ -1741,79 +1562,67 @@ export default function ActiveWorkout() {
         </p>
       )}
 
-      <DragDropContext
-        onDragEnd={handleDragEnd}
-        onDragStart={() => setIsReordering(true)}
-        enableDefaultSensors={false}
-        sensors={sensors}
-      >
-        <Droppable droppableId="exercises">
-          {(provided) => (
-            <div
-              className="px-4 pt-4 flex flex-col gap-3"
-              ref={provided.innerRef}
-              {...provided.droppableProps}
-            >
-              {(() => {
-                const orderedExercises = exerciseOrder.length
-                  ? exerciseOrder.map((id) => activeExercises.find((e) => e.id === id)).filter(Boolean)
-                  : activeExercises;
+      {(() => {
+        const orderedExercises = exerciseOrder.length
+          ? exerciseOrder.map((id) => activeExercises.find((e) => e.id === id)).filter(Boolean)
+          : activeExercises;
 
-                return orderedExercises.map((ex, idx) => (
-                  <Draggable key={ex.id} draggableId={ex.id} index={idx}>
-                    {(drag, snapshot) => (
-                      <div
-                        ref={drag.innerRef}
-                        {...drag.draggableProps}
-                        {...drag.dragHandleProps}
-                        tabIndex={-1}
-                        // Merge styles: draggableProps.style carries the displacement
-                        // transform; dragHandleProps.style carries userSelect/tap styles.
-                        // Spreading dragHandleProps last normally overwrites the transform,
-                        // so we merge both explicitly to keep displacement working.
-                        style={{
-                          ...(drag.draggableProps?.style ?? {}),
-                          ...(drag.dragHandleProps?.style ?? {}),
-                        }}
-                        className={cn(
-                          'bg-card border border-border rounded-2xl overflow-hidden transition-shadow',
-                          snapshot.isDragging && 'shadow-2xl border-primary/50 scale-[1.02]',
-                          longPressId === ex.id && !snapshot.isDragging &&
-                            'border-primary/50 shadow-[0_0_0_3px_hsl(var(--primary)/0.15)]'
-                        )}
-                      >
-                        <ExerciseCard
-                          ex={ex}
-                          exSets={sets[ex.id] || []}
-                          isCollapsed={isReordering || snapshot.isDragging || collapsingId === ex.id}
-                          isOpen={!isReordering && !snapshot.isDragging && !!expanded[ex.id]}
-                          prevSets={getPrevSets(ex.name)}
-                          onToggle={() => !isReordering && setExpanded((p) => ({ ...p, [ex.id]: !p[ex.id] }))}
-                          onUpdateSet={updateSet}
-                          onCompleteSet={completeSet}
-                          onUncompleteSet={uncompleteSet}
-                          onAddSet={addSet}
-                          onNotesChange={updateExerciseNotes}
-                          onNoteImagesChange={updateExerciseNoteImages}
-                          onRepRangeChange={updateRepRange}
-                          onRepModeChange={updateRepMode}
-                          onDeleteSet={deleteSet}
-                          onSwapExercise={swapExercise}
-                          onImageChange={updateExerciseImage}
-                          sessionType={day?.session_type}
-                          divider={false}
-                          userId={user?.email}
-                        />
-                      </div>
+        return (
+          <Reorder.Group
+            axis="y"
+            values={orderedExercises}
+            onReorder={handleReorder}
+            className="px-4 pt-4 flex flex-col gap-3 list-none"
+            as="div"
+          >
+            {orderedExercises.map((ex) => {
+              const isActive = isReordering || draggingId === ex.id;
+              return (
+                <ReorderableCard
+                  key={ex.id}
+                  ex={ex}
+                  isActive={isActive}
+                  onLongPressStart={(id) => setLongPressId(id)}
+                  onLongPressEnd={() => setLongPressId(null)}
+                  onDragStart={(id) => { setLongPressId(null); setDraggingId(id); setIsReordering(true); }}
+                  onDragEnd={() => { setDraggingId(null); setIsReordering(false); }}
+                >
+                  <div
+                    className={cn(
+                      'bg-card border border-border rounded-2xl overflow-hidden',
+                      longPressId === ex.id && draggingId !== ex.id &&
+                        'border-primary/50 shadow-[0_0_0_3px_hsl(var(--primary)/0.15)]'
                     )}
-                  </Draggable>
-                ));
-              })()}
-              {provided.placeholder}
-            </div>
-          )}
-        </Droppable>
-      </DragDropContext>
+                  >
+                    <ExerciseCard
+                      ex={ex}
+                      exSets={sets[ex.id] || []}
+                      isCollapsed={isActive}
+                      isOpen={!isActive && !!expanded[ex.id]}
+                      prevSets={getPrevSets(ex.name)}
+                      onToggle={() => !isActive && setExpanded((p) => ({ ...p, [ex.id]: !p[ex.id] }))}
+                      onUpdateSet={updateSet}
+                      onCompleteSet={completeSet}
+                      onUncompleteSet={uncompleteSet}
+                      onAddSet={addSet}
+                      onNotesChange={updateExerciseNotes}
+                      onNoteImagesChange={updateExerciseNoteImages}
+                      onRepRangeChange={updateRepRange}
+                      onRepModeChange={updateRepMode}
+                      onDeleteSet={deleteSet}
+                      onSwapExercise={swapExercise}
+                      onImageChange={updateExerciseImage}
+                      sessionType={day?.session_type}
+                      divider={false}
+                      userId={user?.email}
+                    />
+                  </div>
+                </ReorderableCard>
+              );
+            })}
+          </Reorder.Group>
+        );
+      })()}
 
       {showImportDay && (
         <ImportWorkoutModal
