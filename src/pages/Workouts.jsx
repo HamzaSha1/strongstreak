@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Flame, Plus, Edit, Play, BedDouble, Dumbbell, Upload } from 'lucide-react';
+import { Flame, Plus, Edit, Play, BedDouble, Dumbbell, Upload, Eye } from 'lucide-react';
+import DayViewEditSheet from '@/components/workout/DayViewEditSheet';
 import ImportSplitJsonModal from '@/components/splitbuilder/ImportSplitJsonModal';
 import StreakCalendar from '@/components/workout/StreakCalendar';
 import { Button } from '@/components/ui/button.jsx';
@@ -32,6 +33,7 @@ export default function Workouts() {
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [showImportSplit, setShowImportSplit] = useState(false);
   const [showStreakCalendar, setShowStreakCalendar] = useState(false);
+  const [viewingDay, setViewingDay] = useState(null);
 
 
   useEffect(() => {
@@ -311,14 +313,25 @@ export default function Workouts() {
                   </p>
 
                   {day.session_type !== 'Rest' && (
-                    <Button
-                      size="sm"
-                      className="bg-primary text-primary-foreground gap-1.5 w-full"
-                      onClick={() => navigate(`/workout/${day.id}`)}
-                    >
-                      <Play size={13} fill="currentColor" />
-                      Start Workout
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1 gap-1.5 border-border text-muted-foreground"
+                        onClick={() => setViewingDay(day)}
+                      >
+                        <Eye size={13} />
+                        View / Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        className="flex-1 bg-primary text-primary-foreground gap-1.5"
+                        onClick={() => navigate(`/workout/${day.id}`)}
+                      >
+                        <Play size={13} fill="currentColor" />
+                        Start
+                      </Button>
+                    </div>
                   )}
                 </div>
               );
@@ -360,6 +373,16 @@ export default function Workouts() {
         <ImportSplitJsonModal
           user={user}
           onClose={() => setShowImportSplit(false)}
+        />
+      )}
+
+      {/* Day view/edit sheet */}
+      {viewingDay && (
+        <DayViewEditSheet
+          day={viewingDay}
+          exercises={exercises.filter((e) => e.split_day_id === viewingDay.id).sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0))}
+          onClose={() => setViewingDay(null)}
+          onSaved={() => queryClient.invalidateQueries({ queryKey: ['splitExercises'] })}
         />
       )}
 
