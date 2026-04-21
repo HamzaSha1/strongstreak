@@ -49,36 +49,33 @@ function makeLongPressDragSensor(callbacksRef) {
         if (pressStart) { callbacksRef.current?.onPressCancel?.(); pressStart = null; }
       };
 
-      // Shared lift logic — called after React has had time to collapse the card.
-      // Uses snapLift so the card snaps between list positions (like iOS native
-      // list reorder). As the finger crosses a ~44px threshold the card swaps
-      // with its neighbour and other cards animate out of the way.
-      const SNAP_THRESHOLD = 44; // ≈ collapsed card height
-      const liftAfterCollapse = (preDrag, anchorY, isTouchDrag) => {
+      // Shared lift logic — called after React has re-rendered the collapsed card.
+      // Uses fluidLift so the card follows the finger smoothly, and other cards
+      // animate out of the way to show the insertion point (displacement).
+      //
+      // We pass the collapsed card's center as the fluidLift selection so the
+      // library's offset calculation is always valid (the original press coords
+      // could be outside the now-smaller card's bounds after collapse).
+      // The finger position is then fed into move() on every touchmove/mousemove.
+      const liftAfterCollapse = (preDrag, draggableId, isTouchDrag) => {
         if (!preDrag) return; // was aborted during rAF wait
         preDragPending = null;
 
-        const drag = preDrag.snapLift();
-        activeDrag = drag;
-        let currentAnchor = anchorY;
+        // Read the collapsed card's center from the DOM
+        const el = document.querySelector(`[data-rfd-draggable-id="${draggableId}"]`);
+        const rect = el?.getBoundingClientRect();
+        // Fall back to middle of viewport if element not found (shouldn't happen)
+        const cx = rect ? rect.left + rect.width  / 2 : window.innerWidth  / 2;
+        const cy = rect ? rect.top  + rect.height / 2 : window.innerHeight / 2;
 
-        const handleMove = (y) => {
-          if (!drag.isActive()) return;
-          const delta = y - currentAnchor;
-          if (delta > SNAP_THRESHOLD) {
-            drag.moveDown();
-            currentAnchor = y;
-          } else if (delta < -SNAP_THRESHOLD) {
-            drag.moveUp();
-            currentAnchor = y;
-          }
-        };
+        const drag = preDrag.fluidLift({ x: cx, y: cy });
+        activeDrag = drag;
 
         if (isTouchDrag) {
           const onMove = (e) => {
-            if (e.touches.length !== 1) return;
+            if (!drag.isActive() || e.touches.length !== 1) return;
             e.preventDefault();
-            handleMove(e.touches[0].clientY);
+            drag.move({ x: e.touches[0].clientX, y: e.touches[0].clientY });
           };
           const onEnd = () => {
             if (drag.isActive()) drag.drop();
@@ -91,7 +88,7 @@ function makeLongPressDragSensor(callbacksRef) {
           document.addEventListener('touchend', onEnd);
           document.addEventListener('touchcancel', onEnd);
         } else {
-          const onMove = (e) => handleMove(e.clientY);
+          const onMove = (e) => { if (drag.isActive()) drag.move({ x: e.clientX, y: e.clientY }); };
           const onEnd = () => {
             if (drag.isActive()) drag.drop();
             activeDrag = null;
@@ -127,15 +124,15 @@ function makeLongPressDragSensor(callbacksRef) {
 
           try { navigator.vibrate?.([40, 20, 40]); } catch (_) {}
           // Tell React to collapse this card NOW, before we lift
-          callbacksRef.current?.onPressActivate?.(pressStart.draggableId);
-          const { y: sy } = pressStart;
+          const { draggableId: liftId } = pressStart;
+          callbacksRef.current?.onPressActivate?.(liftId);
           pressStart = null;
           preDragPending = preDrag;
 
           // Wait 2 frames so React re-renders the card in collapsed state,
-          // then snap-lift it (snapLift is position-based, not pixel-position)
+          // then read the collapsed card's center and fluid-lift from there
           requestAnimationFrame(() => requestAnimationFrame(() => {
-            liftAfterCollapse(preDragPending, sy, true);
+            liftAfterCollapse(preDragPending, liftId, true);
           }));
         }, LONG_PRESS_MS);
       };
@@ -165,13 +162,13 @@ function makeLongPressDragSensor(callbacksRef) {
           if (!pressStart) return;
           const preDrag = api.tryGetLock(pressStart.draggableId);
           if (!preDrag) { cancel(); return; }
-          callbacksRef.current?.onPressActivate?.(pressStart.draggableId);
-          const { y: sy } = pressStart;
+          const { draggableId: liftId } = pressStart;
+          callbacksRef.current?.onPressActivate?.(liftId);
           pressStart = null;
           preDragPending = preDrag;
 
           requestAnimationFrame(() => requestAnimationFrame(() => {
-            liftAfterCollapse(preDragPending, sy, false);
+            liftAfterCollapse(preDragPending, liftId, false);
           }));
         }, LONG_PRESS_MS);
       };
