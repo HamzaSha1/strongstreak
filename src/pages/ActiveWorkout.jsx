@@ -1003,6 +1003,7 @@ export default function ActiveWorkout() {
   const [showImportDay, setShowImportDay] = useState(false);
   const [showStreakCelebration, setShowStreakCelebration] = useState(false);
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+  const [discarding, setDiscarding] = useState(false);
   const [showSaveChangesPrompt, setShowSaveChangesPrompt] = useState(false);
   const [savingChanges, setSavingChanges] = useState(false);
   const summaryRef = useRef(null);
@@ -1836,12 +1837,25 @@ export default function ActiveWorkout() {
             </div>
             <Button
               className="w-full bg-destructive text-destructive-foreground hover:bg-destructive/90 font-heading font-bold py-5"
-              onClick={() => {
-                if (workoutLog) base44.entities.WorkoutLog.delete(workoutLog.id).catch(() => {});
-                window.location.href = '/';
+              disabled={discarding}
+              onClick={async () => {
+                setDiscarding(true);
+                try {
+                  if (workoutLog) {
+                    // Delete all set logs recorded during this session first
+                    const setLogs = await base44.entities.SetLog.filter({ workout_log_id: workoutLog.id });
+                    await Promise.all(setLogs.map((s) => base44.entities.SetLog.delete(s.id)));
+                    // Then delete the workout log itself
+                    await base44.entities.WorkoutLog.delete(workoutLog.id);
+                  }
+                } catch (_) {
+                  // Best-effort cleanup — navigate away regardless
+                } finally {
+                  window.location.href = '/';
+                }
               }}
             >
-              Discard Workout
+              {discarding ? 'Discarding…' : 'Discard Workout'}
             </Button>
             <Button
               variant="outline"
