@@ -6,7 +6,7 @@ import { format, startOfDay, differenceInCalendarDays, subDays, parseISO } from 
 const parseLocalDate = (dateStr) => parseISO(dateStr);
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, ArrowLeftRight, Plus, Check, Flag, Pencil, ScanLine, Trash2, X, Camera, ImageIcon } from 'lucide-react';
+import { ArrowLeft, ArrowLeftRight, Plus, Check, Flag, Pencil, ScanLine, Trash2, X, Camera, ImageIcon, Timer, ChevronDown } from 'lucide-react';
 import { EXERCISES_BY_MUSCLE, SESSION_MUSCLE_GROUPS } from '@/components/splitbuilder/exerciseData';
 import ImportWorkoutModal from '@/components/import/ImportWorkoutModal';
 import { Button } from '@/components/ui/button';
@@ -452,6 +452,160 @@ function ExerciseNotes({ ex, onNotesChange, onNoteImagesChange }) {
   );
 }
 
+function ExerciseTimer() {
+  const [mode, setMode] = useState('open'); // 'open' | 'countdown'
+  const [targetInput, setTargetInput] = useState('');
+  const [phase, setPhase] = useState('idle'); // 'idle' | 'pre' | 'running' | 'stopped'
+  const [displayCount, setDisplayCount] = useState(0);
+  const [minimized, setMinimized] = useState(false);
+  const [removed, setRemoved] = useState(false);
+  const intervalRef = useRef(null);
+
+  const parseMmSs = (str) => {
+    if (!str) return 0;
+    const parts = str.split(':');
+    if (parts.length === 2) return (parseInt(parts[0]) || 0) * 60 + (parseInt(parts[1]) || 0);
+    return parseInt(str) || 0;
+  };
+  const fmt = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+  const clear = () => { if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; } };
+
+  useEffect(() => () => clear(), []);
+
+  const startRunning = (currentMode, targetSecs) => {
+    setPhase('running');
+    if (currentMode === 'open') {
+      let elapsed = 0;
+      setDisplayCount(0);
+      intervalRef.current = setInterval(() => { elapsed += 1; setDisplayCount(elapsed); }, 1000);
+    } else {
+      let remaining = targetSecs;
+      setDisplayCount(targetSecs);
+      intervalRef.current = setInterval(() => {
+        remaining -= 1;
+        setDisplayCount(remaining);
+        if (remaining <= 0) { clearInterval(intervalRef.current); setPhase('stopped'); }
+      }, 1000);
+    }
+  };
+
+  const handleStart = () => {
+    clear();
+    const currentMode = mode;
+    const targetSecs = parseMmSs(targetInput);
+    let pre = 10;
+    setPhase('pre');
+    setDisplayCount(pre);
+    intervalRef.current = setInterval(() => {
+      pre -= 1;
+      if (pre <= 0) { clear(); startRunning(currentMode, targetSecs); }
+      else setDisplayCount(pre);
+    }, 1000);
+  };
+
+  const handleStop = () => { clear(); setPhase('stopped'); };
+  const handleReset = () => { clear(); setPhase('idle'); setDisplayCount(0); };
+
+  if (removed) return null;
+
+  const timeDisplay = phase === 'pre'
+    ? String(displayCount)
+    : phase === 'idle'
+    ? (mode === 'countdown' ? (targetInput || '0:00') : '0:00')
+    : fmt(displayCount);
+
+  if (minimized) {
+    return (
+      <button
+        onClick={() => setMinimized(false)}
+        className="fixed bottom-20 left-4 z-50 px-4 h-10 rounded-full bg-primary text-primary-foreground font-heading font-bold text-sm shadow-lg flex items-center gap-2"
+      >
+        <Timer size={14} /> {timeDisplay}
+      </button>
+    );
+  }
+
+  return (
+    <div className="mb-3 bg-muted/40 border border-border rounded-2xl p-3 flex flex-col gap-3">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1.5 text-xs font-semibold">
+          <Timer size={14} className="text-primary" /> Exercise Timer
+        </div>
+        <div className="flex gap-1">
+          <button onClick={() => setMinimized(true)} className="p-1 text-muted-foreground hover:text-foreground" title="Minimise">
+            <ChevronDown size={15} />
+          </button>
+          <button onClick={() => { clear(); setRemoved(true); }} className="p-1 text-muted-foreground hover:text-destructive" title="Remove">
+            <X size={15} />
+          </button>
+        </div>
+      </div>
+
+      {/* Mode selector — only when idle or stopped */}
+      {(phase === 'idle' || phase === 'stopped') && (
+        <div className="flex gap-1.5">
+          {[['open', 'Open Timer'], ['countdown', 'Countdown']].map(([id, label]) => (
+            <button key={id} onClick={() => { setMode(id); handleReset(); }}
+              className={cn('flex-1 py-1.5 rounded-xl border text-xs font-semibold transition-colors',
+                mode === id ? 'bg-primary text-primary-foreground border-primary' : 'border-border text-muted-foreground')}>
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Countdown target input */}
+      {mode === 'countdown' && (phase === 'idle' || phase === 'stopped') && (
+        <input
+          type="text" inputMode="numeric" placeholder="mm:ss — e.g. 1:30"
+          value={targetInput}
+          onChange={(e) => setTargetInput(e.target.value)}
+          className="h-9 rounded-xl bg-input border border-border px-3 text-sm text-center"
+        />
+      )}
+
+      {/* Big time display */}
+      <div className="flex flex-col items-center py-1">
+        {phase === 'pre' && <p className="text-xs text-muted-foreground mb-1">Get ready...</p>}
+        <p className={cn('font-heading font-bold text-primary', phase === 'pre' ? 'text-6xl' : 'text-5xl')}>
+          {timeDisplay}
+        </p>
+        {phase === 'stopped' && <p className="text-xs text-muted-foreground mt-1">Timer stopped</p>}
+      </div>
+
+      {/* Controls */}
+      <div className="flex gap-2">
+        {(phase === 'idle' || phase === 'stopped') && (
+          <>
+            <button onClick={handleStart}
+              disabled={mode === 'countdown' && !targetInput}
+              className="flex-1 py-2.5 rounded-2xl bg-primary text-primary-foreground text-sm font-bold disabled:opacity-40">
+              {phase === 'stopped' ? 'Start Again' : 'Start Timer'}
+            </button>
+            {phase === 'stopped' && (
+              <button onClick={handleReset} className="px-4 py-2.5 rounded-2xl bg-secondary text-foreground text-sm font-semibold">
+                Reset
+              </button>
+            )}
+          </>
+        )}
+        {phase === 'pre' && (
+          <button onClick={() => { clear(); setPhase('idle'); setDisplayCount(0); }}
+            className="flex-1 py-2.5 rounded-2xl bg-secondary text-foreground text-sm font-bold">
+            Cancel
+          </button>
+        )}
+        {phase === 'running' && (
+          <button onClick={handleStop} className="flex-1 py-2.5 rounded-2xl bg-destructive text-white text-sm font-bold">
+            Stop
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function ExerciseCard({ ex, exSets, isOpen, isCollapsed, prevSets, onToggle, onUpdateSet, onCompleteSet, onUncompleteSet, onAddSet, onNotesChange, onNoteImagesChange, onRepRangeChange, onRepModeChange, onDeleteSet, onSwapExercise, onImageChange, sessionType, divider, userId }) {
   const { unit: weightUnit, toggle: toggleUnit, toDisplay, toKg } = useWeightUnit();
   const isCardio = ex.exercise_type === 'cardio';
@@ -599,17 +753,30 @@ function ExerciseCard({ ex, exSets, isOpen, isCollapsed, prevSets, onToggle, onU
                 className="flex-1 h-10 text-center bg-background border border-border rounded-xl text-sm font-bold outline-none focus:border-primary transition-colors disabled:opacity-50 min-w-0 placeholder:text-muted-foreground/40 placeholder:font-normal"
               />
 
-              <input
-                type="number"
-                inputMode="decimal"
-                placeholder={prevSet?.reps?.toString() || '—'}
-                value={s.reps}
-                min="0"
-                onChange={(e) => onUpdateSet(ex.id, actualIdx, { reps: e.target.value === '' ? '' : String(Math.max(0, parseFloat(e.target.value) || 0)) })}
-                onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
-                disabled={s.completed}
-                className="flex-1 h-10 text-center bg-background border border-border rounded-xl text-sm font-bold outline-none focus:border-primary transition-colors disabled:opacity-50 min-w-0 placeholder:text-muted-foreground/40 placeholder:font-normal"
-              />
+              {ex.rep_mode === 'time' ? (
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder={prevSet?.reps || '0:00'}
+                  value={s.reps}
+                  onChange={(e) => onUpdateSet(ex.id, actualIdx, { reps: e.target.value })}
+                  onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
+                  disabled={s.completed}
+                  className="flex-1 h-10 text-center bg-background border border-border rounded-xl text-sm font-bold outline-none focus:border-primary transition-colors disabled:opacity-50 min-w-0 placeholder:text-muted-foreground/40 placeholder:font-normal"
+                />
+              ) : (
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  placeholder={prevSet?.reps?.toString() || '—'}
+                  value={s.reps}
+                  min="0"
+                  onChange={(e) => onUpdateSet(ex.id, actualIdx, { reps: e.target.value === '' ? '' : String(Math.max(0, parseFloat(e.target.value) || 0)) })}
+                  onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
+                  disabled={s.completed}
+                  className="flex-1 h-10 text-center bg-background border border-border rounded-xl text-sm font-bold outline-none focus:border-primary transition-colors disabled:opacity-50 min-w-0 placeholder:text-muted-foreground/40 placeholder:font-normal"
+                />
+              )}
 
               <button
                 disabled={s.completed}
@@ -663,7 +830,7 @@ function ExerciseCard({ ex, exSets, isOpen, isCollapsed, prevSets, onToggle, onU
           <>
             <span className="w-14 text-[10px] text-muted-foreground text-center uppercase tracking-widest shrink-0">Range</span>
             <span className="flex-1 text-[10px] text-muted-foreground text-center uppercase tracking-widest">Weight ({weightUnit})</span>
-            <span className="flex-1 text-[10px] text-muted-foreground text-center uppercase tracking-widest">Reps</span>
+            <span className="flex-1 text-[10px] text-muted-foreground text-center uppercase tracking-widest">{ex.rep_mode === 'time' ? 'Time' : 'Reps'}</span>
             <span className="w-14 text-[10px] text-muted-foreground text-center uppercase tracking-widest ml-2">RIR</span>
             <span className="w-10 shrink-0" />
           </>
@@ -879,6 +1046,7 @@ function ExerciseCard({ ex, exSets, isOpen, isCollapsed, prevSets, onToggle, onU
           {/* ── Sets / notes body ── */}
           {isOpen && (
             <div className="border-t border-border px-4 pb-4 pt-3">
+              {ex.rep_mode === 'time' && <ExerciseTimer />}
               <ExerciseNotes ex={ex} onNotesChange={onNotesChange} onNoteImagesChange={onNoteImagesChange} />
               <ExerciseHistory exerciseName={ex.name} userId={userId} weightUnit={weightUnit} toDisplay={toDisplay} />
               {!isCardio && (
