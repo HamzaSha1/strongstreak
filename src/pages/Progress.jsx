@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -9,7 +9,6 @@ import { cn } from '@/lib/utils';
 import { format, parse } from 'date-fns';
 import { toast } from 'sonner';
 import { uploadImage } from '@/lib/uploadImage';
-import { motion, AnimatePresence } from 'framer-motion';
 
 // ─── Lightbox ─────────────────────────────────────────────────────────────────
 function Lightbox({ photo, onClose }) {
@@ -29,10 +28,7 @@ function Lightbox({ photo, onClose }) {
           <p className="font-heading font-bold text-white text-base">{photo.weight_kg} kg</p>
           <p className="text-white/60 text-xs">{format(parse(photo.date, 'yyyy-MM-dd', new Date()), 'MMM d, yyyy')}</p>
         </div>
-        <button
-          onClick={onClose}
-          className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center"
-        >
+        <button onClick={onClose} className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
           <X size={18} className="text-white" />
         </button>
       </div>
@@ -54,10 +50,7 @@ function Lightbox({ photo, onClose }) {
 // ─── Compare View ─────────────────────────────────────────────────────────────
 function CompareView({ a, b, onClose }) {
   return (
-    <div
-      className="fixed inset-0 bg-black flex flex-col"
-      style={{ zIndex: 1000 }}
-    >
+    <div className="fixed inset-0 bg-black flex flex-col" style={{ zIndex: 1000 }}>
       <div
         className="flex items-center justify-between px-4 shrink-0"
         style={{ paddingTop: 'calc(0.75rem + env(safe-area-inset-top))', paddingBottom: '0.75rem' }}
@@ -83,6 +76,36 @@ function CompareView({ a, b, onClose }) {
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+// ─── Tappable photo wrapper ───────────────────────────────────────────────────
+// Uses touchstart/touchend to fire reliably inside iOS scroll containers.
+// If the finger moved more than 8px we treat it as a scroll, not a tap.
+function TappablePhoto({ children, onTap, className }) {
+  const touchStartY = useRef(null);
+  const touchStartX = useRef(null);
+
+  return (
+    <div
+      className={className}
+      onTouchStart={(e) => {
+        touchStartY.current = e.touches[0].clientY;
+        touchStartX.current = e.touches[0].clientX;
+      }}
+      onTouchEnd={(e) => {
+        const dy = Math.abs(e.changedTouches[0].clientY - touchStartY.current);
+        const dx = Math.abs(e.changedTouches[0].clientX - touchStartX.current);
+        if (dy < 8 && dx < 8) {
+          e.preventDefault();
+          onTap();
+        }
+      }}
+      // also handle regular click for desktop / PWA installs
+      onClick={onTap}
+    >
+      {children}
     </div>
   );
 }
@@ -171,25 +194,21 @@ export default function Progress() {
   };
 
   return (
-    <>
-      {/* Lightbox — outside the scroll container, always on top */}
-      {lightboxPhoto && <Lightbox photo={lightboxPhoto} onClose={() => setLightboxPhoto(null)} />}
+    <div className="flex flex-col h-full" style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top))' }}>
 
-      {/* Compare view */}
+      {/* Lightbox & compare — rendered at top level, above everything */}
+      {lightboxPhoto && <Lightbox photo={lightboxPhoto} onClose={() => setLightboxPhoto(null)} />}
       {showCompare && compareSelected.length === 2 && (
         <CompareView a={compareSelected[0]} b={compareSelected[1]} onClose={() => setShowCompare(false)} />
       )}
 
-      {/* Page content — no inner scroll, Layout's main handles it */}
-      <div className="px-4 pb-6" style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top))' }}>
-
-        {/* Header */}
+      {/* ── Static top section ── */}
+      <div className="px-4 shrink-0">
         <div className="mb-6">
           <h1 className="font-heading font-bold text-2xl mb-1">Progress</h1>
           <p className="text-muted-foreground text-sm">Track your weight journey</p>
         </div>
 
-        {/* Current weight card */}
         {currentWeight && (
           <div className="bg-card border border-border rounded-2xl p-4 mb-6">
             <div className="flex items-end justify-between">
@@ -207,7 +226,6 @@ export default function Progress() {
           </div>
         )}
 
-        {/* Action buttons */}
         {!showForm && (
           <div className="flex gap-2 mb-4">
             <Button onClick={() => setShowForm(true)} className="flex-1 gap-2">
@@ -226,7 +244,6 @@ export default function Progress() {
           </div>
         )}
 
-        {/* Compare instruction banner */}
         {compareMode && (
           <div className="bg-primary/10 border border-primary/30 rounded-xl px-4 py-2 mb-4 flex items-center justify-between">
             <p className="text-primary text-xs font-medium">
@@ -244,8 +261,11 @@ export default function Progress() {
             )}
           </div>
         )}
+      </div>
 
-        {/* Log weight form */}
+      {/* ── Scrollable content ── */}
+      <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-24">
+
         {showForm && (
           <div className="bg-card border border-border rounded-2xl p-4 mb-6">
             <input
@@ -315,7 +335,6 @@ export default function Progress() {
           </div>
         )}
 
-        {/* Empty state */}
         {chartData.length === 0 && !showForm && (
           <div className="flex flex-col items-center justify-center py-12 gap-3 text-center">
             <TrendingUp size={36} className="text-muted-foreground/40" />
@@ -324,7 +343,6 @@ export default function Progress() {
           </div>
         )}
 
-        {/* Chart */}
         {chartData.length > 0 && (
           <div className="bg-card border border-border rounded-2xl p-4 mb-6">
             <p className="text-xs uppercase tracking-wide text-muted-foreground mb-4">Weight Trend</p>
@@ -344,7 +362,6 @@ export default function Progress() {
           </div>
         )}
 
-        {/* Weight history */}
         {weights.length > 0 && (
           <div className="bg-card border border-border rounded-2xl p-4">
             <p className="text-xs uppercase tracking-wide text-muted-foreground mb-3">History</p>
@@ -365,14 +382,11 @@ export default function Progress() {
                       )}
                     </div>
                     {w.photo_url && (
-                      <div
-                        className="relative cursor-pointer"
-                        onClick={() => {
-                          if (compareMode) {
-                            toggleCompareSelect(w);
-                          } else {
-                            setLightboxPhoto(w);
-                          }
+                      <TappablePhoto
+                        className="relative"
+                        onTap={() => {
+                          if (compareMode) toggleCompareSelect(w);
+                          else setLightboxPhoto(w);
                         }}
                       >
                         <img
@@ -383,7 +397,6 @@ export default function Progress() {
                             isSelected && compareMode && 'ring-2 ring-primary ring-offset-2 ring-offset-card'
                           )}
                         />
-                        {/* Compare selection badge */}
                         {compareMode && (
                           <div className={cn(
                             'absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center border-2 transition-all',
@@ -392,13 +405,12 @@ export default function Progress() {
                             {isSelected && <Check size={14} className="text-primary-foreground" />}
                           </div>
                         )}
-                        {/* View hint */}
                         {!compareMode && (
                           <div className="absolute bottom-2 right-2 bg-black/50 rounded-md px-2 py-0.5">
                             <p className="text-white/80 text-[10px]">Tap to view</p>
                           </div>
                         )}
-                      </div>
+                      </TappablePhoto>
                     )}
                   </div>
                 );
@@ -408,6 +420,6 @@ export default function Progress() {
         )}
 
       </div>
-    </>
+    </div>
   );
 }
