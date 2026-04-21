@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Check, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const RIR_VALUES = [0, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+const RIR_VALUES = [10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0.5, 0];
 
 /**
  * Full-screen overlay RIR picker.
@@ -32,7 +32,7 @@ export default function RIRPicker({ initialValue, onConfirm, onSkip }) {
         {/* Title */}
         <div className="text-center">
           <p className="font-heading font-bold text-lg">Effort Level (RIR)</p>
-          <p className="text-xs text-muted-foreground mt-0.5">0 = Failure (max) · 10 = Very Easy (10+ reps left)</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Swipe left → harder effort · 10 = Very Easy · 0 = Failure</p>
         </div>
 
         {/* Horizontal scroll picker */}
