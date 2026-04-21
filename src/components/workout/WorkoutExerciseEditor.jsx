@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { Trash2, Plus, Clock, GripVertical, ArrowUp, ArrowDown, Camera, ImageIcon, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SESSION_MUSCLE_GROUPS, EXERCISES_BY_MUSCLE } from '@/components/splitbuilder/exerciseData';
@@ -24,9 +24,7 @@ export default function WorkoutExerciseEditor({ exercises, sessionType, onClose,
   const [editingRestId, setEditingRestId] = useState(null);
   const [viewingImageEx, setViewingImageEx] = useState(null);
   const [uploadingId, setUploadingId] = useState(null);
-
-  const cameraInputRef = useRef(null);
-  const libraryInputRef = useRef(null);
+  const [changingPhoto, setChangingPhoto] = useState(false);
 
   const muscleGroups = SESSION_MUSCLE_GROUPS[sessionType] ||
     SESSION_MUSCLE_GROUPS['Custom'] || [];
@@ -146,7 +144,7 @@ export default function WorkoutExerciseEditor({ exercises, sessionType, onClose,
 
                           {/* Photo thumbnail */}
                           <button
-                            onClick={() => setViewingImageEx(ex)}
+                            onClick={() => { setViewingImageEx(ex); setChangingPhoto(false); }}
                             className="relative shrink-0 w-10 h-10 rounded-xl overflow-hidden bg-secondary border border-border flex items-center justify-center"
                           >
                             {ex.image_url ? (
@@ -423,7 +421,7 @@ export default function WorkoutExerciseEditor({ exercises, sessionType, onClose,
           <div className="relative w-full max-w-sm bg-card rounded-3xl overflow-hidden flex flex-col">
             {/* Close */}
             <button
-              onClick={() => setViewingImageEx(null)}
+              onClick={() => { setViewingImageEx(null); setChangingPhoto(false); }}
               className="absolute top-3 right-3 z-10 p-2 rounded-full bg-black/50 text-white"
             >
               <X size={18} />
@@ -460,40 +458,58 @@ export default function WorkoutExerciseEditor({ exercises, sessionType, onClose,
               </p>
             </div>
 
-            {/* Action buttons */}
-            <div className="flex gap-3 px-5 pb-5 pt-3">
-              {/* Take Photo — opens native camera */}
-              <label className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-primary text-primary-foreground text-sm font-semibold cursor-pointer">
-                <Camera size={16} />
-                Take Photo
-                <input
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) handleImageUpload(file, viewingExLive.id);
-                    e.target.value = '';
-                  }}
-                />
-              </label>
-
-              {/* Upload from Library */}
-              <label className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-secondary text-foreground text-sm font-semibold cursor-pointer">
-                <ImageIcon size={16} />
-                Library
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) handleImageUpload(file, viewingExLive.id);
-                    e.target.value = '';
-                  }}
-                />
-              </label>
+            <div className="px-5 pb-5 pt-3">
+              {!changingPhoto ? (
+                /* VIEW mode — just a "Change Photo" button */
+                <button
+                  onClick={() => setChangingPhoto(true)}
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-secondary text-foreground text-sm font-semibold"
+                >
+                  <Camera size={16} />
+                  Change Photo
+                </button>
+              ) : (
+                /* CHANGE mode — pick source */
+                <div className="flex flex-col gap-2">
+                  <div className="flex gap-3">
+                    <label className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-primary text-primary-foreground text-sm font-semibold cursor-pointer">
+                      <Camera size={16} />
+                      Take Photo
+                      <input
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) { handleImageUpload(file, viewingExLive.id); setChangingPhoto(false); }
+                          e.target.value = '';
+                        }}
+                      />
+                    </label>
+                    <label className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-secondary text-foreground text-sm font-semibold cursor-pointer">
+                      <ImageIcon size={16} />
+                      Library
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) { handleImageUpload(file, viewingExLive.id); setChangingPhoto(false); }
+                          e.target.value = '';
+                        }}
+                      />
+                    </label>
+                  </div>
+                  <button
+                    onClick={() => setChangingPhoto(false)}
+                    className="text-xs text-muted-foreground text-center py-1"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
