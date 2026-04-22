@@ -6,10 +6,12 @@ import FlappyBirdGame from './FlappyBirdGame';
 import BoxBreathingExercise from './BoxBreathingExercise';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRestGame } from '@/hooks/useRestGame';
-import { playBell, requestNotificationPermission, showTimerNotification } from '@/lib/bellSound';
+import { playBell } from '@/lib/bellSound';
+import { scheduleNotification, cancelNotification, requestNotificationPermission } from '@/lib/notifications';
 
 const RADIUS = 45;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
+const REST_TAG = 'rest-timer';
 
 export default function RestTimer({ seconds, total, onDone, onSkip, isMinimized, onToggleMinimize, gameState, onGameStateChange, notification }) {
   const [remaining, setRemaining] = useState(seconds);
@@ -21,6 +23,26 @@ export default function RestTimer({ seconds, total, onDone, onSkip, isMinimized,
   const [editValue, setEditValue] = useState(seconds);
   const [showNotification, setShowNotification] = useState(!!notification);
 
+  // Schedule a background notification for when rest ends
+  const scheduleRestNotification = (delayMs) => {
+    scheduleNotification({
+      tag: REST_TAG,
+      title: '💪 Rest Complete!',
+      body: 'Time to crush your next set!',
+      delayMs: Math.max(500, delayMs),
+    });
+  };
+
+  // On mount: request permission and schedule SW background notification
+  useEffect(() => {
+    requestNotificationPermission().then((granted) => {
+      if (granted) scheduleRestNotification(seconds * 1000);
+    });
+    // On unmount (skip, done, close): cancel scheduled notification
+    return () => cancelNotification(REST_TAG);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     if (!notification) return;
     setShowNotification(true);
@@ -28,19 +50,18 @@ export default function RestTimer({ seconds, total, onDone, onSkip, isMinimized,
     return () => clearTimeout(t);
   }, [notification]);
 
-  // Ask for notification permission as soon as the timer appears
-  useEffect(() => {
-    requestNotificationPermission();
-  }, []);
+  const endTimeRef = useRef(Date.now() + seconds * 1000);
 
   const adjustTime = (delta) => {
     const newEnd = endTimeRef.current + delta * 1000;
-    const minEnd = Date.now() + 1000; // at least 1 second left
+    const minEnd = Date.now() + 1000;
     endTimeRef.current = Math.max(newEnd, minEnd);
-    setRemaining(Math.max(1, Math.round((endTimeRef.current - Date.now()) / 1000)));
+    const newRemaining = Math.max(1, Math.round((endTimeRef.current - Date.now()) / 1000));
+    setRemaining(newRemaining);
+    // Reschedule SW notification with updated time
+    scheduleRestNotification(endTimeRef.current - Date.now());
   };
 
-  const endTimeRef = useRef(Date.now() + remaining * 1000);
   useEffect(() => {
     endTimeRef.current = Date.now() + remaining * 1000;
     const interval = setInterval(() => {
@@ -48,9 +69,10 @@ export default function RestTimer({ seconds, total, onDone, onSkip, isMinimized,
       if (left <= 0) {
         clearInterval(interval);
         setRemaining(0);
-        // Fire bell sound + system notification, then call onDone
+        // Cancel the SW notification (timer ended in-app, no need for push)
+        cancelNotification(REST_TAG);
+        // Play bell sound + vibrate for in-app experience
         playBell();
-        showTimerNotification();
         try { navigator.vibrate?.([200, 80, 200, 80, 200]); } catch (_) {}
         onDone();
       } else {
@@ -192,7 +214,16 @@ export default function RestTimer({ seconds, total, onDone, onSkip, isMinimized,
                 className="w-20 text-center text-2xl font-heading font-bold bg-muted border border-border rounded-lg px-3 py-2 text-foreground"
               />
               <span className="text-lg text-muted-foreground">s</span>
-              <button onClick={() => { endTimeRef.current = Date.now() + editValue * 1000; setRemaining(editValue); setIsEditing(false); }} className="text-primary hover:text-primary/80 transition-colors p-1">
+              <button
+                onClick={() => {
+                  endTimeRef.current = Date.now() + editValue * 1000;
+                  setRemaining(editValue);
+                  setIsEditing(false);
+                  // Reschedule SW notification for the new time
+                  scheduleRestNotification(editValue * 1000);
+                }}
+                className="text-primary hover:text-primary/80 transition-colors p-1"
+              >
                 <Check size={20} />
               </button>
             </motion.div>
@@ -250,7 +281,10 @@ export default function RestTimer({ seconds, total, onDone, onSkip, isMinimized,
           >
             <Edit2 size={15} /> Edit
           </button>
-          <button onClick={onSkip} className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground text-sm transition-colors">
+          <button
+            onClick={() => { cancelNotification(REST_TAG); onSkip(); }}
+            className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground text-sm transition-colors"
+          >
             <SkipForward size={15} /> Skip
           </button>
         </div>

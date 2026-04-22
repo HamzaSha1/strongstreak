@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import html2canvas from 'html2canvas';
 import { useParams, useNavigate } from 'react-router-dom';
 import { format, startOfDay, differenceInCalendarDays, subDays, parseISO } from 'date-fns';
+import { scheduleNotification, cancelNotification, requestNotificationPermission } from '@/lib/notifications';
 
 const parseLocalDate = (dateStr) => parseISO(dateStr);
 import { base44 } from '@/api/base44Client';
@@ -361,7 +362,7 @@ function ExerciseTimer() {
   const fmt = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
   const clear = () => { if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; } };
 
-  useEffect(() => () => clear(), []);
+  useEffect(() => () => { clear(); cancelNotification('exercise-timer'); }, []);
 
   const startRunning = (currentMode, targetSecs) => {
     setPhase('running');
@@ -370,18 +371,34 @@ function ExerciseTimer() {
       setDisplayCount(0);
       intervalRef.current = setInterval(() => { elapsed += 1; setDisplayCount(elapsed); }, 1000);
     } else {
+      // Schedule background notification for when countdown ends
+      requestNotificationPermission().then((granted) => {
+        if (granted) {
+          scheduleNotification({
+            tag: 'exercise-timer',
+            title: '⏱️ Time\'s Up!',
+            body: 'Your exercise timer has ended. Log your set!',
+            delayMs: targetSecs * 1000,
+          });
+        }
+      });
       let remaining = targetSecs;
       setDisplayCount(targetSecs);
       intervalRef.current = setInterval(() => {
         remaining -= 1;
         setDisplayCount(remaining);
-        if (remaining <= 0) { clearInterval(intervalRef.current); setPhase('stopped'); }
+        if (remaining <= 0) {
+          clearInterval(intervalRef.current);
+          cancelNotification('exercise-timer'); // SW may have already fired; cancel to be safe
+          setPhase('stopped');
+        }
       }, 1000);
     }
   };
 
   const handleStart = () => {
     clear();
+    cancelNotification('exercise-timer');
     const currentMode = mode;
     const targetSecs = parseMmSs(targetInput);
     let pre = 10;
@@ -394,8 +411,8 @@ function ExerciseTimer() {
     }, 1000);
   };
 
-  const handleStop = () => { clear(); setPhase('stopped'); };
-  const handleReset = () => { clear(); setPhase('idle'); setDisplayCount(0); };
+  const handleStop = () => { clear(); cancelNotification('exercise-timer'); setPhase('stopped'); };
+  const handleReset = () => { clear(); cancelNotification('exercise-timer'); setPhase('idle'); setDisplayCount(0); };
 
   if (removed) return null;
 
