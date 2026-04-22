@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useActiveWorkout } from '@/lib/ActiveWorkoutContext';
+import { getReminderEnabled, getReminderTime, scheduleWeightReminder } from '@/lib/notifications';
 
 const ActiveWorkout = lazy(() => import('@/pages/ActiveWorkout'));
 
@@ -35,6 +36,13 @@ export default function Layout() {
   const [prevPath, setPrevPath] = useState(location.pathname);
   const mainRef = useRef(null);
   const [bgColor, setBgColor] = useState(null);
+
+  // Reschedule daily weight reminder every time the app opens
+  useEffect(() => {
+    if (getReminderEnabled()) {
+      scheduleWeightReminder(getReminderTime());
+    }
+  }, []);
 
   useEffect(() => {
     let unsubscribe;

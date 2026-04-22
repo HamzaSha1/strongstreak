@@ -65,3 +65,58 @@ export async function cancelNotification(tag) {
   if (!sw) return;
   sw.postMessage({ type: 'CANCEL_NOTIFICATION', tag });
 }
+
+// ── Daily weight / progress reminder ────────────────────────────────────────
+
+const REMINDER_ENABLED_KEY = 'ss_reminder_enabled';
+const REMINDER_TIME_KEY    = 'ss_reminder_time';
+const DEFAULT_REMINDER_TIME = '08:00';
+
+export function getReminderEnabled() {
+  return localStorage.getItem(REMINDER_ENABLED_KEY) !== 'false'; // default true
+}
+
+export function getReminderTime() {
+  return localStorage.getItem(REMINDER_TIME_KEY) || DEFAULT_REMINDER_TIME;
+}
+
+export function setReminderEnabled(val) {
+  localStorage.setItem(REMINDER_ENABLED_KEY, String(val));
+}
+
+export function setReminderTime(val) {
+  localStorage.setItem(REMINDER_TIME_KEY, val);
+}
+
+/**
+ * Schedule (or reschedule) the daily progress reminder.
+ * Fires at the user-chosen time; if that time has already passed today,
+ * schedules for tomorrow. Call this every time the app opens.
+ */
+export async function scheduleWeightReminder(timeStr) {
+  if (!notificationsGranted()) return;
+
+  const [hours, minutes] = (timeStr || DEFAULT_REMINDER_TIME).split(':').map(Number);
+  const now  = new Date();
+  const next = new Date();
+  next.setHours(hours, minutes, 0, 0);
+
+  // Already passed today → push to tomorrow
+  if (next <= now) next.setDate(next.getDate() + 1);
+
+  const delayMs = next.getTime() - now.getTime();
+
+  await scheduleNotification({
+    tag:     'weight-reminder',
+    title:   '📸 Log your progress!',
+    body:    'Time to weigh in and snap a progress photo. Keep the streak going! 💪',
+    delayMs,
+  });
+}
+
+/**
+ * Cancel the daily weight reminder.
+ */
+export async function cancelWeightReminder() {
+  await cancelNotification('weight-reminder');
+}

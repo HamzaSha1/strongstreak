@@ -1,13 +1,19 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { LogOut, Trash2, Camera, Eye, EyeOff, Lock, Shield, User, AtSign, Check, X, Loader2, ShieldOff, Palette } from 'lucide-react';
+import { LogOut, Trash2, Camera, Eye, EyeOff, Lock, Shield, User, AtSign, Check, X, Loader2, ShieldOff, Palette, Bell, BellOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { useWeightUnit } from '@/hooks/useWeightUnit';
 import { useRestGame } from '@/hooks/useRestGame';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  getReminderEnabled, getReminderTime,
+  setReminderEnabled, setReminderTime,
+  scheduleWeightReminder, cancelWeightReminder,
+  requestNotificationPermission,
+} from '@/lib/notifications';
 
 export default function ProfileSettings({ user, profile, setProfile }) {
   const navigate = useNavigate();
@@ -15,6 +21,36 @@ export default function ProfileSettings({ user, profile, setProfile }) {
   const { unit: weightUnit, toggle: toggleUnit } = useWeightUnit();
   const { get: getRestGame, set: setRestGame } = useRestGame();
   const [restGame, setRestGameState] = useState(() => getRestGame());
+
+  const [reminderEnabled, setReminderEnabledState] = useState(() => getReminderEnabled());
+  const [reminderTime, setReminderTimeState] = useState(() => getReminderTime());
+
+  const handleToggleReminder = async (val) => {
+    setReminderEnabledState(val);
+    setReminderEnabled(val);
+    if (val) {
+      const granted = await requestNotificationPermission();
+      if (!granted) {
+        toast.error('Please allow notifications in your phone settings first.');
+        setReminderEnabledState(false);
+        setReminderEnabled(false);
+        return;
+      }
+      await scheduleWeightReminder(reminderTime);
+      toast.success('Morning reminder set for ' + reminderTime);
+    } else {
+      await cancelWeightReminder();
+      toast.success('Reminder turned off');
+    }
+  };
+
+  const handleReminderTimeChange = async (newTime) => {
+    setReminderTimeState(newTime);
+    setReminderTime(newTime);
+    if (reminderEnabled) {
+      await scheduleWeightReminder(newTime);
+    }
+  };
 
 
 
@@ -317,6 +353,37 @@ export default function ProfileSettings({ user, profile, setProfile }) {
         <button onClick={toggleUnit} className="flex items-center gap-1 px-4 py-2 rounded-xl border border-primary text-primary font-heading font-bold text-sm">
           {weightUnit === 'kg' ? 'KG' : 'LBS'}
         </button>
+      </div>
+
+      {/* Morning reminder */}
+      <div className="bg-card border border-border rounded-2xl p-4 flex flex-col gap-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="font-semibold text-sm flex items-center gap-1.5">
+              {reminderEnabled ? <Bell size={14} className="text-primary" /> : <BellOff size={14} className="text-muted-foreground" />}
+              Morning Reminder
+            </p>
+            <p className="text-xs text-muted-foreground">Daily nudge to log your weight &amp; photo</p>
+          </div>
+          {/* Toggle switch */}
+          <button
+            onClick={() => handleToggleReminder(!reminderEnabled)}
+            className={`relative w-11 h-6 rounded-full transition-colors ${reminderEnabled ? 'bg-primary' : 'bg-muted border border-border'}`}
+          >
+            <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${reminderEnabled ? 'translate-x-5' : 'translate-x-0.5'}`} />
+          </button>
+        </div>
+        {reminderEnabled && (
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-muted-foreground">Reminder time</p>
+            <input
+              type="time"
+              value={reminderTime}
+              onChange={(e) => handleReminderTimeChange(e.target.value)}
+              className="h-9 rounded-xl bg-input border border-border px-3 text-sm font-heading font-semibold text-primary"
+            />
+          </div>
+        )}
       </div>
 
       {/* Blocked Users */}
