@@ -115,7 +115,7 @@ export default function Layout() {
       />
       <div className="flex flex-col items-center" style={{ height: '100dvh', ...dynamicStyle }}>
         <div className="w-full max-w-[512px] flex flex-col h-full" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-          <main ref={mainRef} className="flex-1 min-h-0 overflow-y-auto pb-24" onScroll={handleMainScroll}>
+          <main ref={mainRef} className="flex-1 min-h-0 overflow-y-auto pb-32" onScroll={handleMainScroll}>
             <Outlet />
           </main>
 
