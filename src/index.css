@@ -67,6 +67,8 @@
     overflow-x: hidden;
     overscroll-behavior: none;
     height: 100%;
+    /* color-scheme tells iOS to use dark keyboard + dark toolbar above keyboard */
+    color-scheme: dark;
     /* Fill any area iOS exposes when the keyboard opens — prevents white flash */
     background-color: hsl(228 46% 13%);
   }
@@ -84,7 +86,11 @@
   }
   #root {
     height: 100dvh;
-    overflow-y: auto;
+    /* overflow-y must be hidden — NOT auto.
+       auto lets iOS scroll the entire root container to bring a focused
+       input into view, which makes the whole screen jump up on keyboard open.
+       Scrolling happens inside Layout's <main> container only. */
+    overflow-y: hidden;
     overflow-x: hidden;
     overscroll-behavior: none;
     background-color: hsl(228 46% 13%);
@@ -94,6 +100,17 @@
   input, textarea, select {
     font-size: 16px !important;
     -webkit-text-size-adjust: 100%;
+  }
+
+  /* iOS autofill overrides — prevents white/yellow autofill highlight */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  textarea:-webkit-autofill,
+  select:-webkit-autofill {
+    -webkit-box-shadow: 0 0 0 100px hsl(228 38% 22%) inset !important;
+    -webkit-text-fill-color: hsl(210 40% 96%) !important;
+    caret-color: hsl(210 40% 96%);
   }
 
   /* Disable text selection everywhere except inputs */
