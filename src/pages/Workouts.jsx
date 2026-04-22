@@ -8,6 +8,7 @@ import StreakCalendar from '@/components/workout/StreakCalendar';
 import { Button } from '@/components/ui/button.jsx';
 import { Badge } from '@/components/ui/badge.jsx';
 import { Link, useNavigate } from 'react-router-dom';
+import { useActiveWorkout } from '@/lib/ActiveWorkoutContext';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -27,6 +28,7 @@ const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
 
 export default function Workouts() {
   const navigate = useNavigate();
+  const { startWorkout } = useActiveWorkout();
   const queryClient = useQueryClient();
   const [user, setUser] = useState(null);
   const [activeTab, setActiveTab] = useState(0);
@@ -326,7 +328,7 @@ export default function Workouts() {
                       <Button
                         size="sm"
                         className="flex-1 bg-primary text-primary-foreground gap-1.5"
-                        onClick={() => navigate(`/workout/${day.id}`)}
+                        onClick={() => startWorkout(day.id)}
                       >
                         <Play size={13} fill="currentColor" />
                         Start

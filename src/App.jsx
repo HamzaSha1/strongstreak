@@ -8,6 +8,7 @@ import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import Layout from '@/components/Layout';
+import { ActiveWorkoutProvider } from '@/lib/ActiveWorkoutContext';
 import ErrorBoundary from '@/components/ErrorBoundary';
 // Add page imports here
 const Workouts = lazy(() => import('@/pages/Workouts'));
@@ -86,8 +87,10 @@ function App() {
       <Router>
         <QueryClientProvider client={queryClientInstance}>
           <AuthProvider>
-            <AuthenticatedApp />
-            <Toaster />
+            <ActiveWorkoutProvider>
+              <AuthenticatedApp />
+              <Toaster />
+            </ActiveWorkoutProvider>
           </AuthProvider>
         </QueryClientProvider>
       </Router>

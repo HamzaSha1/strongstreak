@@ -6,7 +6,8 @@ import { format, startOfDay, differenceInCalendarDays, subDays, parseISO } from 
 const parseLocalDate = (dateStr) => parseISO(dateStr);
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, ArrowLeftRight, Plus, Check, Flag, Pencil, ScanLine, Trash2, X, Camera, ImageIcon, Timer, ChevronDown } from 'lucide-react';
+import { ArrowLeft, ArrowLeftRight, Plus, Check, Flag, Pencil, ScanLine, Trash2, X, Camera, ImageIcon, Timer, ChevronDown, ChevronUp } from 'lucide-react';
+import { useActiveWorkout } from '@/lib/ActiveWorkoutContext';
 import { EXERCISES_BY_MUSCLE, SESSION_MUSCLE_GROUPS } from '@/components/splitbuilder/exerciseData';
 import ImportWorkoutModal from '@/components/import/ImportWorkoutModal';
 import { Button } from '@/components/ui/button';
@@ -988,9 +989,13 @@ function ExerciseCard({ ex, exSets, isOpen, isCollapsed, prevSets, onToggle, onU
   );
 }
 
-export default function ActiveWorkout() {
-  const { dayId } = useParams();
+export default function ActiveWorkout({ dayId: propDayId }) {
+  const { dayId: paramDayId } = useParams();
+  const dayId = propDayId ?? paramDayId;
+  const isOverlay = !!propDayId;
   const navigate = useNavigate();
+  const { isMinimized, minimize, maximize, stopWorkout } = useActiveWorkout() ?? {};
+  const goHome = () => { stopWorkout?.(); navigate('/'); };
   const queryClient = useQueryClient();
   const [user, setUser] = useState(null);
   const [workoutLog, setWorkoutLog] = useState(null);
@@ -1590,13 +1595,38 @@ export default function ActiveWorkout() {
     return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
   };
 
-  return (
+  // Mini bar shown when minimized (overlay mode only)
+  if (isOverlay && isMinimized) {
+    return (
+      <div
+        className="fixed left-1/2 -translate-x-1/2 w-full max-w-[512px] z-[60] px-3 cursor-pointer"
+        style={{ bottom: 'calc(5rem + env(safe-area-inset-bottom))' }}
+        onClick={() => maximize?.()}
+      >
+        <div className="bg-primary rounded-2xl px-4 py-3 flex items-center gap-3 shadow-lg active:opacity-90 transition-opacity">
+          <span className="w-2.5 h-2.5 rounded-full bg-white/90 animate-pulse shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-primary-foreground text-sm font-semibold leading-tight truncate">
+              {day?.day_of_week}{day?.custom_name || day?.session_type ? ` — ${day?.custom_name || day?.session_type}` : ''}
+            </p>
+            <p className="text-primary-foreground/70 text-xs mt-0.5">{formatTime(elapsed)} · Tap to resume</p>
+          </div>
+          <ChevronUp size={18} className="text-primary-foreground/80 shrink-0" />
+        </div>
+      </div>
+    );
+  }
+
+  const workoutContent = (
     <div style={{ paddingBottom: 'calc(7rem + env(safe-area-inset-bottom))' }}>
       {/* Header — padded to sit below the iOS status bar */}
       <div className="sticky top-0 z-10 bg-background border-b border-border px-4 pb-3" style={{ paddingTop: 'calc(0.75rem + env(safe-area-inset-top))' }}>
         <div className="flex items-center justify-between mb-2">
-          <button onClick={() => setShowDiscardConfirm(true)} className="text-muted-foreground">
-            <ArrowLeft size={20} />
+          <button
+            onClick={() => isOverlay ? minimize?.() : setShowDiscardConfirm(true)}
+            className="text-muted-foreground"
+          >
+            {isOverlay ? <ChevronDown size={22} /> : <ArrowLeft size={20} />}
           </button>
           <div className="text-center">
             <p className="font-heading font-semibold text-sm">{day?.day_of_week} — {day?.custom_name || day?.session_type}</p>
@@ -1765,12 +1795,7 @@ export default function ActiveWorkout() {
           streak={currentStreak}
           durationMinutes={Math.round(elapsed / 60)}
           onSkip={() => {
-            // Hard reload instead of React-Router navigate: the ActiveWorkout
-            // page has heavy framer-motion Reorder + overlays, and
-            // AnimatePresence's mode="wait" exit animation was getting stuck
-            // on the transition home — leaving a blank screen at `/`.
-            // A full navigation guarantees a clean Workouts page with fresh data.
-            window.location.href = '/';
+            goHome();
           }}
           weightSuggestions={activeExercises
             .map((ex) => getWeightSuggestion(ex.name, ex.target_reps, sets[ex.id] || []))
@@ -1796,7 +1821,7 @@ export default function ActiveWorkout() {
           workoutLog={workoutLog}
           user={user}
           summaryImageUrl={summaryImageUrl}
-          onClose={() => { window.location.href = '/'; }}
+          onClose={() => { goHome(); }}
         />
       )}
 
@@ -1862,7 +1887,7 @@ export default function ActiveWorkout() {
                 } catch (_) {
                   // Best-effort cleanup — navigate away regardless
                 } finally {
-                  window.location.href = '/';
+                  goHome();
                 }
               }}
             >
@@ -1909,4 +1934,13 @@ export default function ActiveWorkout() {
       </div>
     </div>
   );
+
+  if (isOverlay) {
+    return (
+      <div className="fixed inset-0 z-[60] bg-background overflow-y-auto">
+        {workoutContent}
+      </div>
+    );
+  }
+  return workoutContent;
 }

@@ -1,8 +1,11 @@
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { Dumbbell, Rss, Users, History, UserSearch, TrendingUp, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { base44 } from '@/api/base44Client';
+import { useActiveWorkout } from '@/lib/ActiveWorkoutContext';
+
+const ActiveWorkout = lazy(() => import('@/pages/ActiveWorkout'));
 
 function getContrastColor(hex) {
   if (!hex) return null;
@@ -26,6 +29,7 @@ const NAV_ITEMS = [
 ];
 
 export default function Layout() {
+  const { activeDayId } = useActiveWorkout();
   const location = useLocation();
   const [scrollPositions, setScrollPositions] = useState({});
   const [prevPath, setPrevPath] = useState(location.pathname);
@@ -143,6 +147,13 @@ export default function Layout() {
           </nav>
         </div>
       </div>
+
+      {/* Persistent active workout overlay — survives page navigation */}
+      {activeDayId && (
+        <Suspense fallback={null}>
+          <ActiveWorkout dayId={activeDayId} />
+        </Suspense>
+      )}
     </>
   );
 }
