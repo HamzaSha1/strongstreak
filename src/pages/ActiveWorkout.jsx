@@ -116,6 +116,14 @@ function ReorderableCard({ ex, isActive, onLongPressStart, onLongPressEnd, onDra
 
 function SwapExerciseModal({ ex, sessionType, onSwap, onClose }) {
   const [query, setQuery] = useState('');
+
+  // Lock background scroll while modal is open (iOS fix)
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
+  }, []);
+
   const allExercises = useMemo(() => {
     const groups = SESSION_MUSCLE_GROUPS[sessionType] || SESSION_MUSCLE_GROUPS['Custom'] || [];
     const seen = new Set();
@@ -136,14 +144,14 @@ function SwapExerciseModal({ ex, sessionType, onSwap, onClose }) {
         style={{ maxHeight: '72vh' }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-5 pt-5 pb-3">
+        <div className="flex items-center justify-between px-5 pt-5 pb-3 shrink-0">
           <div>
             <p className="font-heading font-bold text-base">Swap Exercise</p>
             <p className="text-xs text-muted-foreground">Currently: {ex.name}</p>
           </div>
           <button onClick={onClose} className="text-muted-foreground p-1"><X size={18} /></button>
         </div>
-        <div className="px-4 pb-3">
+        <div className="px-4 pb-3 shrink-0">
           <input
             autoFocus
             value={query}
@@ -152,7 +160,10 @@ function SwapExerciseModal({ ex, sessionType, onSwap, onClose }) {
             className="w-full h-10 rounded-xl bg-input border border-border px-3 text-sm outline-none focus:border-primary"
           />
         </div>
-        <div className="overflow-y-auto flex-1 px-4 pb-8">
+        <div
+          className="overflow-y-auto flex-1 min-h-0 px-4 pb-8 overscroll-contain"
+          style={{ WebkitOverflowScrolling: 'touch' }}
+        >
           {query.trim() && (
             <button
               onClick={() => onSwap(query.trim())}
