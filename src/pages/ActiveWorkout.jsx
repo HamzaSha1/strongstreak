@@ -118,12 +118,30 @@ function ReorderableCard({ ex, isActive, onLongPressStart, onLongPressEnd, onDra
 
 function SwapExerciseModal({ ex, sessionType, onSwap, onClose }) {
   const [query, setQuery] = useState('');
+  const [sheetMaxHeight, setSheetMaxHeight] = useState('72vh');
 
   // Lock background scroll while modal is open (iOS fix)
   useEffect(() => {
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = prev; };
+  }, []);
+
+  // Keep the sheet above the keyboard using visualViewport
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const update = () => {
+      const availableHeight = vv.height;
+      setSheetMaxHeight(`${availableHeight * 0.92}px`);
+    };
+    update();
+    vv.addEventListener('resize', update);
+    vv.addEventListener('scroll', update);
+    return () => {
+      vv.removeEventListener('resize', update);
+      vv.removeEventListener('scroll', update);
+    };
   }, []);
 
   const allExercises = useMemo(() => {
@@ -143,7 +161,7 @@ function SwapExerciseModal({ ex, sessionType, onSwap, onClose }) {
     <div className="fixed inset-0 z-[70] flex items-end bg-black/60 backdrop-blur-sm" onClick={onClose}>
       <div
         className="w-full bg-card rounded-t-3xl border-t border-border flex flex-col"
-        style={{ maxHeight: '72vh' }}
+        style={{ maxHeight: sheetMaxHeight }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-5 pt-5 pb-3 shrink-0">
