@@ -66,7 +66,7 @@ export default function ExerciseNotes({ ex, onNotesChange, onNoteImagesChange })
           autoFocus
           value={ex.notes || ''}
           onChange={(e) => onNotesChange(ex.id, e.target.value)}
-          onBlur={() => setEditing(false)}
+          onBlur={() => { setEditing(false); if (!ex.notes) { setExpanded(false); setShowPhotoSection(false); } }}
           placeholder="Add a note for this exercise..."
           className="w-full bg-muted/40 rounded-xl px-3 py-2 text-xs text-muted-foreground resize-none min-h-[60px] border border-border focus:outline-none focus:border-primary"
         />
