@@ -124,7 +124,21 @@ function SwapExerciseModal({ ex, sessionType, onSwap, onClose }) {
   useEffect(() => {
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = prev; };
+    // Also lock any scrollable parent containers
+    const scrollableParents = [];
+    let el = document.documentElement;
+    while (el) {
+      const style = window.getComputedStyle(el);
+      if (style.overflowY === 'auto' || style.overflowY === 'scroll') {
+        scrollableParents.push({ el, prev: el.style.overflowY });
+        el.style.overflowY = 'hidden';
+      }
+      el = el.parentElement;
+    }
+    return () => {
+      document.body.style.overflow = prev;
+      scrollableParents.forEach(({ el, prev }) => { el.style.overflowY = prev; });
+    };
   }, []);
 
   // Track visualViewport so the sheet always sits above the keyboard
@@ -1838,7 +1852,7 @@ export default function ActiveWorkout({ dayId: propDayId }) {
 
   if (isOverlay) {
     return (
-      <div className="fixed inset-0 z-[60] bg-background overflow-y-auto">
+      <div className="fixed inset-0 z-[60] bg-background" style={{ overflowY: 'auto', height: '100dvh' }}>
         {workoutContent}
       </div>
     );
