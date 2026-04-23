@@ -274,18 +274,18 @@ export default function Progress() {
               onChange={(e) => setFormData({ ...formData, date: e.target.value })}
               min="2000-01-01"
               max={format(new Date(), 'yyyy-MM-dd')}
-              className="w-full h-10 rounded-xl bg-input border border-border px-3 text-sm mb-3"
+              className="w-full min-w-0 h-10 rounded-xl bg-input border border-border px-3 text-sm mb-3 box-border"
             />
-            <div className="flex gap-2 mb-3">
+            <div className="flex gap-2 mb-3 min-w-0">
               <Input
                 type="number"
                 step="0.1"
                 placeholder="Weight (kg)"
                 value={formData.weight_kg}
                 onChange={(e) => setFormData({ ...formData, weight_kg: e.target.value })}
-                className="flex-1"
+                className="flex-1 min-w-0"
               />
-              <span className="text-muted-foreground text-sm flex items-center">kg</span>
+              <span className="text-muted-foreground text-sm flex items-center shrink-0">kg</span>
             </div>
 
             {formData.photo_url ? (
