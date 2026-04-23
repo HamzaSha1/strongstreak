@@ -554,9 +554,6 @@ function ExerciseCard({ ex, exSets, isOpen, isCollapsed, prevSets, onToggle, onU
       toast.error(err?.message || 'Photo upload failed. Please try again.');
     } finally {
       setUploadingImage(false);
-      // Reset the file input so the user can re-select the same file after a
-      // failure (browsers ignore "change" events if the value is unchanged)
-      if (e.target) e.target.value = '';
     }
   };
 
@@ -650,6 +647,7 @@ function ExerciseCard({ ex, exSets, isOpen, isCollapsed, prevSets, onToggle, onU
                 value={s.reps}
                 min="0"
                 onChange={(e) => onUpdateSet(ex.id, actualIdx, { reps: e.target.value === '' ? '' : String(Math.max(0, parseFloat(e.target.value) || 0)) })}
+                onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
                 disabled={s.completed}
                 className="flex-1 h-10 text-center bg-background border-border rounded-xl text-sm font-semibold"
               />
@@ -674,6 +672,7 @@ function ExerciseCard({ ex, exSets, isOpen, isCollapsed, prevSets, onToggle, onU
                   const displayVal = e.target.value === '' ? '' : String(Math.max(0, parseFloat(e.target.value) || 0));
                   onUpdateSet(ex.id, actualIdx, { weight_display: displayVal, weight_kg: toKg(displayVal) });
                 }}
+                onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
                 disabled={s.completed}
                 className="flex-1 h-10 text-center bg-background border border-border rounded-xl text-sm font-bold outline-none focus:border-primary transition-colors disabled:opacity-50 min-w-0 placeholder:text-muted-foreground/40 placeholder:font-normal"
               />
@@ -704,7 +703,8 @@ function ExerciseCard({ ex, exSets, isOpen, isCollapsed, prevSets, onToggle, onU
                     placeholder="0:00"
                     value={toMmSs(s.reps)}
                     onChange={(e) => onUpdateSet(ex.id, actualIdx, { reps: formatMmSs(e.target.value) })}
-                        disabled={s.completed}
+                    onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
+                    disabled={s.completed}
                     className="flex-1 h-10 text-center bg-background border border-border rounded-xl text-sm font-bold outline-none focus:border-primary transition-colors disabled:opacity-50 min-w-0 placeholder:text-muted-foreground/40 placeholder:font-normal"
                   />
                 );
@@ -716,7 +716,8 @@ function ExerciseCard({ ex, exSets, isOpen, isCollapsed, prevSets, onToggle, onU
                   value={s.reps}
                   min="0"
                   onChange={(e) => onUpdateSet(ex.id, actualIdx, { reps: e.target.value === '' ? '' : String(Math.max(0, parseFloat(e.target.value) || 0)) })}
-                    disabled={s.completed}
+                  onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
+                  disabled={s.completed}
                   className="flex-1 h-10 text-center bg-background border border-border rounded-xl text-sm font-bold outline-none focus:border-primary transition-colors disabled:opacity-50 min-w-0 placeholder:text-muted-foreground/40 placeholder:font-normal"
                 />
               )}
@@ -1827,31 +1828,16 @@ export default function ActiveWorkout({ dayId: propDayId }) {
           weightSuggestions={activeExercises
             .map((ex) => getWeightSuggestion(ex.name, ex.target_reps, sets[ex.id] || []))
             .filter(Boolean)}
-          onContinue={() => {
-            // Kick off image capture+upload in the background. html2canvas
-            // clones the DOM on its first tick, so it captures the summary
-            // card BEFORE the unmount below takes effect. Upload resolves
-            // later and the post modal re-renders with the image when ready.
+          onContinue={async () => {
             if (summaryRef.current) {
-              const captureNode = summaryRef.current;
-              (async () => {
-                try {
-                  const canvas = await html2canvas(captureNode, {
-                    backgroundColor: null,
-                    scale: 2,
-                    logging: false,
-                  });
-                  const blob = await new Promise((res) => canvas.toBlob(res, 'image/png'));
-                  if (!blob) return;
-                  const file = new File([blob], 'workout-summary.png', { type: 'image/png' });
-                  const file_url = await uploadImage(file);
-                  setSummaryImageUrl(file_url);
-                } catch (_) {
-                  // Non-fatal — user can still post without the summary image
-                }
-              })();
+              try {
+                const canvas = await html2canvas(summaryRef.current, { backgroundColor: null, scale: 2 });
+                const blob = await new Promise((res) => canvas.toBlob(res, 'image/png'));
+                const file = new File([blob], 'workout-summary.png', { type: 'image/png' });
+                const file_url = await uploadImage(file);
+                setSummaryImageUrl(file_url);
+              } catch (e) {}
             }
-            // Transition the UI immediately so the button doesn't feel dead
             setShowSummary(false);
             setShowPostModal(true);
           }}

@@ -150,21 +150,19 @@
   }
 }
 
-/* Flame glow animation — GPU-friendly (opacity + scale instead of drop-shadow
-   which forces full-layer rasterization on iOS and causes frame drops) */
+/* Flame glow animation */
 @keyframes flame-glow {
-  0%, 100% { opacity: 0.85; transform: scale(1); }
-  50%      { opacity: 1;    transform: scale(1.06); }
+  0%, 100% { filter: drop-shadow(0 0 6px hsl(199 92% 60% / 0.8)); }
+  50% { filter: drop-shadow(0 0 14px hsl(199 92% 60% / 1)); }
 }
 .flame-glow {
   animation: flame-glow 1.8s ease-in-out infinite;
-  will-change: opacity, transform;
 }
 
-/* Streak number glow — opacity pulse (text-shadow animation is expensive) */
+/* Streak number glow */
 @keyframes streak-pulse {
-  0%, 100% { opacity: 0.95; }
-  50%      { opacity: 1; }
+  0%, 100% { text-shadow: 0 0 8px hsl(199 92% 60% / 0.6); }
+  50% { text-shadow: 0 0 20px hsl(199 92% 60% / 1); }
 }
 .streak-pulse {
   animation: streak-pulse 1.8s ease-in-out infinite;

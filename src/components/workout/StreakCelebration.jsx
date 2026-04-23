@@ -1,56 +1,78 @@
 import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
-// Lightweight celebration: a single fire emoji pop-in, then a single number
-// scale-bump when the streak counts up. Previously used multiple nested
-// motion trees with key-based remounts + continuous drop-shadow pulses which
-// was dropping frames on iOS. This version uses only two motion elements
-// and simple transform/opacity transitions.
 export default function StreakCelebration({ newStreak, onDone }) {
-  const start = Math.max(0, newStreak - 1);
-  const [displayStreak, setDisplayStreak] = useState(start);
-  const [bumped, setBumped] = useState(false);
+  const [displayStreak, setDisplayStreak] = useState(newStreak - 1);
+  const [showNumber, setShowNumber] = useState(false);
+  const [counting, setCounting] = useState(false);
 
   useEffect(() => {
-    // Count up after the fire has settled
-    const t1 = setTimeout(() => {
+    // Show fire first, then count up
+    const t1 = setTimeout(() => setShowNumber(true), 600);
+    const t2 = setTimeout(() => {
+      setCounting(true);
       setDisplayStreak(newStreak);
-      setBumped(true);
-    }, 900);
-    // Auto-close
-    const t2 = setTimeout(() => onDone(), 2400);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
+    }, 1200);
+    const t3 = setTimeout(() => onDone(), 2800);
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
   }, []);
 
   return (
     <div className="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-background">
-      {/* Soft glow backdrop */}
+      {/* Background glow */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
         <div className="w-96 h-96 rounded-full bg-primary/20 blur-3xl" />
       </div>
 
-      {/* Fire — single scale-in, no continuous filter animation */}
+      {/* Fire emoji — big and bouncy */}
       <motion.div
-        initial={{ scale: 0.3, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 0.45, ease: 'easeOut' }}
+        initial={{ scale: 0, y: 40 }}
+        animate={{ scale: 1, y: 0 }}
+        transition={{ type: 'spring', stiffness: 220, damping: 12, delay: 0.1 }}
         className="text-[120px] leading-none mb-4 select-none"
+        style={{ filter: 'drop-shadow(0 0 40px hsl(35 96% 58% / 0.9))' }}
       >
         🔥
       </motion.div>
 
-      {/* Streak number — fade in, then bump when count updates */}
-      <motion.p
-        initial={{ opacity: 0, scale: 0.7 }}
-        animate={{ opacity: 1, scale: bumped ? 1.15 : 1 }}
-        transition={{ duration: 0.4, ease: 'easeOut' }}
-        className="font-heading font-bold text-8xl text-primary"
-      >
-        {displayStreak}
-      </motion.p>
-      <p className="font-heading font-semibold text-xl text-foreground mt-2">
-        Day Streak{bumped ? '! 🔥' : ''}
-      </p>
+      {/* Streak number */}
+      <AnimatePresence mode="wait">
+        {showNumber && (
+          <motion.div
+            key="streak"
+            initial={{ opacity: 0, scale: 0.5 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 14 }}
+            className="text-center"
+          >
+            <motion.p
+              key={displayStreak}
+              initial={{ scale: counting ? 1.4 : 1, color: counting ? 'hsl(35 96% 70%)' : 'hsl(35 96% 58%)' }}
+              animate={{ scale: 1, color: 'hsl(35 96% 58%)' }}
+              transition={{ duration: 0.4 }}
+              className="font-heading font-bold text-8xl text-primary streak-pulse"
+            >
+              {displayStreak}
+            </motion.p>
+            <motion.p
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="font-heading font-semibold text-xl text-foreground mt-2"
+            >
+              {counting ? 'Day Streak! 🔥' : 'Day Streak'}
+            </motion.p>
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
+              className="text-muted-foreground text-sm mt-1"
+            >
+              {counting ? 'Keep it up!' : ''}
+            </motion.p>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
