@@ -193,6 +193,7 @@ function SwapExerciseModal({ ex, sessionType, onSwap, onClose }) {
 function ExerciseNotes({ ex, onNotesChange, onNoteImagesChange }) {
   const [editing, setEditing] = useState(false);
   const [showAddOptions, setShowAddOptions] = useState(false);
+  const [showPhotoSection, setShowPhotoSection] = useState(false);
   const [viewingIdx, setViewingIdx] = useState(null);
   const [replacing, setReplacing] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -247,31 +248,41 @@ function ExerciseNotes({ ex, onNotesChange, onNoteImagesChange }) {
         </button>
       )}
 
-      {/* Photo grid + add button */}
-      <div className="flex flex-wrap gap-2 items-center">
-        {noteImages.map((url, i) => (
-          <button
-            key={i}
-            onClick={() => { setViewingIdx(i); setReplacing(false); }}
-            className="w-16 h-16 rounded-xl overflow-hidden border border-border shrink-0"
-          >
-            <img src={url} alt={`note-${i}`} className="w-full h-full object-cover" />
-          </button>
-        ))}
+      {/* Photo section — collapsed by default, expands when user taps camera icon */}
+      {noteImages.length === 0 && !showPhotoSection ? (
         <button
-          onClick={() => setShowAddOptions(true)}
-          className="w-16 h-16 rounded-xl border border-dashed border-border flex flex-col items-center justify-center gap-1 text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors shrink-0"
+          onClick={() => setShowPhotoSection(true)}
+          className="flex items-center gap-1.5 text-[11px] text-muted-foreground/60 hover:text-muted-foreground transition-colors"
         >
-          {uploading ? (
-            <div className="w-4 h-4 border-2 border-muted border-t-primary rounded-full animate-spin" />
-          ) : (
-            <>
-              <Camera size={14} />
-              <span className="text-[9px]">Add</span>
-            </>
-          )}
+          <Camera size={11} />
+          <span>Add photo</span>
         </button>
-      </div>
+      ) : (
+        <div className="flex flex-wrap gap-2 items-center">
+          {noteImages.map((url, i) => (
+            <button
+              key={i}
+              onClick={() => { setViewingIdx(i); setReplacing(false); }}
+              className="w-16 h-16 rounded-xl overflow-hidden border border-border shrink-0"
+            >
+              <img src={url} alt={`note-${i}`} className="w-full h-full object-cover" />
+            </button>
+          ))}
+          <button
+            onClick={() => setShowAddOptions(true)}
+            className="w-16 h-16 rounded-xl border border-dashed border-border flex flex-col items-center justify-center gap-1 text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors shrink-0"
+          >
+            {uploading ? (
+              <div className="w-4 h-4 border-2 border-muted border-t-primary rounded-full animate-spin" />
+            ) : (
+              <>
+                <Camera size={14} />
+                <span className="text-[9px]">Add</span>
+              </>
+            )}
+          </button>
+        </div>
+      )}
 
       {/* Add photo options sheet */}
       {showAddOptions && (
