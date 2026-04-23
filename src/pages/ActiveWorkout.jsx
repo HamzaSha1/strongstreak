@@ -500,7 +500,8 @@ function ExerciseCard({ ex, exSets, isOpen, isCollapsed, prevSets, onToggle, onU
                 onClick={() => !isDropset && setRepPickerOpen((v) => !v)}
                 className={cn(
                   'w-14 shrink-0 h-10 flex items-center justify-center border rounded-xl text-xs font-semibold transition-colors',
-                  isDropset ? 'bg-primary/10 border-primary/20 text-primary/70' : repPickerOpen ? 'bg-primary/20 border-primary text-primary' : 'bg-muted/60 border-border text-muted-foreground hover:border-primary/50'
+                  isDropset ? 'bg-primary/10 border-primary/20 text-primary/70' : repPickerOpen ? 'bg-primary/20 border-primary text-primary' : 'bg-muted/60 border-border text-muted-foreground hover:border-primary/50',
+                  'h-12'
                 )}
               >
                 {isDropset ? 'DS' : (ex.target_reps || '—')}
@@ -518,7 +519,7 @@ function ExerciseCard({ ex, exSets, isOpen, isCollapsed, prevSets, onToggle, onU
                 }}
                 onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
                 disabled={s.completed}
-                className="flex-1 h-10 text-center bg-background border border-border rounded-xl text-sm font-bold outline-none focus:border-primary transition-colors disabled:opacity-50 min-w-0 placeholder:text-muted-foreground/40 placeholder:font-normal"
+                className="flex-1 h-12 text-center bg-background border border-border rounded-xl text-base font-bold outline-none focus:border-primary transition-colors disabled:opacity-50 min-w-0 placeholder:text-muted-foreground/40 placeholder:font-normal"
               />
 
               {ex.rep_mode === 'time' ? (() => {
@@ -549,7 +550,7 @@ function ExerciseCard({ ex, exSets, isOpen, isCollapsed, prevSets, onToggle, onU
                     onChange={(e) => onUpdateSet(ex.id, actualIdx, { reps: formatMmSs(e.target.value) })}
                     onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
                     disabled={s.completed}
-                    className="flex-1 h-10 text-center bg-background border border-border rounded-xl text-sm font-bold outline-none focus:border-primary transition-colors disabled:opacity-50 min-w-0 placeholder:text-muted-foreground/40 placeholder:font-normal"
+                    className="flex-1 h-12 text-center bg-background border border-border rounded-xl text-base font-bold outline-none focus:border-primary transition-colors disabled:opacity-50 min-w-0 placeholder:text-muted-foreground/40 placeholder:font-normal"
                   />
                 );
               })() : (
@@ -562,7 +563,7 @@ function ExerciseCard({ ex, exSets, isOpen, isCollapsed, prevSets, onToggle, onU
                   onChange={(e) => onUpdateSet(ex.id, actualIdx, { reps: e.target.value === '' ? '' : String(Math.max(0, parseFloat(e.target.value) || 0)) })}
                   onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
                   disabled={s.completed}
-                  className="flex-1 h-10 text-center bg-background border border-border rounded-xl text-sm font-bold outline-none focus:border-primary transition-colors disabled:opacity-50 min-w-0 placeholder:text-muted-foreground/40 placeholder:font-normal"
+                  className="flex-1 h-12 text-center bg-background border border-border rounded-xl text-base font-bold outline-none focus:border-primary transition-colors disabled:opacity-50 min-w-0 placeholder:text-muted-foreground/40 placeholder:font-normal"
                 />
               )}
 
@@ -570,7 +571,7 @@ function ExerciseCard({ ex, exSets, isOpen, isCollapsed, prevSets, onToggle, onU
                 disabled={s.completed}
                 onClick={() => !s.completed && setRirPickerFor({ exId: ex.id, setIdx: actualIdx })}
                 className={cn(
-                  'w-14 h-10 rounded-xl border text-sm font-bold shrink-0 flex items-center justify-center transition-colors',
+                  'w-14 h-12 rounded-xl border text-sm font-bold shrink-0 flex items-center justify-center transition-colors',
                   s.rpe !== '' && s.rpe != null
                     ? 'bg-primary/10 text-primary border-primary/40'
                     : 'border-border text-muted-foreground/40 hover:border-primary/50 disabled:opacity-50'
@@ -592,7 +593,7 @@ function ExerciseCard({ ex, exSets, isOpen, isCollapsed, prevSets, onToggle, onU
               }
             }}
             className={cn(
-              'w-10 h-10 rounded-full flex items-center justify-center transition-all shrink-0',
+              'w-12 h-12 rounded-full flex items-center justify-center transition-all shrink-0',
               s.completed
                 ? 'bg-primary text-primary-foreground shadow-[0_0_10px_hsl(35_96%_58%/0.4)]'
                 : 'border-2 border-border text-muted-foreground hover:border-primary hover:text-primary'
