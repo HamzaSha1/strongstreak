@@ -541,6 +541,7 @@ function ExerciseCard({ ex, exSets, isOpen, isCollapsed, prevSets, onToggle, onU
   const isCardio = ex.exercise_type === 'cardio';
   const cardioUnit = CARDIO_UNITS[ex.cardio_metric] || 'km';
   const [rirPickerFor, setRirPickerFor] = useState(null);
+  const [showHistory, setShowHistory] = useState(false);
   const [showSwap, setShowSwap] = useState(false);
   const [swipeOffsets, setSwipeOffsets] = useState({});
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -969,7 +970,10 @@ function ExerciseCard({ ex, exSets, isOpen, isCollapsed, prevSets, onToggle, onU
                 </button>
               )}
               <div className="min-w-0">
-                <p className="font-heading font-semibold text-sm text-left">{ex.name}</p>
+                <button
+                  onClick={(e) => { e.stopPropagation(); setShowHistory((v) => !v); }}
+                  className="font-heading font-semibold text-sm text-left hover:text-primary transition-colors"
+                >{ex.name}</button>
                 <p className="text-muted-foreground text-xs">
                   {isCardio
                     ? `${ex.cardio_metric || 'distance'} · target: ${ex.target_reps || '—'} ${cardioUnit}`
@@ -1003,7 +1007,7 @@ function ExerciseCard({ ex, exSets, isOpen, isCollapsed, prevSets, onToggle, onU
             <div className="border-t border-border px-4 pb-4 pt-3">
               {ex.rep_mode === 'time' && <ExerciseTimer />}
               <ExerciseNotes ex={ex} onNotesChange={onNotesChange} onNoteImagesChange={onNoteImagesChange} />
-              <ExerciseHistory exerciseName={ex.name} userId={userId} weightUnit={weightUnit} toDisplay={toDisplay} />
+              {showHistory && <ExerciseHistory exerciseName={ex.name} userId={userId} weightUnit={weightUnit} toDisplay={toDisplay} />}
               {!isCardio && (
                 <RepRangePicker
                   exId={ex.id}
