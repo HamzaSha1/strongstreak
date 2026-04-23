@@ -496,12 +496,15 @@ function ExerciseCard({ ex, exSets, isOpen, isCollapsed, prevSets, onToggle, onU
             </>
           ) : (
             <>
-              <div className={cn(
-                'w-14 shrink-0 h-10 flex items-center justify-center border rounded-xl text-xs font-semibold',
-                isDropset ? 'bg-primary/10 border-primary/20 text-primary/70' : 'bg-muted/60 border-border text-muted-foreground'
-              )}>
+              <button
+                onClick={() => !isDropset && setRepPickerOpen((v) => !v)}
+                className={cn(
+                  'w-14 shrink-0 h-10 flex items-center justify-center border rounded-xl text-xs font-semibold transition-colors',
+                  isDropset ? 'bg-primary/10 border-primary/20 text-primary/70' : repPickerOpen ? 'bg-primary/20 border-primary text-primary' : 'bg-muted/60 border-border text-muted-foreground hover:border-primary/50'
+                )}
+              >
                 {isDropset ? 'DS' : (ex.target_reps || '—')}
-              </div>
+              </button>
 
               <input
                 type="number"
@@ -544,8 +547,7 @@ function ExerciseCard({ ex, exSets, isOpen, isCollapsed, prevSets, onToggle, onU
                     placeholder="0:00"
                     value={toMmSs(s.reps)}
                     onChange={(e) => onUpdateSet(ex.id, actualIdx, { reps: formatMmSs(e.target.value) })}
-                    onFocus={(e) => { setRepPickerOpen(true); setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300); }}
-                    onBlur={() => setTimeout(() => setRepPickerOpen(false), 150)}
+                    onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
                     disabled={s.completed}
                     className="flex-1 h-10 text-center bg-background border border-border rounded-xl text-sm font-bold outline-none focus:border-primary transition-colors disabled:opacity-50 min-w-0 placeholder:text-muted-foreground/40 placeholder:font-normal"
                   />
@@ -558,8 +560,7 @@ function ExerciseCard({ ex, exSets, isOpen, isCollapsed, prevSets, onToggle, onU
                   value={s.reps}
                   min="0"
                   onChange={(e) => onUpdateSet(ex.id, actualIdx, { reps: e.target.value === '' ? '' : String(Math.max(0, parseFloat(e.target.value) || 0)) })}
-                  onFocus={(e) => { setRepPickerOpen(true); setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300); }}
-                  onBlur={() => setTimeout(() => setRepPickerOpen(false), 150)}
+                  onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
                   disabled={s.completed}
                   className="flex-1 h-10 text-center bg-background border border-border rounded-xl text-sm font-bold outline-none focus:border-primary transition-colors disabled:opacity-50 min-w-0 placeholder:text-muted-foreground/40 placeholder:font-normal"
                 />
