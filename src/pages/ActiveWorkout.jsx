@@ -369,6 +369,7 @@ function ExerciseCard({ ex, exSets, isOpen, isCollapsed, prevSets, onToggle, onU
   const isCardio = ex.exercise_type === 'cardio';
   const cardioUnit = CARDIO_UNITS[ex.cardio_metric] || 'km';
   const [rirPickerFor, setRirPickerFor] = useState(null);
+  const [repPickerOpen, setRepPickerOpen] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showSwap, setShowSwap] = useState(false);
   const [swipeOffsets, setSwipeOffsets] = useState({});
@@ -543,7 +544,8 @@ function ExerciseCard({ ex, exSets, isOpen, isCollapsed, prevSets, onToggle, onU
                     placeholder="0:00"
                     value={toMmSs(s.reps)}
                     onChange={(e) => onUpdateSet(ex.id, actualIdx, { reps: formatMmSs(e.target.value) })}
-                    onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
+                    onFocus={(e) => { setRepPickerOpen(true); setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300); }}
+                    onBlur={() => setTimeout(() => setRepPickerOpen(false), 150)}
                     disabled={s.completed}
                     className="flex-1 h-10 text-center bg-background border border-border rounded-xl text-sm font-bold outline-none focus:border-primary transition-colors disabled:opacity-50 min-w-0 placeholder:text-muted-foreground/40 placeholder:font-normal"
                   />
@@ -556,7 +558,8 @@ function ExerciseCard({ ex, exSets, isOpen, isCollapsed, prevSets, onToggle, onU
                   value={s.reps}
                   min="0"
                   onChange={(e) => onUpdateSet(ex.id, actualIdx, { reps: e.target.value === '' ? '' : String(Math.max(0, parseFloat(e.target.value) || 0)) })}
-                  onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
+                  onFocus={(e) => { setRepPickerOpen(true); setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300); }}
+                  onBlur={() => setTimeout(() => setRepPickerOpen(false), 150)}
                   disabled={s.completed}
                   className="flex-1 h-10 text-center bg-background border border-border rounded-xl text-sm font-bold outline-none focus:border-primary transition-colors disabled:opacity-50 min-w-0 placeholder:text-muted-foreground/40 placeholder:font-normal"
                 />
@@ -843,6 +846,7 @@ function ExerciseCard({ ex, exSets, isOpen, isCollapsed, prevSets, onToggle, onU
                   targetReps={ex.target_reps}
                   onRepRangeChange={onRepRangeChange}
                   onRepModeChange={onRepModeChange}
+                  open={repPickerOpen}
                 />
               )}
               <div className="flex flex-col gap-1.5">{renderSets()}</div>

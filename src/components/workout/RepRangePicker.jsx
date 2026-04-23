@@ -4,9 +4,11 @@ import { cn } from '@/lib/utils';
 const REPS_OPTIONS = ['1', '2', '3', '4', '5', '6', '8', '10', '12', '15', '20', 'AMRAP'];
 const TIME_OPTIONS = ['20s', '30s', '45s', '60s', '90s', '2min', '3min'];
 
-export default function RepRangePicker({ exId, repMode, targetReps, onRepRangeChange, onRepModeChange }) {
+export default function RepRangePicker({ exId, repMode, targetReps, onRepRangeChange, onRepModeChange, open }) {
   // rangeStart tracks the first tap while awaiting a second tap
   const [rangeStart, setRangeStart] = useState(null);
+
+  if (!open) return null;
 
   const isTime = repMode === 'time';
   const options = isTime ? TIME_OPTIONS : REPS_OPTIONS;
