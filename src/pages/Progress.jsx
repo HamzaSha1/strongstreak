@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -167,13 +167,16 @@ export default function Progress() {
     },
   });
 
-  const chartData = weights
-    .slice()
-    .reverse()
-    .map((w) => ({
-      date: format(parse(w.date, 'yyyy-MM-dd', new Date()), 'MMM d'),
-      weight: w.weight_kg,
-    }));
+  const chartData = useMemo(() =>
+    weights
+      .slice()
+      .reverse()
+      .map((w) => ({
+        date: format(parse(w.date, 'yyyy-MM-dd', new Date()), 'MMM d'),
+        weight: w.weight_kg,
+      })),
+    [weights]
+  );
 
   const currentWeight = weights[0]?.weight_kg;
   const previousWeight = weights[1]?.weight_kg;
@@ -268,14 +271,17 @@ export default function Progress() {
 
         {showForm && (
           <div className="bg-card border border-border rounded-2xl p-4 mb-6">
-            <input
-              type="date"
-              value={formData.date}
-              onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-              min="2000-01-01"
-              max={format(new Date(), 'yyyy-MM-dd')}
-              className="w-full min-w-0 h-10 rounded-xl bg-input border border-border px-3 text-sm mb-3 box-border"
-            />
+            <div className="mb-3 overflow-hidden rounded-xl">
+              <input
+                type="date"
+                value={formData.date}
+                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                min="2000-01-01"
+                max={format(new Date(), 'yyyy-MM-dd')}
+                className="w-full h-10 bg-input border border-border px-3 text-sm block"
+                style={{ colorScheme: 'dark' }}
+              />
+            </div>
             <div className="flex gap-2 mb-3 min-w-0">
               <Input
                 type="number"

@@ -57,7 +57,7 @@ export default function WorkoutSummaryScreen({ sets, exercises, streak, duration
             <Flame size={20} className="text-primary" />
             <p className="font-heading font-bold text-primary">{streak} day streak 🔥</p>
           </div>
-          {computeAchievements(sets, exercises).map((ach, i) => (
+          {achievements.map((ach, i) => (
             <div key={i} className="flex items-center gap-3 bg-card border border-border rounded-2xl px-4 py-3 w-full">
               <ach.icon size={18} className={ach.color} />
               <div>
