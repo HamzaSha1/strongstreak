@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Heart, Clock, Flag } from 'lucide-react';
@@ -18,6 +18,7 @@ export default function Feed() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const scrollContainerRef = useRef(null);
   const startYRef = useRef(0);
+  const rafRef = useRef(null);
   const queryClient = useQueryClient();
 
   // Refetch blocks on component mount to ensure fresh data
@@ -34,15 +35,24 @@ export default function Feed() {
   };
 
   const handleTouchMove = (e) => {
-    if (scrollContainerRef.current?.scrollTop === 0 && startYRef.current) {
-      const diff = e.touches[0].clientY - startYRef.current;
-      if (diff > 0) {
-        setPullProgress(Math.min(diff / 80, 1));
-      }
-    }
+    if (scrollContainerRef.current?.scrollTop !== 0 || !startYRef.current) return;
+    const diff = e.touches[0].clientY - startYRef.current;
+    if (diff <= 0) return;
+    // Throttle to one state update per animation frame and only when the
+    // quantised value changes — prevents a re-render on every pixel of drag.
+    if (rafRef.current) return;
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = null;
+      const next = Math.min(diff / 80, 1);
+      setPullProgress((prev) => {
+        const quantised = Math.round(next / 0.05) * 0.05;
+        return Math.abs(quantised - prev) >= 0.05 ? quantised : prev;
+      });
+    });
   };
 
   const handleTouchEnd = async () => {
+    if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
     if (pullProgress >= 1 && !isRefreshing) {
       setIsRefreshing(true);
       await queryClient.refetchQueries({ queryKey: ['posts'] });
@@ -87,6 +97,13 @@ export default function Feed() {
     enabled: !!user,
     staleTime: 60_000,
   });
+
+  // O(1) email → profile lookup — rebuilt only when allUsers changes, not on every render/scroll
+  const userMap = useMemo(() => {
+    const map = {};
+    allUsers.forEach((u) => { map[u.email] = u; });
+    return map;
+  }, [allUsers]);
 
   const { data: myProfile } = useQuery({
     queryKey: ['myProfile', user?.email],
@@ -149,9 +166,8 @@ export default function Feed() {
 
   const getProfileData = (email) => {
     if (!email) return { email: '', display_name: '?', full_name: '?', handle: null, avatar_url: null };
-    const found = allUsers.find((u) => u.email === email);
+    const found = userMap[email]; // O(1) — was O(N) allUsers.find()
     if (found) return found;
-    // fallback for current user
     if (email === user?.email) {
       return {
         email,
