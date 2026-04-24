@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Search, UserPlus, UserCheck } from 'lucide-react';
+import { Search, UserPlus, UserCheck, Clock } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import UserProfileSheet from '@/components/people/UserProfileSheet';
@@ -36,11 +36,31 @@ export default function People() {
     enabled: !!user,
   });
 
+  // All pending follow requests sent by the current user (for "Requested" state in list)
+  const { data: myFollowRequests = [] } = useQuery({
+    queryKey: ['myFollowRequests', user?.email],
+    queryFn: () => base44.entities.FollowRequest.filter({ requester_id: user?.email, status: 'pending' }),
+    enabled: !!user,
+  });
+
   const followMutation = useMutation({
     mutationFn: async (targetUser) => {
-      const existing = following.find((f) => f.following_id === targetUser.email);
-      if (existing) {
-        await base44.entities.Follow.delete(existing.id);
+      const alreadyFollowing = following.some((f) => f.following_id === targetUser.email);
+      const existingReq = myFollowRequests.find((r) => r.target_id === targetUser.email);
+
+      if (alreadyFollowing) {
+        const existing = following.find((f) => f.following_id === targetUser.email);
+        if (existing) await base44.entities.Follow.delete(existing.id);
+      } else if (targetUser.is_private) {
+        if (existingReq) {
+          await base44.entities.FollowRequest.delete(existingReq.id);
+        } else {
+          await base44.entities.FollowRequest.create({
+            requester_id: user.email,
+            target_id: targetUser.email,
+            status: 'pending',
+          });
+        }
       } else {
         await base44.entities.Follow.create({
           follower_id: user.email,
@@ -49,11 +69,13 @@ export default function People() {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['following'] });
+      queryClient.invalidateQueries({ queryKey: ['following', user?.email] });
+      queryClient.invalidateQueries({ queryKey: ['myFollowRequests', user?.email] });
     },
   });
 
   const isFollowing = (email) => following.some((f) => f.following_id === email);
+  const isRequested = (email) => myFollowRequests.some((r) => r.target_id === email);
 
   const followingUsers = allUsers.filter((p) =>
     following.some((f) => f.following_id === p.email)
@@ -72,7 +94,6 @@ export default function People() {
         <UserProfileSheet
           person={selectedUser}
           currentUser={user}
-          following={following}
           onClose={() => setSelectedUser(null)}
         />
       )}
@@ -123,16 +144,18 @@ export default function People() {
                 <p className="font-medium text-sm truncate">{p.display_name}</p>
               </div>
               <button
-                onClick={(e) => { e.stopPropagation(); followMutation.mutate({ email: p.email }); }}
+                onClick={(e) => { e.stopPropagation(); followMutation.mutate(p); }}
                 className={cn(
                   'flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-colors',
                   isFollowing(p.email)
                     ? 'bg-primary/10 text-primary border-primary/30'
-                    : 'border-border text-muted-foreground hover:border-primary/50 hover:text-primary'
+                    : isRequested(p.email)
+                      ? 'bg-muted text-muted-foreground border-border'
+                      : 'border-border text-muted-foreground hover:border-primary/50 hover:text-primary'
                 )}
               >
-                {isFollowing(p.email) ? <UserCheck size={13} /> : <UserPlus size={13} />}
-                {isFollowing(p.email) ? 'Following' : 'Follow'}
+                {isFollowing(p.email) ? <UserCheck size={13} /> : isRequested(p.email) ? <Clock size={13} /> : <UserPlus size={13} />}
+                {isFollowing(p.email) ? 'Following' : isRequested(p.email) ? 'Requested' : 'Follow'}
               </button>
             </div>
           ))

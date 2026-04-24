@@ -181,7 +181,6 @@ export default function Feed() {
       <UserProfileSheet
         person={selectedProfile}
         currentUser={user}
-        following={following}
         onClose={() => setSelectedProfile(null)}
       />
     )}
