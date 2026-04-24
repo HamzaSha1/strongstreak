@@ -191,6 +191,11 @@ export default function Feed() {
     return p?.handle ? '@' + p.handle : p?.display_name || p?.full_name || userId?.split('@')[0];
   };
 
+  const visiblePosts = useMemo(
+    () => posts.filter((p) => p.visibility === 'public' && !blockedIds.has(p.user_id || p.created_by)),
+    [posts, blockedIds]
+  );
+
   return (
     <>
     {selectedProfile && (
@@ -244,7 +249,7 @@ export default function Feed() {
         <div className="flex justify-center py-20">
           <div className="w-7 h-7 border-2 border-primary border-t-transparent rounded-full animate-spin" />
         </div>
-      ) : posts.filter((p) => p.visibility === 'public' && !blockedIds.has(p.user_id || p.created_by)).length === 0 ? (
+      ) : visiblePosts.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 px-6 gap-3">
           <p className="text-4xl">🏋️</p>
           <p className="text-muted-foreground text-center text-sm">
@@ -253,9 +258,7 @@ export default function Feed() {
         </div>
       ) : (
         <div className="flex flex-col gap-0">
-          {posts
-            .filter((p) => p.visibility === 'public' && !blockedIds.has(p.user_id || p.created_by))
-            .map((post) => (
+          {visiblePosts.map((post) => (
               <div key={post.id} className="border-b border-border">
                 {/* User row */}
                 <button
@@ -279,6 +282,7 @@ export default function Feed() {
                   <img
                     src={post.image_url}
                     alt="Post"
+                    loading="lazy"
                     className="w-full aspect-square object-cover"
                   />
                 )}
