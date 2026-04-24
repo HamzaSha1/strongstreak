@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Plus, TrendingUp, Camera, X, Columns2, Check } from 'lucide-react';
+import { Plus, TrendingUp, Camera, X, Columns2, Check, CalendarDays } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -268,15 +268,21 @@ export default function Progress() {
 
         {showForm && (
           <div className="bg-card border border-border rounded-2xl p-4 mb-6">
-            <div className="mb-3">
+            {/* Date picker — styled button is the visible UI, native input is invisible and just opens the picker */}
+            <div className="relative mb-3">
+              <div className="h-11 w-full rounded-xl bg-input border border-border flex items-center justify-center gap-2 pointer-events-none select-none">
+                <CalendarDays size={15} className="text-muted-foreground shrink-0" />
+                <span className="text-sm font-medium">
+                  {format(parse(formData.date, 'yyyy-MM-dd', new Date()), 'MMMM d, yyyy')}
+                </span>
+              </div>
               <input
                 type="date"
                 value={formData.date}
                 onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                 min="2000-01-01"
                 max={format(new Date(), 'yyyy-MM-dd')}
-                className="w-full h-10 rounded-xl bg-input border border-border px-3 text-sm text-foreground"
-                style={{ colorScheme: 'dark' }}
+                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer', colorScheme: 'dark' }}
               />
             </div>
             <div className="flex gap-2 mb-3 min-w-0">
