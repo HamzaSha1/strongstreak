@@ -1,5 +1,9 @@
-import { Capacitor } from '@capacitor/core';
-import { LocalNotifications } from '@capacitor/local-notifications';
+// window.Capacitor is injected by the native bridge at runtime — no top-level import needed.
+// This prevents Vite from trying to resolve @capacitor/* during the web/Base44 build.
+const isNative =
+  typeof window !== 'undefined' &&
+  typeof window.Capacitor !== 'undefined' &&
+  window.Capacitor.isNativePlatform?.() === true;
 
 // Numeric IDs required by Capacitor — map string tags to integers
 const TAG_ID = {
@@ -8,13 +12,18 @@ const TAG_ID = {
   'exercise-timer':  3,
 };
 
-const isNative = Capacitor.isNativePlatform();
+async function getLocalNotifications() {
+  // @vite-ignore tells Vite to skip resolving this import at build time
+  const { LocalNotifications } = await import(/* @vite-ignore */ '@capacitor/local-notifications');
+  return LocalNotifications;
+}
 
 // ── Permission ───────────────────────────────────────────────────────────────
 
 export async function requestNotificationPermission() {
   if (isNative) {
-    const { display } = await LocalNotifications.requestPermissions();
+    const LN = await getLocalNotifications();
+    const { display } = await LN.requestPermissions();
     return display === 'granted';
   }
   if (!('Notification' in window)) return false;
@@ -25,22 +34,21 @@ export async function requestNotificationPermission() {
 }
 
 export function notificationsGranted() {
-  if (isNative) return true; // permission was checked at runtime; assume granted if we reach here
+  if (isNative) return true;
   return typeof Notification !== 'undefined' && Notification.permission === 'granted';
 }
 
 // ── Scheduling ───────────────────────────────────────────────────────────────
 
-// Web fallback: browser Notification + setTimeout (screen-on only, but fine for web)
 const webTimers = {};
 
 export async function scheduleNotification({ tag, title, body, delayMs }) {
   if (isNative) {
+    const LN = await getLocalNotifications();
     const id = TAG_ID[tag];
     if (id === undefined) return;
-    // Cancel any existing notification with this ID before rescheduling
-    await LocalNotifications.cancel({ notifications: [{ id }] }).catch(() => {});
-    await LocalNotifications.schedule({
+    await LN.cancel({ notifications: [{ id }] }).catch(() => {});
+    await LN.schedule({
       notifications: [{
         id,
         title,
@@ -68,20 +76,20 @@ export async function scheduleNotification({ tag, title, body, delayMs }) {
 
 export async function cancelNotification(tag) {
   if (isNative) {
+    const LN = await getLocalNotifications();
     const id = TAG_ID[tag];
     if (id === undefined) return;
-    await LocalNotifications.cancel({ notifications: [{ id }] }).catch(() => {});
+    await LN.cancel({ notifications: [{ id }] }).catch(() => {});
     return;
   }
 
-  // Web fallback
   if (webTimers[tag]) {
     clearTimeout(webTimers[tag]);
     delete webTimers[tag];
   }
 }
 
-// ── Init (no-op on native — Capacitor needs no SW registration) ──────────────
+// ── Init ─────────────────────────────────────────────────────────────────────
 
 export async function initNotifications() {
   if (isNative) return true;
@@ -96,14 +104,14 @@ export async function initNotifications() {
   }
 }
 
-// ── Daily weight / progress reminder ────────────────────────────────────────
+// ── Daily weight / progress reminder ─────────────────────────────────────────
 
-const REMINDER_ENABLED_KEY = 'ss_reminder_enabled';
-const REMINDER_TIME_KEY    = 'ss_reminder_time';
+const REMINDER_ENABLED_KEY  = 'ss_reminder_enabled';
+const REMINDER_TIME_KEY     = 'ss_reminder_time';
 const DEFAULT_REMINDER_TIME = '08:00';
 
 export function getReminderEnabled() {
-  return localStorage.getItem(REMINDER_ENABLED_KEY) !== 'false'; // default true
+  return localStorage.getItem(REMINDER_ENABLED_KEY) !== 'false';
 }
 
 export function getReminderTime() {
@@ -128,9 +136,9 @@ export async function scheduleWeightReminder(timeStr) {
   if (next <= now) next.setDate(next.getDate() + 1);
 
   if (isNative) {
-    // Use Capacitor repeating schedule for daily reminders
-    await LocalNotifications.cancel({ notifications: [{ id: TAG_ID['weight-reminder'] }] }).catch(() => {});
-    await LocalNotifications.schedule({
+    const LN = await getLocalNotifications();
+    await LN.cancel({ notifications: [{ id: TAG_ID['weight-reminder'] }] }).catch(() => {});
+    await LN.schedule({
       notifications: [{
         id: TAG_ID['weight-reminder'],
         title: '📸 Log your progress!',
