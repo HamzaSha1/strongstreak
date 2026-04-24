@@ -272,7 +272,7 @@ export default function Progress() {
         {showForm && (
           <div className="bg-card border border-border rounded-2xl p-4 mb-6">
             <div className="relative mb-3">
-              <div className="w-full h-10 rounded-xl bg-input border border-border flex items-center justify-center text-sm pointer-events-none">
+              <div className="w-full h-10 rounded-xl bg-input border border-border flex items-center justify-center text-center text-sm pointer-events-none leading-none">
                 {format(parse(formData.date, 'yyyy-MM-dd', new Date()), 'MMM d, yyyy')}
               </div>
               <input
