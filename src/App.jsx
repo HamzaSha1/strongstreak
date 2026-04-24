@@ -9,16 +9,17 @@ import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import Layout from '@/components/Layout';
 import { ActiveWorkoutProvider } from '@/lib/ActiveWorkoutContext';
 import ErrorBoundary from '@/components/ErrorBoundary';
-// Add page imports here
-const Workouts = lazy(() => import('@/pages/Workouts'));
-const Feed = lazy(() => import('@/pages/Feed'));
-const Groups = lazy(() => import('@/pages/Groups'));
-const History = lazy(() => import('@/pages/History'));
-const Progress = lazy(() => import('@/pages/Progress'));
+// Core tab pages — bundled directly so tab navigation is instant
+import Workouts from '@/pages/Workouts';
+import Feed from '@/pages/Feed';
+import Groups from '@/pages/Groups';
+import History from '@/pages/History';
+import Progress from '@/pages/Progress';
+import People from '@/pages/People';
+import Profile from '@/pages/Profile';
+// Secondary pages — lazy loaded as they are rarely accessed
 const SplitBuilder = lazy(() => import('@/pages/SplitBuilder'));
 const ActiveWorkout = lazy(() => import('@/pages/ActiveWorkout'));
-const People = lazy(() => import('@/pages/People'));
-const Profile = lazy(() => import('@/pages/Profile'));
 const Privacy = lazy(() => import('@/pages/Privacy'));
 const Terms = lazy(() => import('@/pages/Terms'));
 const AdminDashboard = lazy(() => import('@/pages/AdminDashboard'));
