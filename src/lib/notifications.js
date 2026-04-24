@@ -1,28 +1,22 @@
-// StrongStreak Notification Service
-// Schedules and cancels background push notifications via the service worker
+import { Capacitor } from '@capacitor/core';
+import { LocalNotifications } from '@capacitor/local-notifications';
 
-let swReg = null;
+// Numeric IDs required by Capacitor — map string tags to integers
+const TAG_ID = {
+  'rest-timer':      1,
+  'weight-reminder': 2,
+  'exercise-timer':  3,
+};
 
-/**
- * Register the service worker. Call once on app startup.
- */
-export async function initNotifications() {
-  if (!('serviceWorker' in navigator)) return false;
-  try {
-    swReg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
-    await navigator.serviceWorker.ready;
-    return true;
-  } catch (e) {
-    console.warn('[StrongStreak] SW registration failed:', e);
-    return false;
-  }
-}
+const isNative = Capacitor.isNativePlatform();
 
-/**
- * Ask the user for notification permission.
- * Returns true if granted, false otherwise.
- */
+// ── Permission ───────────────────────────────────────────────────────────────
+
 export async function requestNotificationPermission() {
+  if (isNative) {
+    const { display } = await LocalNotifications.requestPermissions();
+    return display === 'granted';
+  }
   if (!('Notification' in window)) return false;
   if (Notification.permission === 'granted') return true;
   if (Notification.permission === 'denied') return false;
@@ -30,40 +24,76 @@ export async function requestNotificationPermission() {
   return result === 'granted';
 }
 
-/** Returns true if notifications are currently allowed */
 export function notificationsGranted() {
+  if (isNative) return true; // permission was checked at runtime; assume granted if we reach here
   return typeof Notification !== 'undefined' && Notification.permission === 'granted';
 }
 
-/** Get the active service worker (or null if unavailable) */
-async function getActiveSW() {
-  if (!('serviceWorker' in navigator)) return null;
-  try {
-    const reg = swReg ?? (await navigator.serviceWorker.ready);
-    return reg?.active ?? null;
-  } catch {
-    return null;
+// ── Scheduling ───────────────────────────────────────────────────────────────
+
+// Web fallback: browser Notification + setTimeout (screen-on only, but fine for web)
+const webTimers = {};
+
+export async function scheduleNotification({ tag, title, body, delayMs }) {
+  if (isNative) {
+    const id = TAG_ID[tag];
+    if (id === undefined) return;
+    // Cancel any existing notification with this ID before rescheduling
+    await LocalNotifications.cancel({ notifications: [{ id }] }).catch(() => {});
+    await LocalNotifications.schedule({
+      notifications: [{
+        id,
+        title,
+        body,
+        schedule: { at: new Date(Date.now() + delayMs) },
+        sound: undefined,
+        smallIcon: 'ic_stat_icon_config_sample',
+        iconColor: '#f97316',
+      }],
+    });
+    return;
+  }
+
+  // Web fallback
+  if (!notificationsGranted()) return;
+  if (webTimers[tag]) {
+    clearTimeout(webTimers[tag]);
+    delete webTimers[tag];
+  }
+  webTimers[tag] = setTimeout(() => {
+    delete webTimers[tag];
+    try { new Notification(title, { body, icon: '/icons/icon-512.png' }); } catch {}
+  }, delayMs);
+}
+
+export async function cancelNotification(tag) {
+  if (isNative) {
+    const id = TAG_ID[tag];
+    if (id === undefined) return;
+    await LocalNotifications.cancel({ notifications: [{ id }] }).catch(() => {});
+    return;
+  }
+
+  // Web fallback
+  if (webTimers[tag]) {
+    clearTimeout(webTimers[tag]);
+    delete webTimers[tag];
   }
 }
 
-/**
- * Tell the service worker to fire a notification after delayMs milliseconds.
- * The tag is used to cancel/replace the notification.
- */
-export async function scheduleNotification({ tag, title, body, delayMs }) {
-  if (!notificationsGranted()) return;
-  const sw = await getActiveSW();
-  if (!sw) return;
-  sw.postMessage({ type: 'SCHEDULE_NOTIFICATION', tag, title, body, delayMs });
-}
+// ── Init (no-op on native — Capacitor needs no SW registration) ──────────────
 
-/**
- * Cancel a previously scheduled notification by tag.
- */
-export async function cancelNotification(tag) {
-  const sw = await getActiveSW();
-  if (!sw) return;
-  sw.postMessage({ type: 'CANCEL_NOTIFICATION', tag });
+export async function initNotifications() {
+  if (isNative) return true;
+  if (!('serviceWorker' in navigator)) return false;
+  try {
+    await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+    await navigator.serviceWorker.ready;
+    return true;
+  } catch (e) {
+    console.warn('[StrongStreak] SW registration failed:', e);
+    return false;
+  }
 }
 
 // ── Daily weight / progress reminder ────────────────────────────────────────
@@ -88,11 +118,6 @@ export function setReminderTime(val) {
   localStorage.setItem(REMINDER_TIME_KEY, val);
 }
 
-/**
- * Schedule (or reschedule) the daily progress reminder.
- * Fires at the user-chosen time; if that time has already passed today,
- * schedules for tomorrow. Call this every time the app opens.
- */
 export async function scheduleWeightReminder(timeStr) {
   if (!notificationsGranted()) return;
 
@@ -100,12 +125,25 @@ export async function scheduleWeightReminder(timeStr) {
   const now  = new Date();
   const next = new Date();
   next.setHours(hours, minutes, 0, 0);
-
-  // Already passed today → push to tomorrow
   if (next <= now) next.setDate(next.getDate() + 1);
 
-  const delayMs = next.getTime() - now.getTime();
+  if (isNative) {
+    // Use Capacitor repeating schedule for daily reminders
+    await LocalNotifications.cancel({ notifications: [{ id: TAG_ID['weight-reminder'] }] }).catch(() => {});
+    await LocalNotifications.schedule({
+      notifications: [{
+        id: TAG_ID['weight-reminder'],
+        title: '📸 Log your progress!',
+        body:  'Time to weigh in and snap a progress photo. Keep the streak going! 💪',
+        schedule: { at: next, repeats: true, every: 'day' },
+        smallIcon: 'ic_stat_icon_config_sample',
+        iconColor: '#f97316',
+      }],
+    });
+    return;
+  }
 
+  const delayMs = next.getTime() - now.getTime();
   await scheduleNotification({
     tag:     'weight-reminder',
     title:   '📸 Log your progress!',
@@ -114,9 +152,6 @@ export async function scheduleWeightReminder(timeStr) {
   });
 }
 
-/**
- * Cancel the daily weight reminder.
- */
 export async function cancelWeightReminder() {
   await cancelNotification('weight-reminder');
 }
