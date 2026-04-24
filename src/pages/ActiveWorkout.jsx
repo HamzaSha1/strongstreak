@@ -650,17 +650,20 @@ function ExerciseCard({ ex, exSets, isOpen, isCollapsed, prevSets, onToggle, onU
     const dropsetCount = ex.dropset_count || 0;
 
     rows.push(
-      <div key="headers" className="flex items-center px-1 mb-1">
-        <span className="w-6 shrink-0" />
+      <div key="headers" className="flex items-center gap-1.5 px-3 mb-1">
+        <span className="w-5 shrink-0" />
         {isCardio ? (
-          <span className="flex-1 text-[10px] text-muted-foreground text-center uppercase tracking-widest">{ex.cardio_metric || 'Distance'}</span>
+          <>
+            <span className="flex-1 text-[10px] text-muted-foreground text-center uppercase tracking-widest">{ex.cardio_metric || 'Distance'}</span>
+            <span className="w-12 shrink-0" />
+          </>
         ) : (
           <>
             <span className="w-14 text-[10px] text-muted-foreground text-center uppercase tracking-widest shrink-0">Range</span>
             <span className="flex-1 text-[10px] text-muted-foreground text-center uppercase tracking-widest">Weight ({weightUnit})</span>
             <span className="flex-1 text-[10px] text-muted-foreground text-center uppercase tracking-widest">{ex.rep_mode === 'time' ? 'Time' : 'Reps'}</span>
-            <span className="w-14 text-[10px] text-muted-foreground text-center uppercase tracking-widest ml-2">RIR</span>
-            <span className="w-10 shrink-0" />
+            <span className="w-14 text-[10px] text-muted-foreground text-center uppercase tracking-widest shrink-0">RIR</span>
+            <span className="w-12 shrink-0" />
           </>
         )}
         {!isCardio && dropsetCount > 0 && (
