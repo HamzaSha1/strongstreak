@@ -5,6 +5,8 @@ import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useActiveWorkout } from '@/lib/ActiveWorkoutContext';
 import { getReminderEnabled, getReminderTime, scheduleWeightReminder } from '@/lib/notifications';
+import { useAuth } from '@/lib/AuthContext';
+import { useQuery } from '@tanstack/react-query';
 
 const ActiveWorkout = lazy(() => import('@/pages/ActiveWorkout'));
 
@@ -32,6 +34,15 @@ const NAV_ITEMS = [
 export default function Layout() {
   const { activeDayId } = useActiveWorkout();
   const location = useLocation();
+  const { user } = useAuth();
+
+  const { data: pendingRequests = [] } = useQuery({
+    queryKey: ['incomingFollowRequests', user?.email],
+    queryFn: () => base44.entities.FollowRequest.filter({ target_id: user.email, status: 'pending' }),
+    enabled: !!user,
+    staleTime: 30_000,
+  });
+  const hasPendingRequests = pendingRequests.length > 0;
   const [scrollPositions, setScrollPositions] = useState({});
   const [prevPath, setPrevPath] = useState(location.pathname);
   const mainRef = useRef(null);
@@ -143,10 +154,15 @@ export default function Layout() {
                          : 'text-muted-foreground hover:text-foreground'
                      )}
                    >
-                    <Icon
-                      size={22}
-                      className={cn(active && 'drop-shadow-[0_0_6px_hsl(35_96%_58%/0.8)]')}
-                    />
+                    <div className="relative">
+                      <Icon
+                        size={22}
+                        className={cn(active && 'drop-shadow-[0_0_6px_hsl(35_96%_58%/0.8)]')}
+                      />
+                      {path === '/profile' && hasPendingRequests && (
+                        <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-primary rounded-full border-2 border-card" />
+                      )}
+                    </div>
                     <span className="text-[11px] font-medium font-body">{label}</span>
                   </Link>
                 );

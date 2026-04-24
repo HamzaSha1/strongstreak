@@ -14,10 +14,14 @@ export default function FollowRequests({ currentUser }) {
     enabled: !!currentUser,
   });
 
-  // Fetch display info for requesters from allUsers cache
   const { data: allUsers = [] } = useQuery({
-    queryKey: ['allUsers'],
-    enabled: false, // reads from cache only
+    queryKey: ['allUsers', currentUser?.email],
+    queryFn: async () => {
+      const res = await base44.functions.invoke('getUsers', {});
+      return res.data.users || [];
+    },
+    enabled: !!currentUser,
+    staleTime: 60_000,
   });
 
   const acceptMutation = useMutation({

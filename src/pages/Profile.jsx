@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
-import { Grid3X3, Settings } from 'lucide-react';
+import { Grid3X3, Settings, Bell } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import PostGrid from '@/components/profile/PostGrid';
 import ProfileSettings from '@/components/profile/ProfileSettings';
+import FollowRequests from '@/components/people/FollowRequests';
 
 export default function Profile() {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('posts');
 
   const { data: profile = null } = useQuery({
@@ -20,6 +22,15 @@ export default function Profile() {
     enabled: !!user,
   });
 
+  // setProfile writes back into the query cache so ProfileSettings can update it optimistically
+  const setProfile = (newProfile) => queryClient.setQueryData(['profile', user?.email], newProfile);
+
+  const { data: pendingRequests = [] } = useQuery({
+    queryKey: ['incomingFollowRequests', user?.email],
+    queryFn: () => base44.entities.FollowRequest.filter({ target_id: user.email, status: 'pending' }),
+    enabled: !!user,
+  });
+
   const { data: posts = [], isLoading: postsLoading } = useQuery({
     queryKey: ['myPosts', user?.email],
     queryFn: () => base44.entities.Post.filter({ user_id: user.email }, '-created_date', 50),
@@ -28,6 +39,7 @@ export default function Profile() {
 
   const tabs = [
     { id: 'posts', label: 'Posts', icon: Grid3X3 },
+    { id: 'requests', label: 'Requests', icon: Bell, badge: pendingRequests.length },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
 
@@ -74,7 +86,14 @@ export default function Profile() {
                     : 'border-transparent text-muted-foreground hover:text-foreground'
                 )}
               >
-                <Icon size={16} />
+                <div className="relative">
+                  <Icon size={16} />
+                  {tab.badge > 0 && (
+                    <span className="absolute -top-1 -right-1.5 min-w-[14px] h-[14px] bg-primary text-primary-foreground rounded-full text-[9px] font-bold flex items-center justify-center px-0.5">
+                      {tab.badge}
+                    </span>
+                  )}
+                </div>
                 {tab.label}
               </button>
             );
@@ -86,6 +105,16 @@ export default function Profile() {
       <div className="flex-1 overflow-y-auto" style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom))' }}>
         {activeTab === 'posts' && (
           <PostGrid posts={posts} isLoading={postsLoading} userEmail={user?.email} />
+        )}
+        {activeTab === 'requests' && (
+          pendingRequests.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-24 gap-3 text-center px-6">
+              <Bell size={32} className="text-muted-foreground/40" />
+              <p className="text-muted-foreground text-sm">No pending follow requests</p>
+            </div>
+          ) : (
+            <FollowRequests currentUser={user} />
+          )
         )}
         {activeTab === 'settings' && (
           <ProfileSettings user={user} profile={profile} setProfile={setProfile} />
