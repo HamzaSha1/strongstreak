@@ -1,4 +1,4 @@
-import { Link, Outlet, useLocation } from 'react-router-dom';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Dumbbell, Rss, Users, History, UserSearch, TrendingUp, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState, useEffect, useRef, lazy, Suspense } from 'react';
@@ -34,7 +34,22 @@ const NAV_ITEMS = [
 export default function Layout() {
   const { activeDayId } = useActiveWorkout();
   const location = useLocation();
+  const navigate = useNavigate();
   const { user } = useAuth();
+
+  // Native only: when the user taps a Capacitor local notification, navigate
+  // to the URL stored in notification.extra.url (e.g. '/progress').
+  useEffect(() => {
+    const isNative = window.Capacitor?.isNativePlatform?.() === true;
+    if (!isNative) return;
+    const LN = window.Capacitor?.Plugins?.LocalNotifications;
+    if (!LN) return;
+    const handle = LN.addListener('localNotificationActionPerformed', (event) => {
+      const url = event.notification?.extra?.url;
+      if (url) navigate(url);
+    });
+    return () => { handle?.remove?.(); };
+  }, [navigate]);
 
   const { data: pendingRequests = [] } = useQuery({
     queryKey: ['incomingFollowRequests', user?.email],

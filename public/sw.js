@@ -5,16 +5,22 @@
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()));
 
-// When user taps a web notification, bring the app to front
+// When the user taps a web notification, navigate to the URL stored in
+// notification.data.url (e.g. '/progress' for the weight reminder).
+// Falls back to '/' if no URL is present.
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
+  const url = event.notification.data?.url || '/';
+  const targetHref = new URL(url, self.location.origin).href;
+
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
-      const workoutClient = clients.find((c) => c.url.includes('/workout'));
-      if (workoutClient) return workoutClient.focus();
-      const anyClient = clients.find((c) => 'focus' in c);
-      if (anyClient) return anyClient.focus();
-      return self.clients.openWindow('/');
+      // Navigate an existing open window rather than opening a second tab
+      const existing = clients.find((c) => 'focus' in c);
+      if (existing) {
+        return existing.navigate(targetHref).then((c) => c?.focus());
+      }
+      return self.clients.openWindow(targetHref);
     })
   );
 });

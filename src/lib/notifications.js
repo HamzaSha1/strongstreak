@@ -17,6 +17,13 @@ const TAG_ID = {
   'exercise-timer':  3,
 };
 
+// Deep-link URL each notification should open when tapped (null = no deep link)
+const TAG_URL = {
+  'weight-reminder': '/progress',
+  'rest-timer':      null,
+  'exercise-timer':  null,
+};
+
 // ── Permission ───────────────────────────────────────────────────────────────
 
 export async function requestNotificationPermission() {
@@ -65,8 +72,24 @@ export async function scheduleNotification({ tag, title, body, delayMs }) {
     clearTimeout(webTimers[tag]);
     delete webTimers[tag];
   }
-  webTimers[tag] = setTimeout(() => {
+  webTimers[tag] = setTimeout(async () => {
     delete webTimers[tag];
+    const url = TAG_URL[tag] || null;
+    // Use registration.showNotification() so the SW handles the tap and can
+    // deep-link via notificationclick — plain new Notification() cannot do this.
+    try {
+      const reg = await navigator.serviceWorker?.ready;
+      if (reg) {
+        await reg.showNotification(title, {
+          body,
+          icon: '/icons/icon-512.png',
+          tag,
+          data: url ? { url } : undefined,
+        });
+        return;
+      }
+    } catch {}
+    // Final fallback for browsers without SW support
     try { new Notification(title, { body, icon: '/icons/icon-512.png' }); } catch {}
   }, delayMs);
 }
@@ -141,6 +164,7 @@ export async function scheduleWeightReminder(timeStr) {
         schedule: { at: next, repeats: true, every: 'day' },
         smallIcon: 'ic_stat_icon_config_sample',
         iconColor: '#f97316',
+        extra: { url: '/progress' },
       }],
     });
     return;
