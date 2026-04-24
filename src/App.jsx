@@ -1,8 +1,7 @@
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
-import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
-import { AnimatePresence, motion } from 'framer-motion';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
@@ -25,7 +24,6 @@ const Terms = lazy(() => import('@/pages/Terms'));
 const AdminDashboard = lazy(() => import('@/pages/AdminDashboard'));
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
-  const location = useLocation();
 
   if (isLoadingPublicSettings || isLoadingAuth) {
     return (
@@ -45,39 +43,29 @@ const AuthenticatedApp = () => {
   }
 
   return (
-    <AnimatePresence mode="wait">
-      <motion.div
-        key={location.pathname}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.15, ease: 'easeOut' }}
-      >
-        <Suspense fallback={
-          <div className="fixed inset-0 flex items-center justify-center bg-background">
-            <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin"></div>
-          </div>
-        }>
-        <Routes>
-          <Route element={<Layout />}>
-            <Route path="/" element={<Workouts />} />
-            <Route path="/feed" element={<Feed />} />
-            <Route path="/people" element={<People />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/groups" element={<Groups />} />
-            <Route path="/history" element={<History />} />
-            <Route path="/progress" element={<Progress />} />
-          </Route>
-          <Route path="/split-builder" element={<SplitBuilder />} />
-          <Route path="/privacy" element={<Privacy />} />
-          <Route path="/terms" element={<Terms />} />
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/workout/:dayId" element={<ActiveWorkout />} />
-          <Route path="*" element={<PageNotFound />} />
-        </Routes>
-        </Suspense>
-      </motion.div>
-    </AnimatePresence>
+    <Suspense fallback={
+      <div className="fixed inset-0 flex items-center justify-center bg-background">
+        <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin"></div>
+      </div>
+    }>
+      <Routes>
+        <Route element={<Layout />}>
+          <Route path="/" element={<Workouts />} />
+          <Route path="/feed" element={<Feed />} />
+          <Route path="/people" element={<People />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/groups" element={<Groups />} />
+          <Route path="/history" element={<History />} />
+          <Route path="/progress" element={<Progress />} />
+        </Route>
+        <Route path="/split-builder" element={<SplitBuilder />} />
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/terms" element={<Terms />} />
+        <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/workout/:dayId" element={<ActiveWorkout />} />
+        <Route path="*" element={<PageNotFound />} />
+      </Routes>
+    </Suspense>
   );
 };
 
