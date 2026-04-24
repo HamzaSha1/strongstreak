@@ -271,17 +271,14 @@ export default function Progress() {
 
         {showForm && (
           <div className="bg-card border border-border rounded-2xl p-4 mb-6">
-            <div className="relative mb-3">
-              <div className="w-full h-10 rounded-xl bg-input border border-border flex items-center justify-center text-center text-sm pointer-events-none leading-none">
-                {format(parse(formData.date, 'yyyy-MM-dd', new Date()), 'MMM d, yyyy')}
-              </div>
+            <div className="mb-3">
               <input
                 type="date"
                 value={formData.date}
                 onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                 min="2000-01-01"
                 max={format(new Date(), 'yyyy-MM-dd')}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                className="w-full h-10 rounded-xl bg-input border border-border px-3 text-sm text-foreground"
                 style={{ colorScheme: 'dark' }}
               />
             </div>
