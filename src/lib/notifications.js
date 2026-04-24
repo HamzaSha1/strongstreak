@@ -1,9 +1,14 @@
-// window.Capacitor is injected by the native bridge at runtime — no top-level import needed.
-// This prevents Vite from trying to resolve @capacitor/* during the web/Base44 build.
+// No @capacitor/* imports — Vite can't resolve them in a web build.
+// On native, window.Capacitor and window.Capacitor.Plugins are injected by
+// the Capacitor bridge before any JS runs, so we access the plugin directly.
+
 const isNative =
   typeof window !== 'undefined' &&
-  typeof window.Capacitor !== 'undefined' &&
-  window.Capacitor.isNativePlatform?.() === true;
+  window.Capacitor?.isNativePlatform?.() === true;
+
+function LN() {
+  return window.Capacitor?.Plugins?.LocalNotifications;
+}
 
 // Numeric IDs required by Capacitor — map string tags to integers
 const TAG_ID = {
@@ -12,18 +17,11 @@ const TAG_ID = {
   'exercise-timer':  3,
 };
 
-async function getLocalNotifications() {
-  // @vite-ignore tells Vite to skip resolving this import at build time
-  const { LocalNotifications } = await import(/* @vite-ignore */ '@capacitor/local-notifications');
-  return LocalNotifications;
-}
-
 // ── Permission ───────────────────────────────────────────────────────────────
 
 export async function requestNotificationPermission() {
   if (isNative) {
-    const LN = await getLocalNotifications();
-    const { display } = await LN.requestPermissions();
+    const { display } = await LN().requestPermissions();
     return display === 'granted';
   }
   if (!('Notification' in window)) return false;
@@ -44,11 +42,10 @@ const webTimers = {};
 
 export async function scheduleNotification({ tag, title, body, delayMs }) {
   if (isNative) {
-    const LN = await getLocalNotifications();
     const id = TAG_ID[tag];
     if (id === undefined) return;
-    await LN.cancel({ notifications: [{ id }] }).catch(() => {});
-    await LN.schedule({
+    await LN().cancel({ notifications: [{ id }] }).catch(() => {});
+    await LN().schedule({
       notifications: [{
         id,
         title,
@@ -76,10 +73,9 @@ export async function scheduleNotification({ tag, title, body, delayMs }) {
 
 export async function cancelNotification(tag) {
   if (isNative) {
-    const LN = await getLocalNotifications();
     const id = TAG_ID[tag];
     if (id === undefined) return;
-    await LN.cancel({ notifications: [{ id }] }).catch(() => {});
+    await LN().cancel({ notifications: [{ id }] }).catch(() => {});
     return;
   }
 
@@ -136,9 +132,8 @@ export async function scheduleWeightReminder(timeStr) {
   if (next <= now) next.setDate(next.getDate() + 1);
 
   if (isNative) {
-    const LN = await getLocalNotifications();
-    await LN.cancel({ notifications: [{ id: TAG_ID['weight-reminder'] }] }).catch(() => {});
-    await LN.schedule({
+    await LN().cancel({ notifications: [{ id: TAG_ID['weight-reminder'] }] }).catch(() => {});
+    await LN().schedule({
       notifications: [{
         id: TAG_ID['weight-reminder'],
         title: '📸 Log your progress!',
