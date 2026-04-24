@@ -69,10 +69,11 @@ export default function WorkoutSummaryScreen({ sets, exercises, streak, duration
           <p className="text-xs text-muted-foreground mt-1">StrongStreak</p>
         </div>
 
-        {/* Background glow */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="w-80 h-80 rounded-full bg-primary/10 blur-3xl" />
-        </div>
+        {/* Background glow — radial gradient, no blur filter */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{ background: 'radial-gradient(circle at 50% 40%, hsl(35 96% 58% / 0.12) 0%, transparent 60%)' }}
+        />
 
         {/* Trophy */}
         <motion.div

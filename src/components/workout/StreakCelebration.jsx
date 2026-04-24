@@ -19,18 +19,19 @@ export default function StreakCelebration({ newStreak, onDone }) {
 
   return (
     <div className="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-background">
-      {/* Background glow */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <div className="w-96 h-96 rounded-full bg-primary/20 blur-3xl" />
-      </div>
+      {/* Background glow — radial gradient, no blur filter */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{ background: 'radial-gradient(circle at 50% 45%, hsl(35 96% 58% / 0.18) 0%, transparent 65%)' }}
+      />
 
-      {/* Fire emoji — big and bouncy */}
+      {/* Fire emoji — big and bouncy, no filter on the animated element */}
       <motion.div
         initial={{ scale: 0, y: 40 }}
         animate={{ scale: 1, y: 0 }}
         transition={{ type: 'spring', stiffness: 220, damping: 12, delay: 0.1 }}
         className="text-[120px] leading-none mb-4 select-none"
-        style={{ filter: 'drop-shadow(0 0 40px hsl(35 96% 58% / 0.9))' }}
+        style={{ willChange: 'transform' }}
       >
         🔥
       </motion.div>
@@ -44,6 +45,7 @@ export default function StreakCelebration({ newStreak, onDone }) {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ type: 'spring', stiffness: 300, damping: 14 }}
             className="text-center"
+            style={{ willChange: 'transform, opacity' }}
           >
             <motion.p
               key={displayStreak}
