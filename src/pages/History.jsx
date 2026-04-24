@@ -1,23 +1,20 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/lib/AuthContext';
 import { ChevronDown, ChevronUp, Clock, Dumbbell } from 'lucide-react';
 import { format, formatDistanceStrict } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
 export default function History() {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [expanded, setExpanded] = useState(null);
   const [pullProgress, setPullProgress] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const scrollContainerRef = useRef(null);
   const startYRef = useRef(0);
   const queryClient = useQueryClient();
-
-  useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
 
   const handleTouchStart = (e) => {
     if (scrollContainerRef.current?.scrollTop === 0) {

@@ -1,33 +1,24 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '@/lib/AuthContext';
 import { Grid3X3, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import PostGrid from '@/components/profile/PostGrid';
 import ProfileSettings from '@/components/profile/ProfileSettings';
 
 export default function Profile() {
-  const [user, setUser] = useState(null);
-  const [profile, setProfile] = useState(null);
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('posts');
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const me = await base44.auth.me();
-        setUser(me);
-        const profiles = await base44.entities.Profile.filter({ user_id: me.email });
-        if (profiles.length) {
-          setProfile(profiles[0]);
-        } else {
-          setProfile({ user_id: me.email, display_name: me.full_name || '', avatar_url: '', is_private: false });
-        }
-      } catch (err) {
-        console.error(err);
-      }
-    };
-    loadData();
-  }, []);
+  const { data: profile = null } = useQuery({
+    queryKey: ['profile', user?.email],
+    queryFn: async () => {
+      const profiles = await base44.entities.Profile.filter({ user_id: user.email });
+      return profiles[0] ?? { user_id: user.email, display_name: user.full_name || '', avatar_url: '', is_private: false };
+    },
+    enabled: !!user,
+  });
 
   const { data: posts = [], isLoading: postsLoading } = useQuery({
     queryKey: ['myPosts', user?.email],

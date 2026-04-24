@@ -6,6 +6,7 @@ import { scheduleNotification, cancelNotification, requestNotificationPermission
 
 const parseLocalDate = (dateStr) => parseISO(dateStr);
 import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/lib/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, ArrowLeftRight, Plus, Check, Flag, Pencil, ScanLine, Trash2, X, Camera, ImageIcon, Timer, ChevronDown, ChevronUp } from 'lucide-react';
 
@@ -912,7 +913,7 @@ export default function ActiveWorkout({ dayId: propDayId }) {
   const { isMinimized, minimize, maximize, stopWorkout } = useActiveWorkout() ?? {};
   const goHome = () => { stopWorkout?.(); navigate('/'); };
   const queryClient = useQueryClient();
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [workoutLog, setWorkoutLog] = useState(null);
   const [sets, setSets] = useState({});
   const [expanded, setExpanded] = useState({});
@@ -945,7 +946,6 @@ export default function ActiveWorkout({ dayId: propDayId }) {
   const { ensureExercise } = useExerciseLibrary();
 
   useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
     timerRef.current = setInterval(() => setElapsed((e) => e + 1), 1000);
     return () => clearInterval(timerRef.current);
   }, []);

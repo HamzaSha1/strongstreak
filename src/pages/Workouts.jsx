@@ -1,6 +1,7 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/lib/AuthContext';
 import { Flame, Plus, Edit, Play, BedDouble, Dumbbell, Upload, Eye } from 'lucide-react';
 import DayViewEditSheet from '@/components/workout/DayViewEditSheet';
 import ImportSplitJsonModal from '@/components/splitbuilder/ImportSplitJsonModal';
@@ -30,17 +31,13 @@ export default function Workouts() {
   const navigate = useNavigate();
   const { startWorkout } = useActiveWorkout();
   const queryClient = useQueryClient();
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState(0);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [showImportSplit, setShowImportSplit] = useState(false);
   const [showStreakCalendar, setShowStreakCalendar] = useState(false);
   const [viewingDay, setViewingDay] = useState(null);
 
-
-  useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
 
   const { data: splitDays = [] } = useQuery({
     queryKey: ['splitDays', user?.id],

@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/lib/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Plus, TrendingUp, Camera, X, Columns2, Check } from 'lucide-react';
@@ -112,7 +113,7 @@ function TappablePhoto({ children, onTap, className }) {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function Progress() {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({ weight_kg: '', date: format(new Date(), 'yyyy-MM-dd'), photo_url: '' });
   const [uploading, setUploading] = useState(false);
@@ -121,10 +122,6 @@ export default function Progress() {
   const [compareSelected, setCompareSelected] = useState([]);
   const [showCompare, setShowCompare] = useState(false);
   const queryClient = useQueryClient();
-
-  useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
 
   const { data: weights = [] } = useQuery({
     queryKey: ['weights', user?.email],

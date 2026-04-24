@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/lib/AuthContext';
 import { ArrowLeft, Check, Plus, Trash2, ImagePlus, ScanLine, Share2, ArrowUpDown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useNavigate } from 'react-router-dom';
@@ -26,7 +27,7 @@ const initialDays = () =>
 export default function SplitBuilder() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [splits, setSplits] = useState([{ name: 'My Split', days: initialDays() }]);
   const [activeTab, setActiveTab] = useState(0);
   const [initialized, setInitialized] = useState(false);
@@ -37,10 +38,6 @@ export default function SplitBuilder() {
   const [showAIImport, setShowAIImport] = useState(false);
   const [isReordering, setIsReordering] = useState(false);
   const { ensureExercise } = useExerciseLibrary();
-
-  useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
 
   const { data: existingSplitDays = [], isSuccess: daysLoaded } = useQuery({
     queryKey: ['splitDays', user?.email],

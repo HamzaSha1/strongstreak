@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/lib/AuthContext';
 import { Plus, Copy, Users, Flame, LogOut, Flag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,7 +17,7 @@ function generateCode() {
 
 
 export default function Groups() {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [view, setView] = useState('list'); // list | create | join | detail
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [reportTarget, setReportTarget] = useState(null);
@@ -25,10 +26,6 @@ export default function Groups() {
   const [groupDifficulty, setGroupDifficulty] = useState('medium');
   const [joinCode, setJoinCode] = useState('');
   const queryClient = useQueryClient();
-
-  useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
 
   const { data: myMemberships = [] } = useQuery({
     queryKey: ['myMemberships', user?.email],
