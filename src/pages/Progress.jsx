@@ -278,7 +278,7 @@ export default function Progress() {
                 onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                 min="2000-01-01"
                 max={format(new Date(), 'yyyy-MM-dd')}
-                className="w-full h-10 bg-input border border-border px-3 text-sm block"
+                className="w-full h-10 bg-input border border-border px-3 text-sm block text-center"
                 style={{ colorScheme: 'dark' }}
               />
             </div>
