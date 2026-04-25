@@ -1,9 +1,11 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { LogOut, Trash2, Camera, Eye, EyeOff, Lock, Shield, User, AtSign, Check, X, Loader2, ShieldOff, Palette, Bell, BellOff } from 'lucide-react';
+import { LogOut, Trash2, Camera, Eye, EyeOff, Lock, Shield, User, AtSign, Check, X, Loader2, ShieldOff, Palette, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { useWeightUnit } from '@/hooks/useWeightUnit';
 import { useRestGame } from '@/hooks/useRestGame';
@@ -25,7 +27,7 @@ export default function ProfileSettings({ user, profile, setProfile }) {
   const [reminderEnabled, setReminderEnabledState] = useState(() => getReminderEnabled());
   const [reminderTime, setReminderTimeState] = useState(() => getReminderTime());
 
-  const handleToggleReminder = async (val) => {
+  const handleReminderToggle = async (val) => {
     setReminderEnabledState(val);
     setReminderEnabled(val);
     if (val) {
@@ -44,7 +46,8 @@ export default function ProfileSettings({ user, profile, setProfile }) {
     }
   };
 
-  const handleReminderTimeChange = async (newTime) => {
+  const handleTimeChange = async (e) => {
+    const newTime = e.target.value;
     setReminderTimeState(newTime);
     setReminderTime(newTime);
     if (reminderEnabled) {
@@ -357,33 +360,33 @@ export default function ProfileSettings({ user, profile, setProfile }) {
 
       {/* Morning reminder */}
       <div className="bg-card border border-border rounded-2xl p-4 flex flex-col gap-3">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="font-semibold text-sm flex items-center gap-1.5">
-              {reminderEnabled ? <Bell size={14} className="text-primary" /> : <BellOff size={14} className="text-muted-foreground" />}
-              Morning Reminder
-            </p>
-            <p className="text-xs text-muted-foreground">Daily nudge to log your weight &amp; photo</p>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-0.5">
+            <Label htmlFor="morning-reminder-checkbox">Morning Reminder</Label>
+            <p className="text-sm text-muted-foreground">Daily nudge to log weight</p>
           </div>
-          {/* Toggle switch */}
-          <button
-            onClick={() => handleToggleReminder(!reminderEnabled)}
-            className={`relative w-11 h-6 rounded-full transition-colors ${reminderEnabled ? 'bg-primary' : 'bg-muted border border-border'}`}
-          >
-            <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${reminderEnabled ? 'translate-x-5' : 'translate-x-0.5'}`} />
-          </button>
-        </div>
-        {reminderEnabled && (
-          <div className="flex items-center justify-between">
-            <p className="text-xs text-muted-foreground">Reminder time</p>
-            <input
-              type="time"
-              value={reminderTime}
-              onChange={(e) => handleReminderTimeChange(e.target.value)}
-              className="h-9 rounded-xl bg-input border border-border px-3 text-sm font-heading font-semibold text-primary"
+
+          {/* Controls grouped in their own full-width row on mobile */}
+          <div className="flex items-center justify-between w-full sm:w-auto sm:justify-end gap-4">
+            {reminderEnabled && (
+              <div className="flex items-center gap-2">
+                <Bell className="w-4 h-4 text-muted-foreground" />
+                <Input
+                  type="time"
+                  value={reminderTime}
+                  onChange={handleTimeChange}
+                  className="w-[110px] h-8 text-sm"
+                />
+              </div>
+            )}
+            <Checkbox
+              id="morning-reminder-checkbox"
+              checked={reminderEnabled}
+              onCheckedChange={handleReminderToggle}
+              className="w-6 h-6 rounded-md"
             />
           </div>
-        )}
+        </div>
       </div>
 
       {/* Blocked Users */}
