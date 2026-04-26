@@ -375,7 +375,7 @@ export default function ProfileSettings({ user, profile, setProfile }) {
                   type="time"
                   value={reminderTime}
                   onChange={handleTimeChange}
-                  className="w-[110px] h-8 text-sm"
+                  className="w-[140px] h-8 text-sm"
                 />
               </div>
             )}
