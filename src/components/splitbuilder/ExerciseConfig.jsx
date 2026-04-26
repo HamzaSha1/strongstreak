@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { uploadImage } from '@/lib/uploadImage';
 import { toast } from 'sonner';
 import { X, ChevronDown, ChevronUp, Minus, Plus, Camera } from 'lucide-react';

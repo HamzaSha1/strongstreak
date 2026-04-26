@@ -1,7 +1,6 @@
 import { useState } from 'react';
-import { Flag, CheckCircle, XCircle, Trash2, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
+import { Flag, CheckCircle, XCircle, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { Badge } from '@/components/ui/badge';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 

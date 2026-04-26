@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
-import { Flame, Plus, Edit, Play, BedDouble, Dumbbell, Upload, Eye } from 'lucide-react';
+import { Flame, Plus, Edit, Play, Dumbbell, Upload, Eye } from 'lucide-react';
 import DayViewEditSheet from '@/components/workout/DayViewEditSheet';
 import ImportSplitJsonModal from '@/components/splitbuilder/ImportSplitJsonModal';
 import StreakCalendar from '@/components/workout/StreakCalendar';

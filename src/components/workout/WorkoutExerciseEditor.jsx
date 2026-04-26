@@ -4,7 +4,6 @@ import { cn } from '@/lib/utils';
 import { SESSION_MUSCLE_GROUPS, EXERCISES_BY_MUSCLE } from '@/components/splitbuilder/exerciseData';
 import { useExerciseLibrary } from '@/hooks/useExerciseLibrary';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import { base44 } from '@/api/base44Client';
 import { uploadImage } from '@/lib/uploadImage';
 import { toast } from 'sonner';
 

@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
-import { Save, UserPlus, RefreshCw } from 'lucide-react';
+import { UserPlus, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export default function AppSettings() {

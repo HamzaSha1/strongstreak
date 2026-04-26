@@ -40,7 +40,7 @@ export default function RestTimer({ seconds, total, onDone, onSkip, isMinimized,
     });
     // On unmount (skip, done, close): cancel scheduled notification
     return () => cancelNotification(REST_TAG);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, []);
 
   useEffect(() => {
@@ -80,7 +80,7 @@ export default function RestTimer({ seconds, total, onDone, onSkip, isMinimized,
       }
     }, 500); // tick every 500ms so display is always accurate to within half a second
     return () => clearInterval(interval);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, []); // only runs once on mount
 
   const progress = remaining / total;

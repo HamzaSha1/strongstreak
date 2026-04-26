@@ -3,7 +3,6 @@ import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { X, Heart, Pencil, Clock } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { Button } from '@/components/ui/button';
 import EditPostModal from '@/components/profile/EditPostModal';
 
 export default function PostDetailModal({ post, onClose, onUpdated, onDeleted }) {

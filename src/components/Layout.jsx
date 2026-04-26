@@ -98,7 +98,7 @@ export default function Layout() {
     }
     
     setPrevPath(currentPath);
-  }, [location.pathname]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [location.pathname]);  
 
   const contrastColor = bgColor ? getContrastColor(bgColor) : null;
   const isDark = contrastColor === 'white';

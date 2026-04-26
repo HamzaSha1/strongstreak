@@ -4,7 +4,6 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
 import { ChevronDown, ChevronUp, Clock, Dumbbell } from 'lucide-react';
 import { format, formatDistanceStrict } from 'date-fns';
-import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
 export default function History() {

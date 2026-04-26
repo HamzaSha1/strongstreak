@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { AtSign, Check, X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';

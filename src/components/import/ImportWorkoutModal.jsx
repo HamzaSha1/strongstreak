@@ -2,7 +2,6 @@ import { useState, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { X, Upload, ImagePlus, Loader2, Check, ChevronRight, Calendar, Dumbbell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
 /**

@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import html2canvas from 'html2canvas';
 import { useParams, useNavigate } from 'react-router-dom';
-import { format, startOfDay, differenceInCalendarDays, subDays, parseISO } from 'date-fns';
+import { format, startOfDay, subDays, parseISO } from 'date-fns';
 import { scheduleNotification, cancelNotification, requestNotificationPermission } from '@/lib/notifications';
 
 const parseLocalDate = (dateStr) => parseISO(dateStr);
