@@ -1,0 +1,25 @@
+{
+  "name": "DeviceToken",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "User email — matches auth identity"
+    },
+    "token": {
+      "type": "string",
+      "description": "APNs / FCM device token"
+    },
+    "platform": {
+      "type": "string",
+      "enum": ["ios", "android", "web"]
+    }
+  },
+  "required": ["user_id", "token", "platform"],
+  "rls": {
+    "create": { "data.user_id": "{{user.email}}" },
+    "read": { "data.user_id": "{{user.email}}" },
+    "update": { "data.user_id": "{{user.email}}" },
+    "delete": { "data.user_id": "{{user.email}}" }
+  }
+}
