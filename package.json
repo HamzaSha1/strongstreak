@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@base44/sdk": "^0.8.27",
-    "@base44/vite-plugin": "^1.0.14",
+    "@base44/vite-plugin": "^1.0.15",
     "@capacitor/core": "^8.3.1",
     "@capacitor/local-notifications": "^8.0.2",
     "@hello-pangea/dnd": "^17.0.0",
