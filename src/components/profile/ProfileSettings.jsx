@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { LogOut, Trash2, Camera, Eye, EyeOff, Lock, Shield, User, AtSign, Check, X, Loader2, ShieldOff, Palette, Bell } from 'lucide-react';
+import { LogOut, Trash2, Camera, Eye, EyeOff, Lock, Shield, User, AtSign, Check, X, Loader2, ShieldOff, Palette, Bell, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -88,6 +88,25 @@ export default function ProfileSettings({ user, profile, setProfile }) {
   const [passwordForm, setPasswordForm] = useState({ oldPassword: '', newPassword: '', confirmPassword: '' });
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      const res = await base44.functions.invoke('exportWorkoutHistory', {});
+      const blob = new Blob([JSON.stringify(res.data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `workout_history_${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success('Workout history exported!');
+    } catch {
+      toast.error('Export failed. Please try again.');
+    }
+    setIsExporting(false);
+  };
   const [deleteInput, setDeleteInput] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
   const [handleInput, setHandleInput] = useState(profile?.handle || '');
@@ -426,6 +445,12 @@ export default function ProfileSettings({ user, profile, setProfile }) {
           </div>
         </div>
       )}
+
+      {/* Export */}
+      <Button variant="outline" className="gap-2 justify-start" onClick={handleExport} disabled={isExporting}>
+        {isExporting ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+        {isExporting ? 'Exporting...' : 'Export Workout History'}
+      </Button>
 
       {/* Actions */}
       <div className="flex flex-col gap-3">
