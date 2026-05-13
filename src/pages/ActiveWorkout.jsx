@@ -913,14 +913,20 @@ export default function ActiveWorkout({ dayId: propDayId }) {
   const dayId = propDayId ?? paramDayId;
   const isOverlay = !!propDayId;
   const navigate = useNavigate();
-  const { isMinimized, minimize, maximize, stopWorkout } = useActiveWorkout() ?? {};
+  const { isMinimized, minimize, maximize, stopWorkout, workoutStartTime } = useActiveWorkout() ?? {};
   const goHome = () => { stopWorkout?.(); navigate('/'); };
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const [workoutLog, setWorkoutLog] = useState(null);
   const [sets, setSets] = useState({});
   const [expanded, setExpanded] = useState({});
-  const [elapsed, setElapsed] = useState(0);
+  const getInitialElapsed = () => {
+    if (workoutStartTime?.current) {
+      return Math.floor((Date.now() - workoutStartTime.current) / 1000);
+    }
+    return 0;
+  };
+  const [elapsed, setElapsed] = useState(getInitialElapsed);
   const [restTimer, setRestTimer] = useState(null);
   const [timerMinimized, setTimerMinimized] = useState(false);
   const [showPostModal, setShowPostModal] = useState(false);
@@ -942,14 +948,17 @@ export default function ActiveWorkout({ dayId: propDayId }) {
   const [showSaveChangesPrompt, setShowSaveChangesPrompt] = useState(false);
   const [savingChanges, setSavingChanges] = useState(false);
   const summaryRef = useRef(null);
-  const startTime = useRef(new Date());
   const timerRef = useRef(null);
   const startingWorkout = useRef(false);
   const streakIncreased = useRef(false);
   const { ensureExercise } = useExerciseLibrary();
 
   useEffect(() => {
-    timerRef.current = setInterval(() => setElapsed((e) => e + 1), 1000);
+    timerRef.current = setInterval(() => {
+      if (workoutStartTime?.current) {
+        setElapsed(Math.floor((Date.now() - workoutStartTime.current) / 1000));
+      }
+    }, 1000);
     return () => clearInterval(timerRef.current);
   }, []);
 
@@ -1086,7 +1095,7 @@ export default function ActiveWorkout({ dayId: propDayId }) {
           user_id: user.email,
           split_day_id: dayId,
           split_day_name: `${day.day_of_week} — ${day.custom_name || day.session_type}`,
-          started_at: startTime.current.toISOString(),
+          started_at: workoutStartTime?.current ? new Date(workoutStartTime.current).toISOString() : new Date().toISOString(),
           is_rest_day: false,
         });
         setWorkoutLog(log);
