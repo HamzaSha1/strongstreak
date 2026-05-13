@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
@@ -103,15 +103,24 @@ export default function SplitBuilder() {
   const activeSplit = splits[activeTab] || splits[0];
 
   const [isDirty, setIsDirty] = useState(false);
+  const justInitialized = useRef(false);
+
+  // Don't mark dirty on first load
+  useEffect(() => {
+    if (initialized) {
+      justInitialized.current = true;
+    }
+  }, [initialized]);
 
   // Mark dirty whenever splits change after initialization
   useEffect(() => {
-    if (initialized) setIsDirty(true);
+    if (!initialized) return;
+    if (justInitialized.current) {
+      justInitialized.current = false;
+      return;
+    }
+    setIsDirty(true);
   }, [splits]);
-  // Don't mark dirty on first load
-  useEffect(() => {
-    if (initialized) setIsDirty(false);
-  }, [initialized]);
 
   const handleBack = () => {
     if (isDirty) {
