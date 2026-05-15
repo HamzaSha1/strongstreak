@@ -94,16 +94,18 @@ export default function ProfileSettings({ user, profile, setProfile }) {
     setIsExporting(true);
     try {
       const res = await base44.functions.invoke('exportWorkoutHistory', {});
-      const blob = new Blob([JSON.stringify(res.data, null, 2)], { type: 'application/json' });
+      const json = JSON.stringify(res.data, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = `workout_history_${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
       a.click();
-      URL.revokeObjectURL(url);
+      setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
       toast.success('Workout history exported!');
-    } catch {
-      toast.error('Export failed. Please try again.');
+    } catch (err) {
+      toast.error('Export failed: ' + (err?.message || 'Please try again.'));
     }
     setIsExporting(false);
   };
